@@ -1,0 +1,164 @@
+import { describe, expect, it } from "vitest";
+import { RESIDENTIAL_VAT_WARNING, calculateVat, calculateVatLine, extractVat } from "@/calculations/vat";
+import { calculateRot } from "@/calculations/rot";
+import { calculateImprovementBasis } from "@/calculations/improvementBasis";
+import type { RotInputs, VatInputs } from "@/types";
+
+const noVat: VatInputs = { vatTreatment: "none", vatDeductiblePercent: 0, lines: [] };
+
+describe("VAT extraction", () => {
+  it("extracts 25% VAT from a gross amount", () => {
+    expect(extractVat(125_000, 0.25)).toBeCloseTo(25_000, 6);
+  });
+
+  it("returns zero VAT at a zero rate", () => {
+    expect(extractVat(100_000, 0)).toBe(0);
+  });
+
+  it("computes deductible VAT and true cash cost per line", () => {
+    const r = calculateVatLine(125_000, 0.25, 0.5);
+    expect(r.vatIncluded).toBeCloseTo(25_000, 6);
+    expect(r.deductibleVat).toBeCloseTo(12_500, 6);
+    expect(r.trueCashCost).toBeCloseTo(112_500, 6);
+  });
+});
+
+describe("VAT module", () => {
+  it("defaults residential renovation to zero deductible VAT", () => {
+    const r = calculateVat({
+      renovationTotalGross: 1_000_000,
+      vat: noVat,
+      defaultVatRate: 0.25,
+      isCompanyOwned: true,
+    });
+    expect(r.deductibleVat).toBe(0);
+    expect(r.trueCashCost).toBe(1_000_000);
+    expect(r.nonDeductibleVat).toBeCloseTo(200_000, 6);
+    expect(r.warning).toBeUndefined();
+  });
+
+  it("warns when a company scenario claims VAT deduction", () => {
+    const r = calculateVat({
+      renovationTotalGross: 1_000_000,
+      vat: { vatTreatment: "full", vatDeductiblePercent: 1, lines: [] },
+      defaultVatRate: 0.25,
+      isCompanyOwned: true,
+    });
+    expect(r.deductibleVat).toBeCloseTo(200_000, 6);
+    expect(r.trueCashCost).toBeCloseTo(800_000, 6);
+    expect(r.warning).toBe(RESIDENTIAL_VAT_WARNING);
+  });
+
+  it("applies line-level overrides before the scenario default", () => {
+    const r = calculateVat({
+      renovationTotalGross: 1_000_000,
+      vat: {
+        vatTreatment: "none",
+        vatDeductiblePercent: 0,
+        lines: [
+          { id: "l1", label: "Commercial part", grossAmount: 250_000, vatRate: 0.25, deductiblePercent: 1 },
+        ],
+      },
+      defaultVatRate: 0.25,
+      isCompanyOwned: true,
+    });
+    expect(r.deductibleVat).toBeCloseTo(50_000, 6);
+    expect(r.trueCashCost).toBeCloseTo(950_000, 6);
+  });
+});
+
+describe("ROT", () => {
+  const rot: RotInputs = {
+    enabled: true,
+    eligibleLaborCostGross: 400_000,
+    eligibleOwners: 2,
+    remainingAllowancePerson1: 50_000,
+    remainingAllowancePerson2: 50_000,
+  };
+
+  it("caps the credit at the combined per-person allowance", () => {
+    const r = calculateRot({
+      rot,
+      renovationTotalGross: 1_000_000,
+      rotRate: 0.3,
+      rotMaxPerPerson: 50_000,
+      isPrivateOwned: true,
+    });
+    expect(r.potentialRot).toBe(120_000);
+    expect(r.availableRotAllowance).toBe(100_000);
+    expect(r.rotDeduction).toBe(100_000);
+    expect(r.privateRenovationCashCost).toBe(900_000);
+  });
+
+  it("gives the full 30% when it stays under the allowance", () => {
+    const r = calculateRot({
+      rot: { ...rot, eligibleLaborCostGross: 200_000 },
+      renovationTotalGross: 1_000_000,
+      rotRate: 0.3,
+      rotMaxPerPerson: 50_000,
+      isPrivateOwned: true,
+    });
+    expect(r.rotDeduction).toBe(60_000);
+  });
+
+  it("is unavailable to company ownership", () => {
+    const r = calculateRot({
+      rot,
+      renovationTotalGross: 1_000_000,
+      rotRate: 0.3,
+      rotMaxPerPerson: 50_000,
+      isPrivateOwned: false,
+    });
+    expect(r.rotDeduction).toBe(0);
+    expect(r.privateRenovationCashCost).toBe(1_000_000);
+  });
+
+  it("returns zero when disabled or with no eligible labour", () => {
+    const disabled = calculateRot({
+      rot: { ...rot, enabled: false },
+      renovationTotalGross: 0,
+      rotRate: 0.3,
+      rotMaxPerPerson: 50_000,
+      isPrivateOwned: true,
+    });
+    expect(disabled.rotDeduction).toBe(0);
+
+    const noLabour = calculateRot({
+      rot: { ...rot, eligibleLaborCostGross: 0 },
+      renovationTotalGross: 500_000,
+      rotRate: 0.3,
+      rotMaxPerPerson: 50_000,
+      isPrivateOwned: true,
+    });
+    expect(noLabour.rotDeduction).toBe(0);
+  });
+});
+
+describe("improvement tax basis", () => {
+  it("excludes ROT-funded spend from the eligible basis", () => {
+    const r = calculateImprovementBasis({
+      renovationTotalGross: 1_000_000,
+      rotDeduction: 100_000,
+      split: {
+        fundamentalImprovementsPercent: 1,
+        qualifyingRepairsAndMaintenancePercent: 0,
+        nonDeductiblePercent: 0,
+      },
+    });
+    expect(r.eligibleTaxBasis).toBe(900_000);
+    expect(r.nonEligibleRenovation).toBe(100_000);
+  });
+
+  it("never assumes all renovation is deductible", () => {
+    const r = calculateImprovementBasis({
+      renovationTotalGross: 1_000_000,
+      rotDeduction: 0,
+      split: {
+        fundamentalImprovementsPercent: 0,
+        qualifyingRepairsAndMaintenancePercent: 0,
+        nonDeductiblePercent: 1,
+      },
+    });
+    expect(r.eligibleTaxBasis).toBe(0);
+  });
+});

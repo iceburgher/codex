@@ -1,0 +1,224 @@
+import { describe, expect, it } from "vitest";
+import { calculateAnnualizedRoi, calculateRoi } from "@/calculations/roi";
+import { solveSalePrice } from "@/calculations/breakEven";
+import { calculateFamilyNetWorth } from "@/calculations/netWorth";
+import { buildCashFlow } from "@/calculations/cashFlow";
+import { calculateOpportunityCost } from "@/calculations/opportunityCost";
+
+describe("ROI", () => {
+  it("annualizes a 12-month return unchanged", () => {
+    expect(calculateAnnualizedRoi(0.2, 12)).toBeCloseTo(0.2, 10);
+  });
+
+  it("annualizes a 6-month return upward", () => {
+    expect(calculateAnnualizedRoi(0.2, 6)).toBeCloseTo(0.44, 10);
+  });
+
+  it("returns null when the equity is more than wiped out", () => {
+    expect(calculateAnnualizedRoi(-1.5, 12)).toBeNull();
+    expect(calculateAnnualizedRoi(-1, 12)).toBeNull();
+  });
+
+  it("returns null for a zero holding period", () => {
+    expect(calculateAnnualizedRoi(0.2, 0)).toBeNull();
+  });
+
+  it("computes project and equity ROI", () => {
+    const r = calculateRoi({
+      totalProjectCost: 5_000_000,
+      projectProfit: 500_000,
+      investedEquity: 2_000_000,
+      netProfit: 400_000,
+      holdingPeriodMonths: 12,
+    });
+    expect(r.projectROI).toBeCloseTo(0.1, 10);
+    expect(r.equityROI).toBeCloseTo(0.2, 10);
+  });
+
+  it("does not divide by zero equity", () => {
+    const r = calculateRoi({
+      totalProjectCost: 0,
+      projectProfit: 0,
+      investedEquity: 0,
+      netProfit: 100,
+      holdingPeriodMonths: 12,
+    });
+    expect(r.equityROI).toBe(0);
+    expect(r.projectROI).toBe(0);
+  });
+});
+
+describe("break-even solver", () => {
+  it("finds the sale price where a linear profit function crosses zero", () => {
+    const profit = (sp: number) => sp - 5_000_000;
+    const r = solveSalePrice(profit, 0, { upperBound: 20_000_000 });
+    expect(r.salePrice).toBeCloseTo(5_000_000, -3);
+    expect(r.converged).toBe(true);
+  });
+
+  it("handles a piecewise function where tax kicks in above the basis", () => {
+    // Below basis: no tax. Above: 22% on the gain.
+    const basis = 4_500_000;
+    const profit = (sp: number) => {
+      const gain = sp - basis;
+      const tax = gain > 0 ? gain * 0.22 : 0;
+      return sp - basis - 500_000 - tax;
+    };
+    const r = solveSalePrice(profit, 0, { upperBound: 20_000_000 });
+    expect(r.salePrice).not.toBeNull();
+    expect(profit(r.salePrice as number)).toBeCloseTo(0, -2);
+  });
+
+  it("reports no solution when the target is unreachable", () => {
+    const r = solveSalePrice(() => -1_000_000, 0, { upperBound: 20_000_000 });
+    expect(r.salePrice).toBeNull();
+  });
+
+  it("respects the SEK 100 tolerance", () => {
+    const r = solveSalePrice((sp) => sp - 3_333_333, 0, { upperBound: 20_000_000, tolerance: 100 });
+    expect(Math.abs((r.salePrice as number) - 3_333_333)).toBeLessThanOrEqual(100);
+  });
+});
+
+describe("family net worth", () => {
+  it("charges the deferred owner tax only in the fully extracted mode", () => {
+    const r = calculateFamilyNetWorth({
+      privateCashAfterProject: 0,
+      companyValueAfterProject: 3_000_000,
+      deferredOwnerTaxToExtract: 400_000,
+      privateCapitalConsumed: 0,
+      companyCapitalConsumed: 2_000_000,
+      remainingPrivateDebt: 0,
+      remainingCompanyDebt: 0,
+    });
+    expect(r.familyNetWorthDeltaModeA).toBe(1_000_000);
+    expect(r.familyNetWorthDeltaModeB).toBe(600_000);
+  });
+
+  it("does not treat company-retained value as private cash", () => {
+    const company = calculateFamilyNetWorth({
+      privateCashAfterProject: 0,
+      companyValueAfterProject: 1_500_000,
+      deferredOwnerTaxToExtract: 300_000,
+      privateCapitalConsumed: 0,
+      companyCapitalConsumed: 1_000_000,
+      remainingPrivateDebt: 0,
+      remainingCompanyDebt: 0,
+    });
+    const priv = calculateFamilyNetWorth({
+      privateCashAfterProject: 1_500_000,
+      companyValueAfterProject: 0,
+      deferredOwnerTaxToExtract: 0,
+      privateCapitalConsumed: 1_000_000,
+      companyCapitalConsumed: 0,
+      remainingPrivateDebt: 0,
+      remainingCompanyDebt: 0,
+    });
+    expect(priv.familyNetWorthDeltaModeB).toBeGreaterThan(company.familyNetWorthDeltaModeB);
+  });
+
+  it("subtracts remaining debt on both sides", () => {
+    const r = calculateFamilyNetWorth({
+      privateCashAfterProject: 1_000_000,
+      companyValueAfterProject: 0,
+      deferredOwnerTaxToExtract: 0,
+      privateCapitalConsumed: 0,
+      companyCapitalConsumed: 0,
+      remainingPrivateDebt: 250_000,
+      remainingCompanyDebt: 100_000,
+    });
+    expect(r.familyNetWorthDeltaModeA).toBe(650_000);
+  });
+});
+
+describe("cash flow", () => {
+  const params = {
+    holdingPeriodMonths: 12,
+    purchasePrice: 3_600_000,
+    purchaseCosts: 54_825,
+    renovationCashCost: 1_000_000,
+    renovationSpreadMonths: 6,
+    runningCostAnnual: 60_000,
+    rentalIncomeTotal: 0,
+    interestTotal: 100_000,
+    amortizationAnnual: 0,
+    loanDrawdown: 2_000_000,
+    salePrice: 6_000_000,
+    saleCosts: 200_000,
+    taxAtExit: 250_000,
+  };
+
+  it("reports the peak funding need before the sale settles it", () => {
+    const cf = buildCashFlow(params);
+    expect(cf.months).toHaveLength(13);
+    expect(cf.peakCashRequirement).toBeGreaterThan(0);
+    expect(cf.monthOfMaxFundingNeed).toBeGreaterThan(0);
+    expect(cf.monthOfMaxFundingNeed).toBeLessThan(12);
+  });
+
+  it("counts the loan drawdown as reducing the equity needed", () => {
+    const withLoan = buildCashFlow(params);
+    const withoutLoan = buildCashFlow({ ...params, loanDrawdown: 0 });
+    expect(withLoan.peakCashRequirement).toBeLessThan(withoutLoan.peakCashRequirement);
+    expect(withLoan.peakDebt).toBe(2_000_000);
+  });
+
+  it("keeps amortization out of the project result but in the cash flow", () => {
+    const amortizing = buildCashFlow({ ...params, amortizationAnnual: 120_000 });
+    expect(amortizing.totalInterest).toBe(params.interestTotal);
+    const totalAmort = amortizing.months.reduce((s, m) => s + m.amortization, 0);
+    expect(totalAmort).toBeCloseTo(120_000, 6);
+  });
+});
+
+describe("opportunity cost", () => {
+  it("charges the alternative return on average capital tied up", () => {
+    const cf = buildCashFlow({
+      holdingPeriodMonths: 12,
+      purchasePrice: 1_000_000,
+      purchaseCosts: 0,
+      renovationCashCost: 0,
+      renovationSpreadMonths: 1,
+      runningCostAnnual: 0,
+      rentalIncomeTotal: 0,
+      interestTotal: 0,
+      amortizationAnnual: 0,
+      loanDrawdown: 0,
+      salePrice: 1_000_000,
+      saleCosts: 0,
+      taxAtExit: 0,
+    });
+    const r = calculateOpportunityCost({
+      cashFlow: cf,
+      annualAlternativeReturnRate: 0.05,
+      holdingPeriodMonths: 12,
+    });
+    expect(r.averageEquityCapitalTiedUp).toBeGreaterThan(0);
+    expect(r.opportunityCost).toBeCloseTo(r.averageEquityCapitalTiedUp * 0.05, 6);
+  });
+
+  it("is zero at a zero alternative return", () => {
+    const cf = buildCashFlow({
+      holdingPeriodMonths: 6,
+      purchasePrice: 1_000_000,
+      purchaseCosts: 0,
+      renovationCashCost: 0,
+      renovationSpreadMonths: 1,
+      runningCostAnnual: 0,
+      rentalIncomeTotal: 0,
+      interestTotal: 0,
+      amortizationAnnual: 0,
+      loanDrawdown: 0,
+      salePrice: 1_000_000,
+      saleCosts: 0,
+      taxAtExit: 0,
+    });
+    expect(
+      calculateOpportunityCost({
+        cashFlow: cf,
+        annualAlternativeReturnRate: 0,
+        holdingPeriodMonths: 6,
+      }).opportunityCost,
+    ).toBe(0);
+  });
+});
