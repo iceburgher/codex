@@ -25,25 +25,25 @@ export const RENOVATION_LINE_KEYS = [
 export type RenovationLineKey = (typeof RENOVATION_LINE_KEYS)[number];
 
 export const RENOVATION_LINE_LABELS: Record<RenovationLineKey, string> = {
-  laborGross: "Labor (gross)",
-  materialsGross: "Materials (gross)",
-  architect: "Architect",
-  structuralEngineer: "Structural engineer",
-  buildingPermit: "Building permit",
-  controlManager: "Control manager (kontrollansvarig)",
-  inspection: "Inspection",
-  groundWorks: "Ground works",
-  demolition: "Demolition",
-  wasteAndContainers: "Waste & containers",
+  laborGross: "Arbetskostnad (inkl. moms)",
+  materialsGross: "Material (inkl. moms)",
+  architect: "Arkitekt",
+  structuralEngineer: "Konstruktör",
+  buildingPermit: "Bygglov",
+  controlManager: "Kontrollansvarig",
+  inspection: "Besiktning",
+  groundWorks: "Markarbete",
+  demolition: "Rivning",
+  wasteAndContainers: "Avfall och container",
   transport: "Transport",
-  equipmentRental: "Equipment rental",
-  projectManagement: "Project management",
-  appliances: "Appliances",
-  fixedInterior: "Fixed interior",
-  looseInterior: "Loose interior",
+  equipmentRental: "Maskinhyra",
+  projectManagement: "Projektledning",
+  appliances: "Vitvaror",
+  fixedInterior: "Fast inredning",
+  looseInterior: "Lös inredning",
   styling: "Styling",
-  landscaping: "Landscaping",
-  other: "Other",
+  landscaping: "Trädgård",
+  other: "Övrigt",
 };
 
 export function calculateRenovation(input: RenovationInputs): RenovationResult {
@@ -60,15 +60,15 @@ export function calculateRenovation(input: RenovationInputs): RenovationResult {
     renovationTotalGross,
     audit: [
       {
-        title: "Renovation total",
+        title: "Renovering totalt",
         source: "USER_INPUT",
         lines: [
-          { label: "Line items subtotal", value: renovationSubtotal },
+          { label: "Summa poster", value: renovationSubtotal },
           {
-            label: `Contingency (${((input.contingencyPercent || 0) * 100).toFixed(1)}%)`,
+            label: `Oförutsett (${((input.contingencyPercent || 0) * 100).toFixed(1).replace(".", ",")} %)`,
             value: contingency,
           },
-          { label: "Total gross", value: renovationTotalGross },
+          { label: "Totalt inkl. moms", value: renovationTotalGross },
         ],
       },
     ],

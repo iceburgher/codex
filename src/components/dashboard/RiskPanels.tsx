@@ -1,20 +1,18 @@
 "use client";
 
 import { buildAdvisorQuestions } from "@/calculations/advisorQuestions";
-import type { PropertyProject, ScenarioResult, ScenarioType } from "@/types";
-import { Card, RiskBadge } from "../ui";
+import type { PropertyProject, RiskFlag, ScenarioResult, ScenarioType } from "@/types";
+import { Card, RiskDot } from "../ui";
 
 const SEVERITY_ORDER = { high: 0, medium: 1, low: 2 } as const;
 
-export function RiskFlagsPanel({
-  results,
-  onNavigate,
-}: {
-  results: ScenarioResult[];
-  onNavigate?: (section: string) => void;
-}) {
-  // A flag raised by any compared scenario matters — show it once, tagged.
-  const byId = new Map<string, { flag: ScenarioResult["riskFlags"][number]; scenarios: string[] }>();
+interface GroupedFlag {
+  flag: RiskFlag;
+  scenarios: string[];
+}
+
+function groupFlags(results: ScenarioResult[]): GroupedFlag[] {
+  const byId = new Map<string, GroupedFlag>();
   for (const r of results) {
     for (const flag of r.riskFlags) {
       const existing = byId.get(flag.id);
@@ -22,40 +20,76 @@ export function RiskFlagsPanel({
       else byId.set(flag.id, { flag, scenarios: [r.label] });
     }
   }
-
-  const flags = [...byId.values()].sort(
+  return [...byId.values()].sort(
     (a, b) => SEVERITY_ORDER[a.flag.severity] - SEVERITY_ORDER[b.flag.severity],
   );
+}
+
+/** Kort lista med det viktigaste — resten ligger under Detaljer. */
+export function TopRisks({
+  results,
+  limit = 3,
+  onShowAll,
+}: {
+  results: ScenarioResult[];
+  limit?: number;
+  onShowAll?: () => void;
+}) {
+  const flags = groupFlags(results);
+  const shown = flags.slice(0, limit);
+  const rest = flags.length - shown.length;
 
   return (
     <Card
-      title="Tax risk & flags"
-      subtitle="Classification depends on purpose, facts and usage — these are not settled answers."
+      title="Att tänka på"
+      subtitle="Skattereglerna beror på syfte, användning och omständigheter. Det här är inte färdiga svar."
+    >
+      {shown.length === 0 ? (
+        <p className="text-sm text-muted">Inga frågetecken hittade.</p>
+      ) : (
+        <ul className="space-y-3">
+          {shown.map(({ flag, scenarios }) => (
+            <li key={flag.id} className="flex gap-3">
+              <RiskDot severity={flag.severity} />
+              <div>
+                <p className="text-sm leading-relaxed">{flag.text}</p>
+                <p className="mt-0.5 text-xs text-muted">{scenarios.join(" · ")}</p>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+      {rest > 0 && onShowAll && (
+        <button
+          type="button"
+          onClick={onShowAll}
+          className="mt-4 text-sm font-medium text-accent hover:underline"
+        >
+          Visa alla {flags.length} punkter
+        </button>
+      )}
+    </Card>
+  );
+}
+
+export function RiskFlagsPanel({ results }: { results: ScenarioResult[] }) {
+  const flags = groupFlags(results);
+
+  return (
+    <Card
+      title="Alla frågetecken"
+      subtitle="Rött betyder: ta in skatteråd innan du litar på siffran. Gult betyder: kontrollera."
     >
       {flags.length === 0 ? (
-        <p className="text-xs text-muted">No flags raised.</p>
+        <p className="text-sm text-muted">Inga frågetecken hittade.</p>
       ) : (
-        <ul className="space-y-2">
+        <ul className="space-y-3">
           {flags.map(({ flag, scenarios }) => (
-            <li key={flag.id} className="flex gap-2.5">
-              <RiskBadge severity={flag.severity} />
-              <div className="min-w-0">
-                <p className="text-xs">{flag.text}</p>
-                <p className="mt-0.5 text-[10px] text-muted">
-                  {scenarios.join(" · ")}
-                  {onNavigate && FLAG_SECTIONS[flag.id] && (
-                    <>
-                      {" · "}
-                      <button
-                        type="button"
-                        className="text-accent underline underline-offset-2"
-                        onClick={() => onNavigate(FLAG_SECTIONS[flag.id])}
-                      >
-                        Go to input
-                      </button>
-                    </>
-                  )}
-                </p>
+            <li key={flag.id} className="flex gap-3">
+              <RiskDot severity={flag.severity} />
+              <div>
+                <p className="text-sm leading-relaxed">{flag.text}</p>
+                <p className="mt-0.5 text-xs text-muted">{scenarios.join(" · ")}</p>
               </div>
             </li>
           ))}
@@ -64,21 +98,6 @@ export function RiskFlagsPanel({
     </Card>
   );
 }
-
-const FLAG_SECTIONS: Record<string, string> = {
-  sale_price_missing: "Sale",
-  tax_assessment_missing: "Purchase",
-  mortgage_deeds_missing: "Purchase",
-  short_holding_period: "Purchase",
-  explicit_flip_intent: "Tax classification",
-  private_residence_classification_unconfirmed: "Tax classification",
-  no_private_use: "Tax classification",
-  company_private_use_risk: "Private use / benefit",
-  vat_deduction_claimed_on_residence: "VAT",
-  vat_default_zero: "VAT",
-  high_intercompany_debt: "Project company funding",
-  dividend_allowance_exceeded: "Dividend extraction",
-};
 
 export function WarningsPanel({ results }: { results: ScenarioResult[] }) {
   const seen = new Map<string, { text: string; scenarios: string[] }>();
@@ -93,12 +112,12 @@ export function WarningsPanel({ results }: { results: ScenarioResult[] }) {
   if (seen.size === 0) return null;
 
   return (
-    <Card title="Warnings" subtitle="Warnings never block calculation.">
-      <ul className="space-y-1.5">
+    <Card title="Varningar" subtitle="Varningar stoppar aldrig beräkningen.">
+      <ul className="space-y-2.5">
         {[...seen.entries()].map(([id, w]) => (
-          <li key={id} className="text-xs">
-            <span className="text-warn">▲</span> {w.text}
-            <span className="ml-1 text-[10px] text-muted">({w.scenarios.join(", ")})</span>
+          <li key={id} className="text-sm leading-relaxed">
+            <span className="mr-1.5 text-warn">▲</span>
+            {w.text}
           </li>
         ))}
       </ul>
@@ -117,13 +136,13 @@ export function AdvisorQuestionsPanel({
 
   return (
     <Card
-      title="Advisor questions"
-      subtitle="Generated from the scenarios and inputs currently in use."
+      title="Frågor att ta med till rådgivaren"
+      subtitle="Skapas utifrån de ägarformer och uppgifter ni faktiskt använder."
     >
-      <ul className="space-y-2">
+      <ul className="space-y-3">
         {questions.map((q) => (
-          <li key={q.id} className="text-xs">
-            <span className="mr-1.5 rounded bg-surface-muted px-1.5 py-0.5 text-[10px] text-muted">
+          <li key={q.id} className="text-sm leading-relaxed">
+            <span className="mr-2 rounded-md bg-surface-muted px-2 py-0.5 text-xs text-muted">
               {q.scope}
             </span>
             {q.question}

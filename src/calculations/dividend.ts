@@ -61,24 +61,24 @@ export function calculateDividendGrossUp(params: {
     allowanceExceeded: aboveAllowanceGross > 0,
     audit: [
       {
-        title: "Dividend extraction",
+        title: "Utdelning till ägarna",
         source: "TAX_ADVISOR_INPUT",
         lines: [
-          { label: "Target net private cash", value: targetNetPrivateCash },
-          { label: "Low-tax allowance available", value: allowance },
-          { label: `Within allowance @ ${(withinRate * 100).toFixed(1)}%`, value: withinAllowanceGross },
-          { label: "Tax within allowance", value: withinAllowanceTax },
+          { label: "Önskat belopp netto privat", value: targetNetPrivateCash },
+          { label: "Gränsbelopp (lågbeskattat)", value: allowance },
+          { label: `Inom gränsbelopp, ${(withinRate * 100).toFixed(1).replace(".", ",")} %`, value: withinAllowanceGross },
+          { label: "Skatt inom gränsbelopp", value: withinAllowanceTax },
           {
             label:
               aboveRate === null || aboveRate === undefined
-                ? "Above allowance (rate not supplied)"
-                : `Above allowance @ ${(aboveRate * 100).toFixed(1)}%`,
+                ? "Över gränsbelopp (skattesats saknas)"
+                : `Över gränsbelopp, ${(aboveRate * 100).toFixed(1).replace(".", ",")} %`,
             value: aboveAllowanceGross,
           },
-          { label: "Tax above allowance", value: aboveAllowanceTax },
-          { label: "Gross dividend required", value: grossDividendRequired },
-          { label: "Total dividend tax", value: dividendTax },
-          { label: "Net cash to owner", value: netCashToOwner },
+          { label: "Skatt över gränsbelopp", value: aboveAllowanceTax },
+          { label: "Utdelning som krävs", value: grossDividendRequired },
+          { label: "Total utdelningsskatt", value: dividendTax },
+          { label: "Netto till ägaren", value: netCashToOwner },
         ],
       },
     ],
@@ -120,14 +120,14 @@ export function distributeDividend(params: {
     allowanceExceeded: aboveAllowanceGross > 0,
     audit: [
       {
-        title: "Dividend distribution of company profit",
+        title: "Utdelning av bolagets vinst",
         source: "TAX_ADVISOR_INPUT",
         lines: [
-          { label: "Gross available for distribution", value: grossAvailable },
-          { label: "Within allowance", value: withinAllowanceGross },
-          { label: "Above allowance", value: aboveAllowanceGross },
-          { label: "Dividend tax", value: dividendTax },
-          { label: "Net to owners", value: grossAvailable - dividendTax },
+          { label: "Tillgängligt att dela ut", value: grossAvailable },
+          { label: "Inom gränsbelopp", value: withinAllowanceGross },
+          { label: "Över gränsbelopp", value: aboveAllowanceGross },
+          { label: "Utdelningsskatt", value: dividendTax },
+          { label: "Netto till ägarna", value: grossAvailable - dividendTax },
         ],
       },
     ],

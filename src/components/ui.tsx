@@ -10,24 +10,26 @@ export function Card({
   actions,
   children,
   className = "",
+  tone = "default",
 }: {
   title?: ReactNode;
   subtitle?: ReactNode;
   actions?: ReactNode;
   children: ReactNode;
   className?: string;
+  tone?: "default" | "accent";
 }) {
   return (
     <section
-      className={`rounded-lg border border-border bg-surface p-4 print-block ${className}`}
+      className={`card print-block p-5 ${tone === "accent" ? "border-accent/40" : ""} ${className}`}
     >
       {(title || actions) && (
-        <header className="mb-3 flex items-start justify-between gap-3">
+        <header className="mb-4 flex items-start justify-between gap-4">
           <div>
-            {title && <h2 className="text-sm font-semibold tracking-tight">{title}</h2>}
-            {subtitle && <p className="mt-0.5 text-xs text-muted">{subtitle}</p>}
+            {title && <h2 className="text-base font-semibold tracking-tight">{title}</h2>}
+            {subtitle && <p className="mt-1 text-sm leading-snug text-muted">{subtitle}</p>}
           </div>
-          {actions && <div className="flex shrink-0 gap-2">{actions}</div>}
+          {actions && <div className="flex shrink-0 items-center gap-2">{actions}</div>}
         </header>
       )}
       {children}
@@ -39,6 +41,7 @@ export function Button({
   children,
   onClick,
   variant = "default",
+  size = "md",
   type = "button",
   disabled,
   title,
@@ -47,16 +50,21 @@ export function Button({
   children: ReactNode;
   onClick?: () => void;
   variant?: "default" | "primary" | "danger" | "ghost";
+  size?: "sm" | "md";
   type?: "button" | "submit";
   disabled?: boolean;
   title?: string;
   className?: string;
 }) {
   const styles: Record<string, string> = {
-    default: "border border-border bg-surface hover:bg-surface-muted",
-    primary: "border border-accent bg-accent text-white hover:opacity-90",
-    danger: "border border-border bg-surface text-negative hover:bg-danger-soft",
-    ghost: "border border-transparent hover:bg-surface-muted",
+    default: "border border-border-strong bg-surface hover:bg-surface-muted",
+    primary: "border border-accent bg-accent text-white hover:bg-accent-strong",
+    danger: "border border-border-strong bg-surface text-negative hover:bg-negative-soft",
+    ghost: "border border-transparent text-muted hover:bg-surface-muted",
+  };
+  const sizes = {
+    sm: "px-2.5 py-1.5 text-xs",
+    md: "px-3.5 py-2 text-sm",
   };
   return (
     <button
@@ -64,7 +72,7 @@ export function Button({
       title={title}
       disabled={disabled}
       onClick={onClick}
-      className={`rounded-md px-2.5 py-1.5 text-xs font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-50 ${styles[variant]} ${className}`}
+      className={`rounded-lg font-medium transition-colors disabled:cursor-not-allowed disabled:opacity-40 ${styles[variant]} ${sizes[size]} ${className}`}
     >
       {children}
     </button>
@@ -72,38 +80,40 @@ export function Button({
 }
 
 export const SOURCE_LABELS: Record<AssumptionSource, string> = {
-  VERIFIED: "Verified",
-  USER_INPUT: "User input",
-  ESTIMATE: "Estimate",
-  TAX_ADVISOR_INPUT: "Tax advisor input",
+  VERIFIED: "Kontrollerat",
+  USER_INPUT: "Din uppgift",
+  ESTIMATE: "Uppskattning",
+  TAX_ADVISOR_INPUT: "Fråga rådgivare",
 };
 
 export function SourceTag({ source }: { source: AssumptionSource }) {
   const styles: Record<AssumptionSource, string> = {
-    VERIFIED: "bg-ok-soft text-positive",
-    USER_INPUT: "bg-accent-soft text-accent",
+    VERIFIED: "bg-positive-soft text-positive",
+    USER_INPUT: "bg-surface-muted text-muted",
     ESTIMATE: "bg-warn-soft text-warn",
-    TAX_ADVISOR_INPUT: "bg-danger-soft text-negative",
+    TAX_ADVISOR_INPUT: "bg-accent-soft text-accent",
   };
   return (
-    <span
-      className={`rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase tracking-wide ${styles[source]}`}
-    >
+    <span className={`rounded-md px-1.5 py-0.5 text-[11px] font-medium ${styles[source]}`}>
       {SOURCE_LABELS[source]}
     </span>
   );
 }
+
+const FIELD_CLASS =
+  "w-full rounded-lg border bg-surface px-3 py-2.5 text-[15px] outline-none transition-colors focus:border-accent";
 
 export function NumberField({
   label,
   value,
   onChange,
   suffix,
-  placeholder = "Not entered",
+  placeholder = "Ej ifyllt",
   step,
   source,
   hint,
   allowNull = false,
+  size = "md",
 }: {
   label: string;
   value: number | null;
@@ -114,25 +124,26 @@ export function NumberField({
   source?: AssumptionSource;
   hint?: string;
   allowNull?: boolean;
+  size?: "md" | "lg";
 }) {
   const id = useId();
   const isMissing = value === null || value === undefined;
 
   return (
     <label htmlFor={id} className="block">
-      <span className="mb-1 flex items-center justify-between gap-2">
-        <span className="text-xs text-muted">{label}</span>
+      <span className="mb-1.5 flex items-center justify-between gap-2">
+        <span className={size === "lg" ? "text-sm font-medium" : "text-sm text-muted"}>{label}</span>
         {source && <SourceTag source={source} />}
       </span>
-      <span className="flex items-center gap-1.5">
+      <span className="relative block">
         <input
           id={id}
           type="number"
           step={step}
           inputMode="decimal"
-          className={`numeric w-full rounded-md border bg-surface px-2 py-1.5 text-sm outline-none focus:border-accent ${
-            isMissing && allowNull ? "border-warn" : "border-border"
-          }`}
+          className={`numeric ${FIELD_CLASS} ${suffix ? "pr-12" : ""} ${
+            size === "lg" ? "py-3 text-lg font-semibold" : ""
+          } ${isMissing && allowNull ? "border-warn" : "border-border-strong"}`}
           value={isMissing ? "" : value}
           placeholder={placeholder}
           onChange={(e) => {
@@ -145,12 +156,16 @@ export function NumberField({
             onChange(Number.isFinite(parsed) ? parsed : allowNull ? null : 0);
           }}
         />
-        {suffix && <span className="shrink-0 text-xs text-muted">{suffix}</span>}
+        {suffix && (
+          <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-sm text-muted">
+            {suffix}
+          </span>
+        )}
       </span>
       {isMissing && allowNull && (
-        <span className="mt-1 block text-[11px] text-warn">Missing — not entered</span>
+        <span className="mt-1 block text-xs text-warn">Saknas — fyll i för att räkna</span>
       )}
-      {hint && <span className="mt-1 block text-[11px] text-muted">{hint}</span>}
+      {hint && <span className="mt-1 block text-xs leading-snug text-muted">{hint}</span>}
     </label>
   );
 }
@@ -188,7 +203,7 @@ export function TextField({
   label,
   value,
   onChange,
-  placeholder = "Not entered",
+  placeholder = "Ej ifyllt",
 }: {
   label: string;
   value: string | undefined;
@@ -198,11 +213,11 @@ export function TextField({
   const id = useId();
   return (
     <label htmlFor={id} className="block">
-      <span className="mb-1 block text-xs text-muted">{label}</span>
+      <span className="mb-1.5 block text-sm text-muted">{label}</span>
       <input
         id={id}
         type="text"
-        className="w-full rounded-md border border-border bg-surface px-2 py-1.5 text-sm outline-none focus:border-accent"
+        className={`${FIELD_CLASS} border-border-strong`}
         value={value ?? ""}
         placeholder={placeholder}
         onChange={(e) => onChange(e.target.value)}
@@ -229,13 +244,15 @@ export function SelectField<T extends string>({
   const id = useId();
   return (
     <label htmlFor={id} className="block">
-      <span className="mb-1 flex items-center justify-between gap-2">
-        <span className="text-xs text-muted">{label}</span>
-        {source && <SourceTag source={source} />}
-      </span>
+      {label && (
+        <span className="mb-1.5 flex items-center justify-between gap-2">
+          <span className="text-sm text-muted">{label}</span>
+          {source && <SourceTag source={source} />}
+        </span>
+      )}
       <select
         id={id}
-        className="w-full rounded-md border border-border bg-surface px-2 py-1.5 text-sm outline-none focus:border-accent"
+        className={`${FIELD_CLASS} border-border-strong`}
         value={value}
         onChange={(e) => onChange(e.target.value as T)}
       >
@@ -245,7 +262,7 @@ export function SelectField<T extends string>({
           </option>
         ))}
       </select>
-      {hint && <span className="mt-1 block text-[11px] text-muted">{hint}</span>}
+      {hint && <span className="mt-1 block text-xs leading-snug text-muted">{hint}</span>}
     </label>
   );
 }
@@ -264,7 +281,7 @@ export function ToggleField({
   const id = useId();
   return (
     <div>
-      <label htmlFor={id} className="flex items-center gap-2">
+      <label htmlFor={id} className="flex cursor-pointer items-center gap-2.5">
         <input
           id={id}
           type="checkbox"
@@ -272,9 +289,9 @@ export function ToggleField({
           checked={value}
           onChange={(e) => onChange(e.target.checked)}
         />
-        <span className="text-xs">{label}</span>
+        <span className="text-sm">{label}</span>
       </label>
-      {hint && <span className="mt-1 block text-[11px] text-muted">{hint}</span>}
+      {hint && <span className="mt-1 block pl-7 text-xs text-muted">{hint}</span>}
     </div>
   );
 }
@@ -292,46 +309,46 @@ export function Collapsible({
 }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="rounded-lg border border-border bg-surface">
+    <div className="card overflow-hidden">
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="flex w-full items-center justify-between gap-2 px-3 py-2.5 text-left"
+        className="flex w-full items-center justify-between gap-3 px-4 py-3.5 text-left hover:bg-surface-muted"
       >
-        <span className="flex items-center gap-2 text-xs font-semibold">
-          <span className="text-muted">{open ? "−" : "+"}</span>
-          {title}
+        <span className="text-sm font-semibold">{title}</span>
+        <span className="flex items-center gap-2">
+          {badge}
+          <span className="text-muted">{open ? "▾" : "▸"}</span>
         </span>
-        {badge}
       </button>
-      {open && <div className="border-t border-border px-3 py-3">{children}</div>}
+      {open && <div className="border-t border-border px-4 py-4">{children}</div>}
     </div>
   );
 }
 
-/** "Show calculation" — every major output must be explainable. */
+/** "Visa uträkning" — varje viktigt tal ska gå att spåra. */
 export function AuditPanel({ trails }: { trails: AuditTrail[] }) {
   const [open, setOpen] = useState(false);
   if (trails.length === 0) return null;
 
   return (
-    <div className="mt-2">
+    <div className="mt-1.5">
       <button
         type="button"
         onClick={() => setOpen(!open)}
-        className="text-[11px] font-medium text-accent underline underline-offset-2"
+        className="text-xs font-medium text-accent hover:underline"
       >
-        {open ? "Hide calculation" : "Show calculation"}
+        {open ? "Dölj uträkning" : "Visa uträkning"}
       </button>
       {open && (
         <div className="mt-2 space-y-3">
-          {trails.map((trail) => (
-            <div key={trail.title} className="rounded-md bg-surface-muted p-2.5">
-              <div className="mb-1.5 flex items-center justify-between gap-2">
-                <span className="text-[11px] font-semibold">{trail.title}</span>
+          {trails.map((trail, ti) => (
+            <div key={`${trail.title}-${ti}`} className="rounded-lg bg-surface-muted p-3">
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <span className="text-xs font-semibold">{trail.title}</span>
                 <SourceTag source={trail.source} />
               </div>
-              <table className="w-full text-[11px]">
+              <table className="w-full text-xs">
                 <tbody>
                   {trail.lines.map((line, i) => (
                     <tr key={`${line.label}-${i}`}>
@@ -351,18 +368,14 @@ export function AuditPanel({ trails }: { trails: AuditTrail[] }) {
   );
 }
 
-export function RiskBadge({ severity }: { severity: RiskSeverity }) {
-  const map: Record<RiskSeverity, { label: string; className: string }> = {
-    low: { label: "Green", className: "bg-ok-soft text-positive" },
-    medium: { label: "Yellow", className: "bg-warn-soft text-warn" },
-    high: { label: "Red", className: "bg-danger-soft text-negative" },
-  };
-  const m = map[severity];
-  return (
-    <span className={`rounded px-1.5 py-0.5 text-[10px] font-semibold uppercase ${m.className}`}>
-      {m.label}
-    </span>
-  );
+export function RiskDot({ severity }: { severity: RiskSeverity }) {
+  const color =
+    severity === "high"
+      ? "bg-negative"
+      : severity === "medium"
+        ? "bg-warn"
+        : "bg-positive";
+  return <span className={`mt-1.5 h-2.5 w-2.5 shrink-0 rounded-full ${color}`} />;
 }
 
 export function Stat({
@@ -370,19 +383,54 @@ export function Stat({
   value,
   tone = "neutral",
   hint,
+  size = "md",
 }: {
   label: string;
   value: string;
   tone?: "neutral" | "positive" | "negative";
   hint?: string;
+  size?: "md" | "lg";
 }) {
   const toneClass =
     tone === "positive" ? "text-positive" : tone === "negative" ? "text-negative" : "";
   return (
     <div>
-      <div className="text-[11px] text-muted">{label}</div>
-      <div className={`numeric text-sm font-semibold ${toneClass}`}>{value}</div>
-      {hint && <div className="text-[10px] text-muted">{hint}</div>}
+      <div className="text-sm text-muted">{label}</div>
+      <div
+        className={`numeric font-semibold ${size === "lg" ? "text-2xl" : "text-lg"} ${toneClass}`}
+      >
+        {value}
+      </div>
+      {hint && <div className="mt-0.5 text-xs text-muted">{hint}</div>}
+    </div>
+  );
+}
+
+export function Tabs<T extends string>({
+  tabs,
+  active,
+  onChange,
+}: {
+  tabs: { value: T; label: string }[];
+  active: T;
+  onChange: (value: T) => void;
+}) {
+  return (
+    <div className="no-print flex gap-1 rounded-xl bg-surface-muted p-1">
+      {tabs.map((tab) => (
+        <button
+          key={tab.value}
+          type="button"
+          onClick={() => onChange(tab.value)}
+          className={`flex-1 rounded-lg px-4 py-2 text-sm font-medium transition-colors ${
+            active === tab.value
+              ? "bg-surface text-foreground shadow-sm"
+              : "text-muted hover:text-foreground"
+          }`}
+        >
+          {tab.label}
+        </button>
+      ))}
     </div>
   );
 }

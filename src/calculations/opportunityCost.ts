@@ -23,16 +23,16 @@ export function calculateOpportunityCost(params: {
     opportunityCost,
     audit: [
       {
-        title: "Opportunity cost of tied-up capital",
+        title: "Alternativkostnad för bundet kapital",
         source: "ESTIMATE",
         lines: [
-          { label: "Average capital tied up", value: averageEquityCapitalTiedUp },
+          { label: "Genomsnittligt bundet kapital", value: averageEquityCapitalTiedUp },
           {
-            label: "Alternative return",
-            value: `${((params.annualAlternativeReturnRate || 0) * 100).toFixed(1)}% p.a.`,
+            label: "Alternativ avkastning",
+            value: `${((params.annualAlternativeReturnRate || 0) * 100).toFixed(1).replace(".", ",")} % per år`,
           },
-          { label: "Holding period", value: `${params.holdingPeriodMonths} mo` },
-          { label: "Opportunity cost", value: opportunityCost },
+          { label: "Innehavstid", value: `${params.holdingPeriodMonths} mån` },
+          { label: "Alternativkostnad", value: opportunityCost },
         ],
       },
     ],

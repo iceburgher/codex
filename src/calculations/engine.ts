@@ -469,20 +469,25 @@ export interface ScenarioLiteResult {
   profitAfterTax: number;
 }
 
-/** Solver-facing view: same economics, no recursive break-even work. */
+/**
+ * Solver-facing view: same economics, no recursive break-even work.
+ *
+ * The metric must fall below zero when the sale price does, or a root finder
+ * has nothing to bracket. Owner-level net cash is clamped at zero for a
+ * company (you cannot distribute a loss), so the solver uses the project
+ * result after tax instead — that is also what "break-even" means here.
+ */
 export function calculateScenarioLite(
   project: PropertyProject,
   scenarioType: ScenarioType,
   overrides: ScenarioOverrides = {},
 ): ScenarioLiteResult {
   const core = computeCore(project, scenarioType, overrides);
-  const netProfit = isCompanyScenario(scenarioType)
-    ? core.netAvailablePrivately
-    : core.profitAfterTax;
+  const investedEquity = Math.max(core.roi.investedEquity, 1);
 
   return {
-    netProfit,
-    equityROI: core.roi.equityROI,
+    netProfit: core.profitAfterTax,
+    equityROI: core.profitAfterTax / investedEquity,
     profitAfterTax: core.profitAfterTax,
   };
 }

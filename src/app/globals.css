@@ -1,20 +1,23 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f6f7f9;
+  --background: #f4f6f8;
   --surface: #ffffff;
-  --surface-muted: #f0f2f5;
-  --foreground: #14181f;
-  --muted: #5b6472;
-  --border: #dde1e8;
-  --accent: #1f5f8b;
-  --accent-soft: #e6f0f7;
-  --positive: #1a7f5a;
-  --negative: #b23c3c;
-  --warn: #b07d1a;
-  --warn-soft: #fdf4e2;
-  --danger-soft: #fbeaea;
-  --ok-soft: #e8f4ee;
+  --surface-muted: #eef1f5;
+  --foreground: #10151c;
+  --muted: #5d6a7a;
+  --border: #e0e5ec;
+  --border-strong: #cfd6e0;
+  --accent: #10617e;
+  --accent-strong: #0b4a61;
+  --accent-soft: #e4f0f5;
+  --positive: #10714f;
+  --positive-soft: #e3f2eb;
+  --negative: #a83232;
+  --negative-soft: #fbe9e8;
+  --warn: #9a6a12;
+  --warn-soft: #fcf2df;
+  --shadow: 0 1px 2px rgb(16 21 28 / 0.04), 0 8px 24px -12px rgb(16 21 28 / 0.14);
 }
 
 @theme inline {
@@ -24,45 +27,68 @@
   --color-foreground: var(--foreground);
   --color-muted: var(--muted);
   --color-border: var(--border);
+  --color-border-strong: var(--border-strong);
   --color-accent: var(--accent);
+  --color-accent-strong: var(--accent-strong);
   --color-accent-soft: var(--accent-soft);
   --color-positive: var(--positive);
+  --color-positive-soft: var(--positive-soft);
   --color-negative: var(--negative);
+  --color-negative-soft: var(--negative-soft);
   --color-warn: var(--warn);
   --color-warn-soft: var(--warn-soft);
-  --color-danger-soft: var(--danger-soft);
-  --color-ok-soft: var(--ok-soft);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #10141a;
-    --surface: #171c24;
-    --surface-muted: #1e242e;
-    --foreground: #e8ecf2;
-    --muted: #98a3b3;
-    --border: #2a323d;
-    --accent: #6aa9d8;
-    --accent-soft: #1c2c3a;
-    --positive: #55c496;
-    --negative: #e07b7b;
-    --warn: #d9ac52;
-    --warn-soft: #2c2618;
-    --danger-soft: #2e1c1c;
-    --ok-soft: #16291f;
+    --background: #0d1116;
+    --surface: #151b23;
+    --surface-muted: #1c242e;
+    --foreground: #e9edf3;
+    --muted: #96a3b4;
+    --border: #262f3a;
+    --border-strong: #35414f;
+    --accent: #5fb0cf;
+    --accent-strong: #8ecbe3;
+    --accent-soft: #14303c;
+    --positive: #4fc196;
+    --positive-soft: #122c22;
+    --negative: #e0817b;
+    --negative-soft: #2e1b1a;
+    --warn: #d6a84f;
+    --warn-soft: #2b2416;
+    --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 8px 24px -12px rgb(0 0 0 / 0.6);
   }
+}
+
+html {
+  font-size: 16px;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  font-family:
+    ui-sans-serif,
+    system-ui,
+    -apple-system,
+    "Segoe UI",
+    Roboto,
+    "Helvetica Neue",
+    Arial,
+    sans-serif;
+  -webkit-font-smoothing: antialiased;
 }
 
 .numeric {
   font-variant-numeric: tabular-nums;
+}
+
+.card {
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
 }
 
 input[type="number"]::-webkit-outer-spin-button,
@@ -74,6 +100,11 @@ input[type="number"] {
   -moz-appearance: textfield;
 }
 
+input,
+select {
+  color: var(--foreground);
+}
+
 @media print {
   .no-print {
     display: none !important;
@@ -82,14 +113,13 @@ input[type="number"] {
     background: #fff;
     color: #000;
   }
+  .card {
+    box-shadow: none;
+  }
   .print-block {
     break-inside: avoid;
   }
-  /* The input column is hidden in print; collapse its grid track so the
-     results use the full page width instead of the remaining column. */
-  .print-full-width {
-    display: block !important;
-  }
+  .print-full-width,
   .print-stack {
     display: block !important;
   }

@@ -1,7 +1,7 @@
 import type { SalaryInputs, SalaryResult } from "@/types";
 
 export const SALARY_APPROXIMATION_WARNING =
-  "This is an approximation. Exact salary taxation can depend on municipality, total annual salary, state income tax, deductions and other factors.";
+  "Detta är en uppskattning. Den verkliga skatten på lön beror på kommun, total årslön, statlig inkomstskatt, avdrag och annat.";
 
 export function calculateSalaryExtraction(params: {
   targetNetSalary: number;
@@ -33,17 +33,17 @@ export function calculateSalaryExtraction(params: {
     companyCashCostPerPrivateSek,
     audit: [
       {
-        title: "Salary extraction",
+        title: "Lön till ägarna",
         source: "TAX_ADVISOR_INPUT",
         lines: [
-          { label: "Target net salary", value: targetNetSalary },
-          { label: `Marginal income tax ${(marginal * 100).toFixed(1)}%`, value: grossSalary - targetNetSalary },
-          { label: "Gross salary", value: grossSalary },
-          { label: `Employer contributions ${(employerRate * 100).toFixed(2)}%`, value: employerContribution },
-          { label: "Company cash cost", value: companyCashCost },
+          { label: "Önskad lön netto", value: targetNetSalary },
+          { label: `Inkomstskatt, ${(marginal * 100).toFixed(1).replace(".", ",")} %`, value: grossSalary - targetNetSalary },
+          { label: "Bruttolön", value: grossSalary },
+          { label: `Arbetsgivaravgifter, ${(employerRate * 100).toFixed(2).replace(".", ",")} %`, value: employerContribution },
+          { label: "Bolagets kostnad", value: companyCashCost },
           {
-            label: "Company cash cost per private SEK",
-            value: `${companyCashCostPerPrivateSek.toFixed(2)}x`,
+            label: "Bolagets kostnad per krona privat",
+            value: `${companyCashCostPerPrivateSek.toFixed(2).replace(".", ",")} kr`,
           },
         ],
       },

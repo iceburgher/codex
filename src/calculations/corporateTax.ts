@@ -1,5 +1,10 @@
 import type { CompanyAssetClassification, CorporateTaxResult } from "@/types";
 
+const ASSET_LABELS: Record<CompanyAssetClassification, string> = {
+  capital_asset: "Kapitaltillgång",
+  inventory_property: "Lagerfastighet",
+};
+
 /**
  * Company sale result. Deductible operating items (interest, running costs,
  * rental result, employer contributions on benefit) are folded into
@@ -25,21 +30,21 @@ export function calculateCorporateTax(params: {
     companyProfitAfterTax,
     audit: [
       {
-        title: "Corporate tax",
+        title: "Bolagsskatt",
         source: "VERIFIED",
         lines: [
-          { label: "Sale price", value: params.salePrice },
-          { label: "Sale costs", value: -params.saleCosts },
-          { label: "Company tax basis", value: -params.companyTaxBasis },
-          { label: "Disposal result", value: disposalResult },
-          { label: "Other deductible project result", value: params.otherDeductibleResult },
-          { label: "Taxable result", value: taxableSaleResult },
-          { label: "Asset classification", value: params.classification },
+          { label: "Försäljningspris", value: params.salePrice },
+          { label: "Försäljningskostnader", value: -params.saleCosts },
+          { label: "Skattemässigt anskaffningsvärde", value: -params.companyTaxBasis },
+          { label: "Resultat vid försäljning", value: disposalResult },
+          { label: "Övrigt projektresultat", value: params.otherDeductibleResult },
+          { label: "Skattepliktigt resultat", value: taxableSaleResult },
+          { label: "Klassificering", value: ASSET_LABELS[params.classification] },
           {
-            label: `Corporate tax @ ${(params.corporateTaxRate * 100).toFixed(1)}%`,
+            label: `Bolagsskatt, ${(params.corporateTaxRate * 100).toFixed(1).replace(".", ",")} %`,
             value: companyTax,
           },
-          { label: "Profit after corporate tax", value: companyProfitAfterTax },
+          { label: "Vinst efter bolagsskatt", value: companyProfitAfterTax },
         ],
       },
     ],

@@ -11,51 +11,55 @@ interface Row {
   audit?: (r: ScenarioResult) => ScenarioResult["purchase"]["audit"];
 }
 
-/** Exit-dependent rows read as "needs sale price" rather than as a computed loss. */
+/** Rader som beror på exit visar hellre "kräver försäljningspris" än en påhittad förlust. */
 const exit = (render: (r: ScenarioResult) => string) => (r: ScenarioResult) =>
   whenAssessable(r.salePriceMissing, () => render(r));
 
-/** Rows that also depend on the owner-level extraction tax being known. */
+/** Rader som dessutom kräver att skatten för att ta ut pengarna är känd. */
 const afterExtraction = (render: (r: ScenarioResult) => string) => (r: ScenarioResult) =>
   whenAssessable(
     r.salePriceMissing || r.extractionRateUnknown,
     () => render(r),
-    r.extractionRateUnknown ? "Needs dividend tax rate" : undefined,
+    r.extractionRateUnknown ? "Kräver skattesats" : undefined,
   );
 
 const ROWS: Row[] = [
   {
-    label: "Total capital requirement",
+    label: "Totalt kapitalbehov",
     value: (r) => formatMoney(r.totalCapitalRequirement),
   },
-  { label: "Equity committed", value: (r) => formatMoney(r.equityCommitted) },
-  { label: "External debt", value: (r) => formatMoney(r.externalDebt) },
+  { label: "Eget kapital", value: (r) => formatMoney(r.equityCommitted) },
+  { label: "Lån", value: (r) => formatMoney(r.externalDebt) },
   {
-    label: "Purchase taxes / fees",
+    label: "Skatt och avgifter vid köp",
     value: (r) => formatMoney(r.purchaseTaxesFees),
     audit: (r) => r.purchase.audit,
   },
   {
-    label: "Renovation cash cost",
+    label: "Renovering, verklig kostnad",
     value: (r) => formatMoney(r.renovationCashCost),
     audit: (r) => [...r.renovation.audit, ...r.vat.audit, ...r.rot.audit],
   },
-  { label: "Financing cost", value: (r) => formatMoney(r.financingCost), audit: (r) => r.loans.audit },
   {
-    label: "Running costs",
+    label: "Räntor och avgifter",
+    value: (r) => formatMoney(r.financingCost),
+    audit: (r) => r.loans.audit,
+  },
+  {
+    label: "Driftkostnader",
     value: (r) => formatMoney(r.runningCostsTotal),
     audit: (r) => r.runningCosts.audit,
   },
   {
-    label: "Sale costs",
+    label: "Försäljningskostnader",
     value: (r) => formatMoney(r.saleCosts.saleCostsTotal),
     audit: (r) => r.saleCosts.audit,
   },
-  { label: "Total project cost", value: (r) => formatMoney(r.totalProjectCost), emphasis: true },
-  { label: "Sale price (after buffer)", value: exit((r) => formatMoney(r.salePrice)) },
-  { label: "Profit before tax", value: exit((r) => formatMoney(r.profitBeforeTax)) },
+  { label: "Total projektkostnad", value: (r) => formatMoney(r.totalProjectCost), emphasis: true },
+  { label: "Försäljningspris efter prutmån", value: exit((r) => formatMoney(r.salePrice)) },
+  { label: "Vinst före skatt", value: exit((r) => formatMoney(r.profitBeforeTax)) },
   {
-    label: "Tax",
+    label: "Skatt",
     value: afterExtraction((r) => formatMoney(r.totalTax)),
     audit: (r) => [
       ...(r.corporateTax?.audit ?? r.capitalGain.audit),
@@ -63,40 +67,43 @@ const ROWS: Row[] = [
       ...(r.benefit?.audit ?? []),
     ],
   },
-  { label: "Profit after tax", value: exit((r) => formatMoney(r.profitAfterTax)), emphasis: true },
+  { label: "Vinst efter skatt", value: exit((r) => formatMoney(r.profitAfterTax)), emphasis: true },
   {
-    label: "Net retained in company",
+    label: "Kvar i bolaget",
     value: exit((r) => formatMoney(r.netRetainedInCompany)),
   },
   {
-    label: "Net available privately",
+    label: "Kvar till er privat",
     value: afterExtraction((r) => formatMoney(r.netAvailablePrivately)),
     emphasis: true,
   },
-  { label: "Equity ROI", value: afterExtraction((r) => formatPercent(r.roi.equityROI)) },
   {
-    label: "Annualized equity ROI",
+    label: "Avkastning på insatt kapital",
+    value: afterExtraction((r) => formatPercent(r.roi.equityROI)),
+  },
+  {
+    label: "Motsvarande per år",
     value: afterExtraction((r) =>
-      r.roi.annualizedEquityROI === null ? "n/a" : formatPercent(r.roi.annualizedEquityROI),
+      r.roi.annualizedEquityROI === null ? "—" : formatPercent(r.roi.annualizedEquityROI),
     ),
   },
   {
-    label: "Break-even sale price",
+    label: "Nollpris vid försäljning",
     value: (r) => formatMoney(r.breakEven.breakEvenSalePrice),
   },
   {
-    label: "Economic profit after opportunity cost",
+    label: "Vinst efter alternativkostnad",
     value: exit((r) => formatMoney(r.profitAfterTax - r.opportunityCost.opportunityCost)),
     audit: (r) => r.opportunityCost.audit,
   },
   {
-    label: "Family net worth delta (Mode B)",
+    label: "Förmögenhetsförändring, allt uttaget",
     value: afterExtraction((r) => formatMoney(r.familyNetWorth.familyNetWorthDeltaModeB)),
     emphasis: true,
     audit: (r) => r.familyNetWorth.audit,
   },
   {
-    label: "Family net worth delta (Mode A)",
+    label: "Förmögenhetsförändring, kvar i bolaget",
     value: exit((r) => formatMoney(r.familyNetWorth.familyNetWorthDeltaModeA)),
   },
 ];
@@ -104,14 +111,14 @@ const ROWS: Row[] = [
 export function ComparisonTable({ results }: { results: ScenarioResult[] }) {
   return (
     <Card
-      title="Scenario comparison"
-      subtitle="Same object facts, different ownership and financing structures."
+      title="Alla siffror sida vid sida"
+      subtitle="Samma objekt, olika ägande och finansiering. Klicka på Visa uträkning för att se hur ett tal är räknat."
     >
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[720px] text-xs">
+        <table className="w-full min-w-[720px] text-sm">
           <thead>
             <tr className="border-b border-border text-left">
-              <th className="py-2 pr-3 font-medium text-muted">KPI</th>
+              <th className="py-2 pr-3 font-medium text-muted">Nyckeltal</th>
               {results.map((r) => (
                 <th key={r.scenario} className="py-2 pl-3 text-right font-semibold">
                   {r.label}
@@ -131,7 +138,7 @@ export function ComparisonTable({ results }: { results: ScenarioResult[] }) {
                 {results.map((r) => (
                   <td
                     key={r.scenario}
-                    className={`numeric py-1.5 pl-3 text-right align-top ${
+                    className={`numeric py-2 pl-3 text-right align-top ${
                       row.emphasis ? "font-semibold" : ""
                     }`}
                   >

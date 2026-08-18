@@ -1,5 +1,11 @@
 import type { CapitalGainResult, PrivatePropertyTaxClassification } from "@/types";
 
+const CLASSIFICATION_LABELS: Record<PrivatePropertyTaxClassification, string> = {
+  private_residential_property: "Privatbostad",
+  business_property: "Näringsfastighet",
+  property_trading_inventory_risk: "Risk för handel med fastigheter",
+};
+
 /**
  * Private capital gain. The 22% effective residential rate is applied ONLY
  * when the user has explicitly classified the property as a private
@@ -34,21 +40,21 @@ export function calculatePrivateCapitalGain(params: {
     classificationApplied: params.classification,
     audit: [
       {
-        title: "Private capital gain",
+        title: "Kapitalvinst privat",
         source:
           params.classification === "private_residential_property"
             ? "VERIFIED"
             : "TAX_ADVISOR_INPUT",
         lines: [
-          { label: "Sale price", value: params.salePrice },
-          { label: "Sale costs", value: -params.saleCosts },
-          { label: "Purchase price", value: -params.purchasePrice },
-          { label: "Eligible purchase costs", value: -params.eligiblePurchaseCosts },
-          { label: "Eligible improvement costs", value: -params.eligibleImprovementCosts },
-          { label: "Capital gain", value: capitalGain },
-          { label: "Classification", value: params.classification },
-          { label: `Rate applied`, value: `${(rate * 100).toFixed(1)}%` },
-          { label: "Capital gain tax", value: capitalGainTax },
+          { label: "Försäljningspris", value: params.salePrice },
+          { label: "Försäljningskostnader", value: -params.saleCosts },
+          { label: "Köpeskilling", value: -params.purchasePrice },
+          { label: "Avdragsgilla köpkostnader", value: -params.eligiblePurchaseCosts },
+          { label: "Avdragsgilla förbättringar", value: -params.eligibleImprovementCosts },
+          { label: "Kapitalvinst", value: capitalGain },
+          { label: "Klassificering", value: CLASSIFICATION_LABELS[params.classification] },
+          { label: "Skattesats", value: `${(rate * 100).toFixed(1).replace(".", ",")} %` },
+          { label: "Kapitalvinstskatt", value: capitalGainTax },
         ],
       },
     ],

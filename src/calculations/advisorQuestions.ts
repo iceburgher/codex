@@ -7,7 +7,7 @@ export interface AdvisorQuestion {
   scope: string;
 }
 
-/** Checklist generated from the selected scenarios and the inputs actually used. */
+/** Checklista som byggs av de scenarier och indata som faktiskt används. */
 export function buildAdvisorQuestions(
   project: PropertyProject,
   scenarios: ScenarioType[],
@@ -20,24 +20,24 @@ export function buildAdvisorQuestions(
     questions.push(
       {
         id: "private_residence_qualification",
-        scope: "Private purchase",
-        question: "Will the property qualify as a private residential property for tax purposes?",
+        scope: "Privat köp",
+        question: "Räknas fastigheten som privatbostad skattemässigt?",
       },
       {
         id: "trading_risk",
-        scope: "Private purchase",
+        scope: "Privat köp",
         question:
-          "Does the intended renovation-and-sale strategy create a risk of business/property trading treatment?",
+          "Innebär upplägget att renovera och sälja en risk för att det ses som näringsverksamhet eller handel med fastigheter?",
       },
       {
         id: "improvement_basis",
-        scope: "Private purchase",
-        question: "Which renovation expenses qualify as capital improvement basis?",
+        scope: "Privat köp",
+        question: "Vilka renoveringskostnader får dras av som förbättringsutgifter vid försäljning?",
       },
       {
         id: "dividend_allowance",
-        scope: "Private purchase",
-        question: `How much dividend allowance (3:12) is available for each owner in ${project.taxConfigSnapshot?.taxYear ?? 2026}?`,
+        scope: "Privat köp",
+        question: `Hur stort gränsbelopp för utdelning har varje ägare ${project.taxConfigSnapshot?.taxYear ?? 2026}?`,
       },
     );
   }
@@ -46,28 +46,28 @@ export function buildAdvisorQuestions(
     questions.push(
       {
         id: "vat_deductibility",
-        scope: "Company purchase",
-        question: "Is any renovation VAT deductible for this residential property?",
+        scope: "Bolagsköp",
+        question: "Är någon del av renoveringsmomsen avdragsgill för den här bostaden?",
       },
       {
         id: "company_classification",
-        scope: "Company purchase",
-        question: "How should the property be classified in the company (capital asset vs inventory)?",
+        scope: "Bolagsköp",
+        question: "Hur ska fastigheten klassificeras i bolaget — kapitaltillgång eller lagerfastighet?",
       },
       {
         id: "benefit_value",
-        scope: "Company purchase",
-        question: "What benefit value applies if the owners can use the property privately?",
+        scope: "Bolagsköp",
+        question: "Vilket förmånsvärde gäller om ägarna kan använda huset privat?",
       },
       {
         id: "interest_deductibility",
-        scope: "Company purchase",
-        question: "Are interest expenses fully deductible, including any intercompany interest?",
+        scope: "Bolagsköp",
+        question: "Är räntekostnaderna fullt avdragsgilla, även på eventuellt koncernlån?",
       },
       {
         id: "project_company",
-        scope: "Company purchase",
-        question: "Is a separate project company preferable for this project?",
+        scope: "Bolagsköp",
+        question: "Är ett separat projektbolag att föredra för det här projektet?",
       },
     );
   }
@@ -75,18 +75,18 @@ export function buildAdvisorQuestions(
   if (project.rental.enabled) {
     questions.push({
       id: "rental_vat",
-      scope: "Rental",
+      scope: "Uthyrning",
       question:
-        "Does the planned letting pattern trigger VAT or hotel-like classification, and how is the rental result taxed?",
+        "Innebär den planerade uthyrningen moms eller att verksamheten liknar hotell, och hur beskattas resultatet?",
     });
   }
 
   if (project.inputs.holdingPeriodMonths < 12) {
     questions.push({
       id: "short_holding",
-      scope: "Holding period",
+      scope: "Innehavstid",
       question:
-        "Does a holding period under 12 months change the expected tax classification of the disposal?",
+        "Ändrar en innehavstid under 12 månader den skattemässiga bedömningen av försäljningen?",
     });
   }
 

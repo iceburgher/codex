@@ -166,6 +166,35 @@ describe("advisor questions", () => {
   });
 });
 
+describe("break-even for company ownership", () => {
+  it("lands where the company result after tax is zero, not at an arbitrary point", () => {
+    const p = baseProject();
+    const r = calculateScenario(p, "EXISTING_COMPANY");
+    const be = r.breakEven.breakEvenSalePrice as number;
+    expect(be).not.toBeNull();
+
+    const atBreakEven = calculateScenario(p, "EXISTING_COMPANY", { salePrice: be });
+    expect(Math.abs(atBreakEven.profitAfterTax)).toBeLessThan(2_000);
+  });
+
+  it("puts the company break-even above the money already sunk into the project", () => {
+    const p = baseProject();
+    const r = calculateScenario(p, "EXISTING_COMPANY");
+    const be = r.breakEven.breakEvenSalePrice as number;
+    // Sunk cost is at least the purchase price plus stamp duty and renovation.
+    expect(be).toBeGreaterThan(r.purchasePrice + r.purchaseTaxesFees);
+  });
+
+  it("is not fooled by owner net cash being clamped at zero below break-even", () => {
+    const p = baseProject();
+    const below = calculateScenario(p, "EXISTING_COMPANY", { salePrice: 3_000_000 });
+    // Owner-level cash cannot go negative — you cannot distribute a loss …
+    expect(below.netAvailablePrivately).toBe(0);
+    // … but the project result must, or the solver has nothing to bracket.
+    expect(below.profitAfterTax).toBeLessThan(0);
+  });
+});
+
 describe("unknown owner-level extraction tax", () => {
   it("flags a company scenario whose profit exceeds the allowance with no rate supplied", () => {
     const p = baseProject();

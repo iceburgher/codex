@@ -63,126 +63,132 @@ export function CompareView({ initialIds }: { initialIds: string[] }) {
   }, [mode, selectedIds, active, scenarioForProjects, singleProjectId]);
 
   const rows: { label: string; value: (c: Column) => string }[] = [
-    { label: "Purchase price", value: (c) => formatMoney(c.project.inputs.purchasePrice) },
+    { label: "Köpeskilling", value: (c) => formatMoney(c.project.inputs.purchasePrice) },
     {
-      label: "Renovation budget",
+      label: "Renoveringsbudget",
       value: (c) => formatMoney(c.result.renovation.renovationTotalGross),
     },
     {
-      label: "Total acquisition cost",
+      label: "Total anskaffningskostnad",
       value: (c) => formatMoney(c.result.purchasePrice + c.result.purchaseTaxesFees),
     },
-    { label: "Total capital requirement", value: (c) => formatMoney(c.result.totalCapitalRequirement) },
     {
-      label: "Peak cash requirement",
+      label: "Totalt kapitalbehov",
+      value: (c) => formatMoney(c.result.totalCapitalRequirement),
+    },
+    {
+      label: "Kapital som binds",
       value: (c) => formatMoney(c.result.cashFlow.peakCashRequirement),
     },
     {
-      label: "Expected sale price",
+      label: "Förväntat försäljningspris",
       value: (c) =>
         c.project.inputs.expectedSalePrice === null
-          ? "Not entered"
+          ? "Ej ifyllt"
           : formatMoney(c.project.inputs.expectedSalePrice),
     },
-    { label: "Profit before tax", value: exit((c) => formatMoney(c.result.profitBeforeTax)) },
-    { label: "Profit after tax", value: exit((c) => formatMoney(c.result.profitAfterTax)) },
+    { label: "Vinst före skatt", value: exit((c) => formatMoney(c.result.profitBeforeTax)) },
+    { label: "Vinst efter skatt", value: exit((c) => formatMoney(c.result.profitAfterTax)) },
     {
-      label: "Private net proceeds",
+      label: "Kvar till er privat",
       value: afterExtraction((c) => formatMoney(c.result.netAvailablePrivately)),
     },
     {
-      label: "Cash remaining in company",
+      label: "Kvar i bolaget",
       value: exit((c) => formatMoney(c.result.netRetainedInCompany)),
     },
-    { label: "Equity invested", value: (c) => formatMoney(c.result.equityCommitted) },
-    { label: "Equity ROI", value: afterExtraction((c) => formatPercent(c.result.roi.equityROI)) },
+    { label: "Insatt eget kapital", value: (c) => formatMoney(c.result.equityCommitted) },
     {
-      label: "Annualized ROI",
+      label: "Avkastning på insatt kapital",
+      value: afterExtraction((c) => formatPercent(c.result.roi.equityROI)),
+    },
+    {
+      label: "Motsvarande per år",
       value: afterExtraction((c) =>
         c.result.roi.annualizedEquityROI === null
-          ? "n/a"
+          ? "—"
           : formatPercent(c.result.roi.annualizedEquityROI),
       ),
     },
     {
-      label: "Break-even sale price",
+      label: "Nollpris vid försäljning",
       value: (c) => formatMoney(c.result.breakEven.breakEvenSalePrice),
     },
     {
-      label: "Margin of safety",
+      label: "Marginal till nollpris",
       value: (c) => {
         const be = c.result.breakEven.breakEvenSalePrice;
         const sale = c.project.inputs.expectedSalePrice;
-        if (be === null || sale === null || sale <= 0) return "Needs sale price";
+        if (be === null || sale === null || sale <= 0) return "Kräver försäljningspris";
         return formatPercent((sale - be) / sale);
       },
     },
     {
-      label: "Holding period",
-      value: (c) => `${c.project.inputs.holdingPeriodMonths} mo`,
+      label: "Ägandetid",
+      value: (c) => `${c.project.inputs.holdingPeriodMonths} mån`,
     },
     {
-      label: "Risk flags (red / total)",
+      label: "Frågetecken (röda / totalt)",
       value: (c) =>
         `${c.result.riskFlags.filter((f) => f.severity === "high").length} / ${c.result.riskFlags.length}`,
     },
     {
-      label: "Family net worth delta (Mode B)",
+      label: "Förmögenhetsförändring, allt uttaget",
       value: afterExtraction((c) => formatMoney(c.result.familyNetWorth.familyNetWorthDeltaModeB)),
     },
   ];
 
   function exportCsv() {
     const data: (string | number)[][] = [
-      ["KPI", ...columns.map((c) => `${c.heading} — ${c.subheading}`)],
+      ["Nyckeltal", ...columns.map((c) => `${c.heading} — ${c.subheading}`)],
       ...rows.map((row) => [row.label, ...columns.map((c) => row.value(c))]),
     ];
-    downloadFile("project-comparison.csv", toCsv(data), "text/csv");
+    downloadFile("jamforelse.csv", toCsv(data), "text/csv");
   }
 
   return (
-    <div className="mx-auto max-w-[1600px] px-4 py-6">
+    <div className="mx-auto max-w-[1400px] px-5 py-6">
       <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-lg font-semibold tracking-tight">Comparison</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Jämförelse</h1>
           <p className="mt-0.5 text-xs text-muted">
             {mode === "projects"
-              ? "Different property projects under the same ownership scenario."
-              : "The same property project under different ownership scenarios."}
+              ? "Olika objekt under samma ägarform."
+              : "Samma objekt under olika ägarformer."}
           </p>
         </div>
         <div className="no-print flex gap-2">
           <Button onClick={exportCsv} disabled={columns.length === 0}>
-            Export CSV
+            Exportera CSV
           </Button>
-          <Button onClick={() => window.print()}>Print</Button>
+          <Button onClick={() => window.print()}>Skriv ut</Button>
         </div>
       </div>
 
       <Card className="mb-4">
         <div className="grid gap-3 sm:grid-cols-3">
           <SelectField<Mode>
-            label="Comparison mode"
+            label="Vad vill du jämföra?"
             value={mode}
             options={[
-              { value: "projects", label: "Projects (same scenario)" },
-              { value: "scenarios", label: "Scenarios (same project)" },
+              { value: "projects", label: "Olika objekt, samma ägarform" },
+              { value: "scenarios", label: "Samma objekt, olika ägarform" },
             ]}
             onChange={setMode}
           />
           {mode === "projects" ? (
             <SelectField<ScenarioType>
-              label="Ownership scenario"
+              label="Ägarform"
               value={scenarioForProjects}
               options={ALL_SCENARIOS.map((s) => ({ value: s, label: SCENARIO_LABELS[s] }))}
               onChange={setScenarioForProjects}
             />
           ) : (
             <SelectField
-              label="Project"
+              label="Objekt"
               value={singleProjectId}
               options={[
-                { value: "", label: "Select a project" },
+                { value: "", label: "Välj ett objekt" },
                 ...active.map((p) => ({ value: p.id, label: p.name })),
               ]}
               onChange={setSingleProjectId}
@@ -192,7 +198,7 @@ export function CompareView({ initialIds }: { initialIds: string[] }) {
 
         {mode === "projects" && (
           <div className="mt-3">
-            <p className="mb-1.5 text-xs text-muted">Select 2–4 projects</p>
+            <p className="mb-2 text-sm text-muted">Välj 2–4 objekt</p>
             <div className="flex flex-wrap gap-2">
               {active.map((p) => {
                 const on = selectedIds.includes(p.id);
@@ -221,30 +227,30 @@ export function CompareView({ initialIds }: { initialIds: string[] }) {
       </Card>
 
       {columns.length < 2 ? (
-        <Card title="Select at least two columns to compare">
+        <Card title="Välj minst två att jämföra">
           <p className="text-xs text-muted">
             {mode === "projects"
-              ? "Pick 2–4 projects above."
-              : "Pick a project with at least two scenarios enabled."}{" "}
+              ? "Markera 2–4 objekt ovan."
+              : "Välj ett objekt som har minst två ägarformer påslagna."}{" "}
             <Link href="/" className="text-accent underline">
-              Back to projects
+              Tillbaka till projekten
             </Link>
           </p>
         </Card>
       ) : (
         <Card
-          title={mode === "projects" ? "Projects compared" : "Scenarios compared"}
+          title={mode === "projects" ? "Objekten sida vid sida" : "Ägarformerna sida vid sida"}
           subtitle={
             mode === "projects"
-              ? `All columns use ${SCENARIO_LABELS[scenarioForProjects]}.`
-              : "All columns share the same object facts."
+              ? `Alla kolumner räknas som ${SCENARIO_LABELS[scenarioForProjects]}.`
+              : "Alla kolumner utgår från samma uppgifter om objektet."
           }
         >
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[720px] text-xs">
+            <table className="w-full min-w-[720px] text-sm">
               <thead>
                 <tr className="border-b border-border text-left">
-                  <th className="py-2 pr-3 font-medium text-muted">KPI</th>
+                  <th className="py-2 pr-3 font-medium text-muted">Nyckeltal</th>
                   {columns.map((c) => (
                     <th key={c.key} className="py-2 pl-3 text-right">
                       <div className="font-semibold">{c.heading}</div>
@@ -256,9 +262,9 @@ export function CompareView({ initialIds }: { initialIds: string[] }) {
               <tbody>
                 {rows.map((row) => (
                   <tr key={row.label} className="border-b border-border/60 last:border-0">
-                    <td className="py-1.5 pr-3 text-muted">{row.label}</td>
+                    <td className="py-2 pr-3 text-muted">{row.label}</td>
                     {columns.map((c) => (
-                      <td key={c.key} className="numeric py-1.5 pl-3 text-right">
+                      <td key={c.key} className="numeric py-2 pl-3 text-right">
                         {row.value(c)}
                       </td>
                     ))}
@@ -280,5 +286,5 @@ const afterExtraction = (render: (c: Column) => string) => (c: Column) =>
   whenAssessable(
     c.result.salePriceMissing || c.result.extractionRateUnknown,
     () => render(c),
-    c.result.extractionRateUnknown ? "Needs dividend tax rate" : undefined,
+    c.result.extractionRateUnknown ? "Kräver skattesats" : undefined,
   );

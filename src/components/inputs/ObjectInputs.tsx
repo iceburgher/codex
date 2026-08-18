@@ -20,21 +20,21 @@ import {
 type Update = (updater: (draft: PropertyProject) => void) => void;
 
 const PROPERTY_TYPES: { value: PropertyType; label: string }[] = [
-  { value: "detached_house", label: "Detached house" },
-  { value: "townhouse", label: "Townhouse" },
-  { value: "holiday_home", label: "Holiday home" },
-  { value: "apartment", label: "Apartment" },
-  { value: "commercial", label: "Commercial" },
-  { value: "other", label: "Other" },
+  { value: "detached_house", label: "Villa" },
+  { value: "townhouse", label: "Radhus" },
+  { value: "holiday_home", label: "Fritidshus" },
+  { value: "apartment", label: "Lägenhet" },
+  { value: "commercial", label: "Lokal" },
+  { value: "other", label: "Annat" },
 ];
 
 const STATUSES: { value: ProjectStatus; label: string }[] = [
-  { value: "draft", label: "Draft" },
-  { value: "active", label: "Active" },
-  { value: "renovation", label: "Under renovation" },
-  { value: "for_sale", label: "For sale" },
-  { value: "sold", label: "Sold" },
-  { value: "archived", label: "Archived" },
+  { value: "draft", label: "Utkast" },
+  { value: "active", label: "Aktivt" },
+  { value: "renovation", label: "Under renovering" },
+  { value: "for_sale", label: "Till salu" },
+  { value: "sold", label: "Sålt" },
+  { value: "archived", label: "Arkiverat" },
 ];
 
 /** Object-level facts and economics — entered once, shared by every scenario. */
@@ -51,10 +51,10 @@ export function ObjectInputs({
 
   return (
     <div className="space-y-2">
-      <Collapsible title="Project" defaultOpen>
+      <Collapsible title="Projekt" defaultOpen>
         <div className="space-y-3">
           <TextField
-            label="Project name"
+            label="Projektnamn"
             value={project.name}
             onChange={(v) => update((d) => void (d.name = v))}
           />
@@ -65,61 +65,61 @@ export function ObjectInputs({
             onChange={(v) => update((d) => void (d.status = v))}
           />
           <TextField
-            label="Address"
+            label="Adress"
             value={project.facts.address}
             onChange={(v) => update((d) => void (d.facts.address = v))}
           />
           <TextField
-            label="Municipality"
+            label="Kommun"
             value={project.facts.municipality}
             onChange={(v) => update((d) => void (d.facts.municipality = v))}
           />
           <TextField
-            label="Property designation"
+            label="Fastighetsbeteckning"
             value={project.facts.propertyDesignation}
             onChange={(v) => update((d) => void (d.facts.propertyDesignation = v))}
           />
           <SelectField
-            label="Property type"
+            label="Typ av objekt"
             value={project.facts.propertyType}
             options={PROPERTY_TYPES}
             onChange={(v) => update((d) => void (d.facts.propertyType = v))}
           />
           <SelectField
-            label="Tenure"
+            label="Upplåtelseform"
             value={project.facts.tenure ?? "freehold"}
             options={[
-              { value: "freehold", label: "Freehold" },
-              { value: "leasehold", label: "Leasehold" },
-              { value: "condominium", label: "Condominium" },
-              { value: "other", label: "Other" },
+              { value: "freehold", label: "Äganderätt" },
+              { value: "leasehold", label: "Tomträtt" },
+              { value: "condominium", label: "Bostadsrätt" },
+              { value: "other", label: "Annat" },
             ]}
             onChange={(v) => update((d) => void (d.facts.tenure = v))}
           />
           <div className="grid grid-cols-2 gap-2">
             <NumberField
-              label="Living area"
+              label="Boarea"
               suffix="m²"
               value={project.facts.livingAreaSqm ?? null}
               allowNull
               onChange={(v) => update((d) => void (d.facts.livingAreaSqm = v))}
             />
             <NumberField
-              label="Plot area"
+              label="Tomtarea"
               suffix="m²"
               value={project.facts.plotAreaSqm ?? null}
               allowNull
               onChange={(v) => update((d) => void (d.facts.plotAreaSqm = v))}
             />
             <NumberField
-              label="Ancillary area"
+              label="Biarea"
               suffix="m²"
               value={project.facts.ancillaryAreaSqm ?? null}
               allowNull
               onChange={(v) => update((d) => void (d.facts.ancillaryAreaSqm = v))}
             />
             <NumberField
-              label="Construction year"
+              label="Byggår"
               value={project.facts.constructionYear ?? null}
               allowNull
               onChange={(v) => update((d) => void (d.facts.constructionYear = v))}
@@ -128,10 +128,10 @@ export function ObjectInputs({
         </div>
       </Collapsible>
 
-      <Collapsible title="Purchase" defaultOpen>
+      <Collapsible title="Köp" defaultOpen>
         <div className="space-y-3">
           <NumberField
-            label="Purchase price"
+            label="Köpeskilling"
             suffix="kr"
             source="USER_INPUT"
             allowNull
@@ -139,16 +139,16 @@ export function ObjectInputs({
             onChange={(v) => update((d) => void (d.inputs.purchasePrice = v))}
           />
           <NumberField
-            label="Prior-year tax assessment value"
+            label="Taxeringsvärde föregående år"
             suffix="kr"
             source="USER_INPUT"
             allowNull
-            hint="Stamp duty base is the higher of purchase price and assessment value."
+            hint="Lagfartskostnaden räknas på det högsta av köpeskilling och taxeringsvärde."
             value={project.inputs.priorYearTaxAssessmentValue}
             onChange={(v) => update((d) => void (d.inputs.priorYearTaxAssessmentValue = v))}
           />
           <NumberField
-            label="Existing mortgage deeds"
+            label="Befintliga pantbrev"
             suffix="kr"
             source="USER_INPUT"
             allowNull
@@ -156,33 +156,33 @@ export function ObjectInputs({
             onChange={(v) => update((d) => void (d.inputs.existingMortgageDeeds = v))}
           />
           <NumberField
-            label="Holding period"
-            suffix="mo"
+            label="Ägandetid"
+            suffix="mån"
             source="USER_INPUT"
             value={project.inputs.holdingPeriodMonths}
             onChange={(v) => update((d) => void (d.inputs.holdingPeriodMonths = v ?? 0))}
           />
           <div className="grid grid-cols-2 gap-2">
             <PercentField
-              label="Owner 1 share"
+              label="Ägare 1, andel"
               value={project.inputs.ownershipSharePerson1}
               onChange={(v) => update((d) => void (d.inputs.ownershipSharePerson1 = v ?? 0))}
             />
             <PercentField
-              label="Owner 2 share"
+              label="Ägare 2, andel"
               value={project.inputs.ownershipSharePerson2}
               onChange={(v) => update((d) => void (d.inputs.ownershipSharePerson2 = v ?? 0))}
             />
           </div>
           {!ownershipValid && (
             <p className="text-[11px] text-negative">
-              Ownership shares must total 100% (currently {(ownershipSum * 100).toFixed(1)}%).
+              Andelarna måste bli 100 % tillsammans (nu {(ownershipSum * 100).toFixed(1).replace(".", ",")} %).
             </p>
           )}
         </div>
       </Collapsible>
 
-      <Collapsible title="Renovation">
+      <Collapsible title="Renovering">
         <div className="space-y-3">
           {RENOVATION_LINE_KEYS.map((key: RenovationLineKey) => (
             <NumberField
@@ -194,7 +194,7 @@ export function ObjectInputs({
             />
           ))}
           <PercentField
-            label="Contingency"
+            label="Påslag för oförutsett"
             source="ESTIMATE"
             value={project.renovation.contingencyPercent}
             onChange={(v) => update((d) => void (d.renovation.contingencyPercent = v ?? 0))}
@@ -202,7 +202,7 @@ export function ObjectInputs({
         </div>
       </Collapsible>
 
-      <Collapsible title="Hidden / frequently missed costs">
+      <Collapsible title="Kostnader som ofta glöms bort">
         <div className="space-y-2.5">
           {project.hiddenCosts.map((item, index) => (
             <div key={item.id} className="flex items-end gap-2">
@@ -218,7 +218,7 @@ export function ObjectInputs({
               </div>
               <div className="pb-2">
                 <ToggleField
-                  label="Include"
+                  label="Ta med"
                   value={item.included}
                   onChange={(v) => update((d) => void (d.hiddenCosts[index].included = v))}
                 />
@@ -228,73 +228,73 @@ export function ObjectInputs({
         </div>
       </Collapsible>
 
-      <Collapsible title="Operating costs">
+      <Collapsible title="Driftkostnader">
         <div className="space-y-3">
           {RUNNING_COST_KEYS.map((key) => (
             <NumberField
               key={key}
-              label={`${RUNNING_COST_LABELS[key]} (annual)`}
+              label={`${RUNNING_COST_LABELS[key]} per år`}
               suffix="kr"
               value={project.operatingCosts[key]}
               onChange={(v) => update((d) => void (d.operatingCosts[key] = v ?? 0))}
             />
           ))}
           <NumberField
-            label="Property fee (annual) — blank = auto"
+            label="Fastighetsavgift per år — tom = beräknas"
             suffix="kr"
             allowNull
             source="VERIFIED"
-            hint="Auto = min(assessment value × 0.75%, annual cap)."
+            hint="Beräknas som taxeringsvärde × 0,75 %, dock högst takbeloppet."
             value={project.operatingCosts.propertyFeeAnnual}
             onChange={(v) => update((d) => void (d.operatingCosts.propertyFeeAnnual = v))}
           />
         </div>
       </Collapsible>
 
-      <Collapsible title="Rental">
+      <Collapsible title="Uthyrning">
         <div className="space-y-3">
           <ToggleField
-            label="Rental enabled"
+            label="Huset ska hyras ut"
             value={project.rental.enabled}
             onChange={(v) => update((d) => void (d.rental.enabled = v))}
           />
           {project.rental.enabled && (
             <>
               <NumberField
-                label="Rented weeks"
+                label="Antal uthyrda veckor"
                 value={project.rental.rentedWeeks}
                 onChange={(v) => update((d) => void (d.rental.rentedWeeks = v ?? 0))}
               />
               <NumberField
-                label="Rent per week"
+                label="Hyra per vecka"
                 suffix="kr"
                 value={project.rental.rentPerWeek}
                 onChange={(v) => update((d) => void (d.rental.rentPerWeek = v ?? 0))}
               />
               <PercentField
-                label="Platform fee"
+                label="Avgift till förmedlare"
                 value={project.rental.platformFeePercent}
                 onChange={(v) => update((d) => void (d.rental.platformFeePercent = v ?? 0))}
               />
               <NumberField
-                label="Cleaning per stay"
+                label="Städning per uthyrning"
                 suffix="kr"
                 value={project.rental.cleaningPerStay}
                 onChange={(v) => update((d) => void (d.rental.cleaningPerStay = v ?? 0))}
               />
               <NumberField
-                label="Number of stays"
+                label="Antal uthyrningstillfällen"
                 value={project.rental.numberOfStays}
                 onChange={(v) => update((d) => void (d.rental.numberOfStays = v ?? 0))}
               />
               <NumberField
-                label="Extra utilities"
+                label="Extra el, vatten m.m."
                 suffix="kr"
                 value={project.rental.extraUtilities}
                 onChange={(v) => update((d) => void (d.rental.extraUtilities = v ?? 0))}
               />
               <NumberField
-                label="Extra wear and tear"
+                label="Extra slitage"
                 suffix="kr"
                 value={project.rental.extraWearAndTear}
                 onChange={(v) => update((d) => void (d.rental.extraWearAndTear = v ?? 0))}
@@ -304,10 +304,10 @@ export function ObjectInputs({
         </div>
       </Collapsible>
 
-      <Collapsible title="Sale">
+      <Collapsible title="Försäljning">
         <div className="space-y-3">
           <NumberField
-            label="Expected sale price"
+            label="Förväntat försäljningspris"
             suffix="kr"
             source="USER_INPUT"
             allowNull
@@ -315,9 +315,9 @@ export function ObjectInputs({
             onChange={(v) => update((d) => void (d.inputs.expectedSalePrice = v))}
           />
           <PercentField
-            label="Price negotiation buffer"
+            label="Prutmån"
             source="ESTIMATE"
-            hint={`Applied to the headline price: ${formatMoney(
+            hint={`Räknar med ett pris på ${formatMoney(
               (project.inputs.expectedSalePrice ?? 0) *
                 (1 - project.sale.priceNegotiationBufferRate),
             )}`}
@@ -325,25 +325,25 @@ export function ObjectInputs({
             onChange={(v) => update((d) => void (d.sale.priceNegotiationBufferRate = v ?? 0))}
           />
           <NumberField
-            label="Broker fee (fixed)"
+            label="Mäklararvode, fast del"
             suffix="kr"
             value={project.sale.brokerFeeFixed}
             onChange={(v) => update((d) => void (d.sale.brokerFeeFixed = v ?? 0))}
           />
           <PercentField
-            label="Broker fee (percent of price)"
+            label="Mäklararvode, andel av priset"
             value={project.sale.brokerFeePercent}
             onChange={(v) => update((d) => void (d.sale.brokerFeePercent = v ?? 0))}
           />
           {(
             [
-              ["photography", "Photography"],
+              ["photography", "Fotografering"],
               ["styling", "Styling"],
-              ["inspection", "Inspection"],
-              ["sellerInsurance", "Seller insurance"],
-              ["cleaning", "Cleaning"],
-              ["legal", "Legal"],
-              ["other", "Other"],
+              ["inspection", "Besiktning"],
+              ["sellerInsurance", "Säljarförsäkring"],
+              ["cleaning", "Städning"],
+              ["legal", "Juridik"],
+              ["other", "Övrigt"],
             ] as const
           ).map(([key, label]) => (
             <NumberField

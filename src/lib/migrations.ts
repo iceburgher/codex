@@ -35,7 +35,7 @@ export function migrateProject(raw: Record<string, unknown>): PropertyProject {
   }
 
   const id = typeof working.id === "string" ? working.id : `p-${Date.now()}`;
-  const skeleton = createBlankProject(id, typeof working.name === "string" ? working.name : "Imported project");
+  const skeleton = createBlankProject(id, typeof working.name === "string" ? working.name : "Importerat projekt");
 
   const merged: PropertyProject = {
     ...skeleton,

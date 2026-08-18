@@ -141,7 +141,7 @@ export class LocalStorageProjectRepository implements ProjectRepository {
         issues.push({
           projectName: project.name,
           path: "id",
-          message: `ID ${oldId} already exists — imported with a new ID.`,
+          message: `Id ${oldId} fanns redan — projektet importerades med ett nytt id.`,
           severity: "warning",
         });
       }
@@ -238,7 +238,7 @@ function missingValueWarnings(project: PropertyProject): ImportIssue[] {
       issues.push({
         projectName: project.name,
         path,
-        message: "Missing value preserved as null — not substituted.",
+        message: "Värdet saknas och lämnas tomt — det fylls aldrig i med en gissning.",
         severity: "warning",
       });
     }

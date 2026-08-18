@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useMemo, useState } from "react";
 import { calculateScenario } from "@/calculations/engine";
 import { downloadFile, slugify, toCsv } from "@/lib/download";
-import { formatMoney, formatPercent } from "@/lib/format";
+import { formatMoney, formatPercent, whenAssessable } from "@/lib/format";
 import { useProjectStore } from "@/lib/store";
 import {
   OPTIMIZATION_TARGET_LABELS,
@@ -16,17 +16,33 @@ import {
 } from "@/types";
 import { ALL_SCENARIOS } from "@/lib/defaults";
 import { ObjectInputs } from "./inputs/ObjectInputs";
+import { QuickFacts } from "./inputs/QuickFacts";
 import { ScenarioInputsPanel } from "./inputs/ScenarioInputsPanel";
 import { CashFlowChart, CostWaterfall, ScenarioBarCharts } from "./dashboard/Charts";
 import { ComparisonTable } from "./dashboard/ComparisonTable";
-import { AdvisorQuestionsPanel, RiskFlagsPanel, WarningsPanel } from "./dashboard/RiskPanels";
-import { ScenarioCards, bestScenarioIndex } from "./dashboard/ScenarioCards";
+import {
+  AdvisorQuestionsPanel,
+  RiskFlagsPanel,
+  TopRisks,
+  WarningsPanel,
+} from "./dashboard/RiskPanels";
+import { ScenarioCards } from "./dashboard/ScenarioCards";
 import { SensitivityPanel } from "./dashboard/SensitivityPanel";
-import { Button, Card, SelectField, Stat, ToggleField } from "./ui";
+import { Verdict } from "./dashboard/Verdict";
+import { Button, Card, Collapsible, SelectField, Stat, Tabs, ToggleField } from "./ui";
+
+type TabKey = "oversikt" | "antaganden" | "detaljer";
+
+const TABS: { value: TabKey; label: string }[] = [
+  { value: "oversikt", label: "Översikt" },
+  { value: "antaganden", label: "Antaganden" },
+  { value: "detaljer", label: "Detaljer" },
+];
 
 export function ProjectDashboard({ projectId }: { projectId: string }) {
   const store = useProjectStore();
   const project = store.getProject(projectId);
+  const [tab, setTab] = useState<TabKey>("oversikt");
   const [activeScenario, setActiveScenario] = useState<ScenarioType | null>(null);
 
   const results = useMemo<ScenarioResult[]>(() => {
@@ -35,17 +51,17 @@ export function ProjectDashboard({ projectId }: { projectId: string }) {
   }, [project]);
 
   if (store.loading) {
-    return <p className="p-6 text-sm text-muted">Loading…</p>;
+    return <p className="p-8 text-sm text-muted">Laddar…</p>;
   }
 
   if (!project) {
     return (
-      <div className="p-6">
-        <Card title="Project not found">
-          <p className="text-xs text-muted">
-            This project no longer exists.{" "}
-            <Link href="/" className="text-accent underline">
-              Back to projects
+      <div className="mx-auto max-w-3xl p-8">
+        <Card title="Projektet finns inte">
+          <p className="text-sm text-muted">
+            Projektet har tagits bort.{" "}
+            <Link href="/" className="font-medium text-accent hover:underline">
+              Tillbaka till projekten
             </Link>
           </p>
         </Card>
@@ -54,8 +70,8 @@ export function ProjectDashboard({ projectId }: { projectId: string }) {
   }
 
   const selectedScenario = activeScenario ?? project.selectedScenario;
-  const selectedResult =
-    results.find((r) => r.scenario === selectedScenario) ?? results[0] ?? null;
+  const selectedResult = results.find((r) => r.scenario === selectedScenario) ?? results[0] ?? null;
+  const currentName = project.name;
 
   const update = (updater: (draft: PropertyProject) => void) => {
     const draft: PropertyProject = JSON.parse(JSON.stringify(project));
@@ -63,43 +79,33 @@ export function ProjectDashboard({ projectId }: { projectId: string }) {
     store.updateProject(draft);
   };
 
-  const best = bestScenarioIndex(results, project.optimizationTarget);
-  const currentName = project.name;
-
   function exportCsv() {
-    const header = ["KPI", ...results.map((r) => r.label)];
     const rows: (string | number)[][] = [
-      header,
-      ["Purchase price", ...results.map((r) => Math.round(r.purchasePrice))],
-      ["Total capital requirement", ...results.map((r) => Math.round(r.totalCapitalRequirement))],
-      ["Equity committed", ...results.map((r) => Math.round(r.equityCommitted))],
-      ["External debt", ...results.map((r) => Math.round(r.externalDebt))],
-      ["Purchase taxes/fees", ...results.map((r) => Math.round(r.purchaseTaxesFees))],
-      ["Renovation cash cost", ...results.map((r) => Math.round(r.renovationCashCost))],
-      ["Financing cost", ...results.map((r) => Math.round(r.financingCost))],
-      ["Running costs", ...results.map((r) => Math.round(r.runningCostsTotal))],
-      ["Total project cost", ...results.map((r) => Math.round(r.totalProjectCost))],
-      ["Sale price", ...results.map((r) => Math.round(r.salePrice))],
-      ["Profit before tax", ...results.map((r) => Math.round(r.profitBeforeTax))],
-      ["Tax", ...results.map((r) => Math.round(r.totalTax))],
-      ["Profit after tax", ...results.map((r) => Math.round(r.profitAfterTax))],
-      ["Net retained in company", ...results.map((r) => Math.round(r.netRetainedInCompany))],
-      ["Net available privately", ...results.map((r) => Math.round(r.netAvailablePrivately))],
-      ["Equity ROI", ...results.map((r) => r.roi.equityROI.toFixed(4))],
+      ["Nyckeltal", ...results.map((r) => r.label)],
+      ["Köpeskilling", ...results.map((r) => Math.round(r.purchasePrice))],
+      ["Totalt kapitalbehov", ...results.map((r) => Math.round(r.totalCapitalRequirement))],
+      ["Eget kapital", ...results.map((r) => Math.round(r.equityCommitted))],
+      ["Lån", ...results.map((r) => Math.round(r.externalDebt))],
+      ["Skatt och avgifter vid köp", ...results.map((r) => Math.round(r.purchaseTaxesFees))],
+      ["Renovering, verklig kostnad", ...results.map((r) => Math.round(r.renovationCashCost))],
+      ["Finansieringskostnad", ...results.map((r) => Math.round(r.financingCost))],
+      ["Driftkostnader", ...results.map((r) => Math.round(r.runningCostsTotal))],
+      ["Total projektkostnad", ...results.map((r) => Math.round(r.totalProjectCost))],
+      ["Försäljningspris", ...results.map((r) => Math.round(r.salePrice))],
+      ["Vinst före skatt", ...results.map((r) => Math.round(r.profitBeforeTax))],
+      ["Skatt", ...results.map((r) => Math.round(r.totalTax))],
+      ["Vinst efter skatt", ...results.map((r) => Math.round(r.profitAfterTax))],
+      ["Kvar i bolaget", ...results.map((r) => Math.round(r.netRetainedInCompany))],
+      ["Kvar till er privat", ...results.map((r) => Math.round(r.netAvailablePrivately))],
+      ["Avkastning på insatt kapital", ...results.map((r) => r.roi.equityROI.toFixed(4))],
+      ["Årsavkastning", ...results.map((r) => (r.roi.annualizedEquityROI ?? 0).toFixed(4))],
+      ["Nollpris", ...results.map((r) => Math.round(r.breakEven.breakEvenSalePrice ?? 0))],
       [
-        "Annualized equity ROI",
-        ...results.map((r) => (r.roi.annualizedEquityROI ?? 0).toFixed(4)),
-      ],
-      [
-        "Break-even sale price",
-        ...results.map((r) => Math.round(r.breakEven.breakEvenSalePrice ?? 0)),
-      ],
-      [
-        "Family net worth delta (Mode B)",
+        "Förmögenhetsförändring (allt uttaget)",
         ...results.map((r) => Math.round(r.familyNetWorth.familyNetWorthDeltaModeB)),
       ],
     ];
-    downloadFile(`${slugify(currentName)}-comparison.csv`, toCsv(rows), "text/csv");
+    downloadFile(`${slugify(currentName)}-jamforelse.csv`, toCsv(rows), "text/csv");
   }
 
   async function exportJson() {
@@ -108,213 +114,224 @@ export function ProjectDashboard({ projectId }: { projectId: string }) {
   }
 
   return (
-    <div className="mx-auto max-w-[1600px] px-4 py-5">
-      <header className="mb-4 flex flex-wrap items-start justify-between gap-3">
+    <div className="mx-auto max-w-[1400px] px-5 py-6">
+      <header className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <Link href="/" className="no-print text-[11px] text-accent hover:underline">
-            ← Projects
+          <Link href="/" className="no-print text-sm font-medium text-accent hover:underline">
+            ← Alla projekt
           </Link>
-          <h1 className="mt-1 text-lg font-semibold tracking-tight">{project.name}</h1>
-          <p className="text-xs text-muted">
-            {project.facts.address ?? "No address"}
-            {project.facts.municipality ? ` · ${project.facts.municipality}` : ""} · Tax year{" "}
+          <h1 className="mt-2 text-2xl font-semibold tracking-tight">{project.name}</h1>
+          <p className="mt-1 text-sm text-muted">
+            {project.facts.address ?? "Ingen adress angiven"}
+            {project.facts.municipality ? ` · ${project.facts.municipality}` : ""} · Skatteår{" "}
             {project.taxConfigSnapshot?.taxYear ?? 2026}
           </p>
         </div>
         <div className="no-print flex flex-wrap items-center gap-2">
           <span
-            className={`rounded px-2 py-1 text-[11px] font-medium ${
+            className={`rounded-lg px-2.5 py-1.5 text-xs font-medium ${
               store.saveState === "saved"
-                ? "bg-ok-soft text-positive"
+                ? "bg-positive-soft text-positive"
                 : "bg-warn-soft text-warn"
             }`}
           >
             {store.saveState === "saved"
-              ? "Saved"
+              ? "Sparat"
               : store.saveState === "saving"
-                ? "Saving…"
-                : "Unsaved changes"}
+                ? "Sparar…"
+                : "Osparade ändringar"}
           </span>
-          <Button onClick={() => void store.saveNow()}>Save</Button>
-          <Button onClick={exportJson}>Export JSON</Button>
-          <Button onClick={exportCsv}>Export CSV</Button>
-          <Button onClick={() => window.print()}>Print summary</Button>
+          <Button size="sm" onClick={exportJson}>
+            Exportera JSON
+          </Button>
+          <Button size="sm" onClick={exportCsv}>
+            Exportera CSV
+          </Button>
+          <Button size="sm" onClick={() => window.print()}>
+            Skriv ut
+          </Button>
         </div>
       </header>
 
-      <Card className="mb-4">
-        <div className="grid gap-4 sm:grid-cols-3 lg:grid-cols-6">
-          <Stat label="Purchase price" value={formatMoney(project.inputs.purchasePrice)} />
-          <Stat
-            label="Expected sale price"
-            value={
-              project.inputs.expectedSalePrice === null
-                ? "Missing"
-                : formatMoney(project.inputs.expectedSalePrice)
-            }
-            tone={project.inputs.expectedSalePrice === null ? "negative" : "neutral"}
+      <div className="mb-6 max-w-md">
+        <Tabs tabs={TABS} active={tab} onChange={setTab} />
+      </div>
+
+      {results.length === 0 ? (
+        <Card title="Inget alternativ valt">
+          <p className="text-sm text-muted">
+            Välj minst en ägarform under Antaganden för att se en jämförelse.
+          </p>
+        </Card>
+      ) : tab === "oversikt" ? (
+        <div className="space-y-5">
+          <QuickFacts
+            project={project}
+            update={update}
+            onGoToRenovation={() => setTab("antaganden")}
           />
-          <Stat
-            label="Renovation (gross)"
-            value={formatMoney(selectedResult?.renovation.renovationTotalGross ?? 0)}
+
+          <Verdict
+            results={results}
+            target={project.optimizationTarget}
+            onGoToInput={() => setTab("antaganden")}
           />
-          <Stat label="Holding period" value={`${project.inputs.holdingPeriodMonths} mo`} />
-          <Stat
-            label={`Best on ${OPTIMIZATION_TARGET_LABELS[project.optimizationTarget].toLowerCase()}`}
-            value={best >= 0 ? results[best].label : "Not determinable"}
-            hint={best >= 0 ? undefined : "Missing inputs — see flags"}
-          />
-          <div className="no-print">
-            <SelectField<OptimizationTarget>
-              label="Optimize for"
-              value={project.optimizationTarget}
-              options={(Object.keys(OPTIMIZATION_TARGET_LABELS) as OptimizationTarget[]).map(
-                (t) => ({ value: t, label: OPTIMIZATION_TARGET_LABELS[t] }),
-              )}
-              onChange={(v) => update((d) => void (d.optimizationTarget = v))}
-              hint={
-                project.optimizationTarget === "min_tax"
-                  ? "Lowest tax is not the same as the best economic outcome."
-                  : undefined
-              }
-            />
+
+          <div className="flex flex-wrap items-end justify-between gap-4">
+            <h2 className="text-lg font-semibold tracking-tight">Ägarformerna sida vid sida</h2>
+            <div className="no-print w-64">
+              <SelectField<OptimizationTarget>
+                label="Vad är viktigast för er?"
+                value={project.optimizationTarget}
+                options={(Object.keys(OPTIMIZATION_TARGET_LABELS) as OptimizationTarget[]).map(
+                  (t) => ({ value: t, label: OPTIMIZATION_TARGET_LABELS[t] }),
+                )}
+                onChange={(v) => update((d) => void (d.optimizationTarget = v))}
+                hint={
+                  project.optimizationTarget === "min_tax"
+                    ? "Lägst skatt är inte samma sak som bästa affär."
+                    : undefined
+                }
+              />
+            </div>
+          </div>
+
+          <ScenarioCards results={results} target={project.optimizationTarget} />
+
+          <ThreeQuestions results={results} />
+
+          <div className="grid gap-5 lg:grid-cols-2 print-stack">
+            <TopRisks results={results} onShowAll={() => setTab("detaljer")} />
+            <BreakEvenCard results={results} />
           </div>
         </div>
-      </Card>
-
-      <div className="grid gap-4 lg:grid-cols-[320px_1fr] print-full-width">
-        <aside className="no-print space-y-3">
-          <Card title="Compared scenarios">
-            <div className="space-y-2">
-              {ALL_SCENARIOS.map((s) => (
-                <ToggleField
-                  key={s}
-                  label={SCENARIO_LABELS[s]}
-                  value={project.compareScenarios.includes(s)}
-                  onChange={(on) =>
-                    update((d) => {
-                      d.compareScenarios = on
-                        ? [...ALL_SCENARIOS.filter((x) => d.compareScenarios.includes(x) || x === s)]
-                        : d.compareScenarios.filter((x) => x !== s);
-                      if (!d.compareScenarios.includes(d.selectedScenario)) {
-                        d.selectedScenario = d.compareScenarios[0] ?? "PRIVATE_EQUITY";
-                      }
-                    })
-                  }
-                />
-              ))}
-            </div>
-          </Card>
-
-          <div>
-            <h2 className="mb-2 px-1 text-xs font-semibold">Object assumptions</h2>
+      ) : tab === "antaganden" ? (
+        <div className="grid gap-5 lg:grid-cols-2">
+          <div className="space-y-3">
+            <h2 className="text-lg font-semibold tracking-tight">Om objektet</h2>
+            <p className="text-sm text-muted">
+              Gäller alla ägarformer. Ändrar du något här räknas alla alternativ om.
+            </p>
             <ObjectInputs project={project} update={update} />
           </div>
 
-          <div>
-            <h2 className="mb-2 px-1 text-xs font-semibold">Scenario assumptions</h2>
-            <div className="mb-2">
-              <SelectField<ScenarioType>
-                label="Editing scenario"
-                value={selectedScenario}
-                options={project.compareScenarios.map((s) => ({
-                  value: s,
-                  label: SCENARIO_LABELS[s],
-                }))}
-                onChange={(v) => {
-                  setActiveScenario(v);
-                  update((d) => void (d.selectedScenario = v));
-                }}
-              />
-            </div>
+          <div className="space-y-3">
+            <h2 className="text-lg font-semibold tracking-tight">Om ägande och finansiering</h2>
+            <p className="text-sm text-muted">
+              Skiljer sig mellan ägarformerna. Välj vilken du vill justera.
+            </p>
+
+            <Card title="Ägarformer att jämföra">
+              <div className="space-y-2.5">
+                {ALL_SCENARIOS.map((s) => (
+                  <ToggleField
+                    key={s}
+                    label={SCENARIO_LABELS[s]}
+                    value={project.compareScenarios.includes(s)}
+                    onChange={(on) =>
+                      update((d) => {
+                        d.compareScenarios = on
+                          ? ALL_SCENARIOS.filter(
+                              (x) => d.compareScenarios.includes(x) || x === s,
+                            )
+                          : d.compareScenarios.filter((x) => x !== s);
+                        if (!d.compareScenarios.includes(d.selectedScenario)) {
+                          d.selectedScenario = d.compareScenarios[0] ?? "PRIVATE_EQUITY";
+                        }
+                      })
+                    }
+                  />
+                ))}
+              </div>
+            </Card>
+
+            <SelectField<ScenarioType>
+              label="Ägarform att justera"
+              value={selectedScenario}
+              options={project.compareScenarios.map((s) => ({
+                value: s,
+                label: SCENARIO_LABELS[s],
+              }))}
+              onChange={(v) => {
+                setActiveScenario(v);
+                update((d) => void (d.selectedScenario = v));
+              }}
+            />
+
             <ScenarioInputsPanel
               project={project}
               scenarioType={selectedScenario}
               update={update}
             />
           </div>
-        </aside>
-
-        <div className="space-y-4">
-          {results.length === 0 ? (
-            <Card title="No scenarios selected">
-              <p className="text-xs text-muted">Enable at least one scenario to see results.</p>
-            </Card>
-          ) : (
-            <>
-              <ScenarioCards results={results} target={project.optimizationTarget} />
-              <ThreeQuestions results={results} />
-              <ComparisonTable results={results} />
-              <ScenarioBarCharts results={results} />
-              <CashFlowChart results={results} />
-              {selectedResult && (
-                <div className="grid gap-3 lg:grid-cols-2 print-stack">
-                  <CostWaterfall result={selectedResult} />
-                  <TaxBreakdown result={selectedResult} />
-                </div>
-              )}
-              <SensitivityPanel project={project} scenario={selectedScenario} />
-              <div className="grid gap-3 lg:grid-cols-2 print-stack">
-                <RiskFlagsPanel results={results} />
-                <div className="space-y-3">
-                  <WarningsPanel results={results} />
-                  <AdvisorQuestionsPanel
-                    project={project}
-                    scenarios={project.compareScenarios}
-                  />
-                </div>
-              </div>
-              {selectedResult && <CashFlowTable result={selectedResult} />}
-            </>
+        </div>
+      ) : (
+        <div className="space-y-5">
+          <ComparisonTable results={results} />
+          <ScenarioBarCharts results={results} />
+          <CashFlowChart results={results} />
+          {selectedResult && (
+            <div className="grid gap-5 lg:grid-cols-2 print-stack">
+              <CostWaterfall result={selectedResult} />
+              <TaxBreakdown result={selectedResult} />
+            </div>
+          )}
+          <SensitivityPanel project={project} scenario={selectedScenario} />
+          <div className="grid gap-5 lg:grid-cols-2 print-stack">
+            <RiskFlagsPanel results={results} />
+            <div className="space-y-5">
+              <WarningsPanel results={results} />
+              <AdvisorQuestionsPanel project={project} scenarios={project.compareScenarios} />
+            </div>
+          </div>
+          {selectedResult && (
+            <Collapsible title="Kassaflöde månad för månad">
+              <CashFlowTable result={selectedResult} />
+            </Collapsible>
           )}
         </div>
-      </div>
+      )}
     </div>
   );
 }
 
-/** The three questions the spec insists are not the same question. */
+/** De tre frågor som specen envisas med att inte är samma fråga. */
 function ThreeQuestions({ results }: { results: ScenarioResult[] }) {
-  const bestProfit = pick(results, (r) => r.profitAfterTax);
-  const bestCompany = pick(results, (r) => r.netRetainedInCompany);
-  // Only structures whose owner-level extraction tax is known can answer C.
-  const familyCandidates = results.filter((r) => !r.extractionRateUnknown);
-  const bestFamily = familyCandidates.length > 0 ? pick(familyCandidates, (r) => r.familyNetWorth.familyNetWorthDeltaModeB) : null;
+  const familyCandidates = results.filter((r) => !r.extractionRateUnknown && !r.salePriceMissing);
+  const assessable = results.filter((r) => !r.salePriceMissing);
 
-  if (results.every((r) => r.salePriceMissing)) {
-    return (
-      <Card title="Three separate questions">
-        <p className="text-xs text-warn">
-          Enter an expected sale price to rank the structures. Costs, capital requirement and
-          break-even prices below are already assessable without it.
-        </p>
-      </Card>
-    );
-  }
+  if (assessable.length === 0) return null;
+
+  const bestProfit = pick(assessable, (r) => r.profitAfterTax);
+  const bestCompany = pick(assessable, (r) => r.netRetainedInCompany);
+  const bestFamily =
+    familyCandidates.length > 0
+      ? pick(familyCandidates, (r) => r.familyNetWorth.familyNetWorthDeltaModeB)
+      : null;
 
   return (
     <Card
-      title="Three separate questions"
-      subtitle="Highest project profit, most capital left in the company, and highest after-tax family net worth are not the same answer."
+      title="Tre frågor som inte har samma svar"
+      subtitle="Störst vinst i projektet, mest kvar i bolaget och störst förmögenhet för er är olika saker."
     >
       <div className="grid gap-4 sm:grid-cols-3">
         <Answer
-          question="A. Highest project profit?"
+          question="Vilket ger störst vinst i projektet?"
           answer={bestProfit.label}
           value={formatMoney(bestProfit.profitAfterTax)}
         />
         <Answer
-          question="B. Most capital inside the company?"
-          answer={bestCompany.label}
+          question="Vilket lämnar mest kapital i bolaget?"
+          answer={bestCompany.netRetainedInCompany > 0 ? bestCompany.label : "Inget alternativ"}
           value={formatMoney(bestCompany.netRetainedInCompany)}
         />
         <Answer
-          question="C. Highest after-tax family net worth?"
-          answer={bestFamily ? bestFamily.label : "Not determinable"}
+          question="Vilket ger störst förmögenhet för er?"
+          answer={bestFamily ? bestFamily.label : "Går inte att avgöra"}
           value={
             bestFamily
               ? formatMoney(bestFamily.familyNetWorth.familyNetWorthDeltaModeB)
-              : "Supply the dividend tax rate above the allowance"
+              : "Fyll i skatt över gränsbeloppet"
           }
           headline
         />
@@ -335,14 +352,12 @@ function Answer({
   headline?: boolean;
 }) {
   return (
-    <div
-      className={`rounded-md p-3 ${headline ? "bg-accent-soft" : "bg-surface-muted"}`}
-    >
-      <p className="text-[11px] text-muted">{question}</p>
-      <p className="mt-1 text-sm font-semibold">{answer}</p>
-      <p className="numeric text-xs text-muted">{value}</p>
+    <div className={`rounded-xl p-4 ${headline ? "bg-accent-soft" : "bg-surface-muted"}`}>
+      <p className="text-xs leading-snug text-muted">{question}</p>
+      <p className="mt-2 text-[15px] font-semibold leading-tight">{answer}</p>
+      <p className="numeric mt-1 text-sm text-muted">{value}</p>
       {headline && (
-        <p className="mt-1 text-[10px] font-medium text-accent">Default recommendation basis</p>
+        <p className="mt-2 text-xs font-medium text-accent">Den vi rekommenderar att utgå från</p>
       )}
     </div>
   );
@@ -352,23 +367,49 @@ function pick(results: ScenarioResult[], score: (r: ScenarioResult) => number): 
   return results.reduce((best, r) => (score(r) > score(best) ? r : best), results[0]);
 }
 
+/** Vad huset måste säljas för — det tal folk faktiskt vill ha. */
+function BreakEvenCard({ results }: { results: ScenarioResult[] }) {
+  return (
+    <Card
+      title="Vad måste huset säljas för?"
+      subtitle="Nollpriset är där projektet varken går plus eller minus efter skatt och alla kostnader."
+    >
+      <div className="space-y-3">
+        {results.map((r) => (
+          <div key={r.scenario} className="flex items-baseline justify-between gap-4">
+            <span className="text-sm">{r.label}</span>
+            <span className="flex items-baseline gap-4">
+              <span className="numeric text-sm font-semibold">
+                {formatMoney(r.breakEven.breakEvenSalePrice)}
+              </span>
+              <span className="numeric hidden text-xs text-muted sm:inline">
+                {formatMoney(r.breakEven.salePriceFor20PctROI)} för 20 %
+              </span>
+            </span>
+          </div>
+        ))}
+      </div>
+    </Card>
+  );
+}
+
 function TaxBreakdown({ result }: { result: ScenarioResult }) {
   const rows: [string, number][] = result.corporateTax
     ? [
-        ["Corporate tax", result.corporateTax.companyTax],
-        ["Owner extraction tax", result.extraction?.ownerExtractionTax ?? 0],
-        ["Owner benefit tax", result.benefit?.ownerBenefitTax ?? 0],
+        ["Bolagsskatt", result.corporateTax.companyTax],
+        ["Skatt när pengarna tas ut", result.extraction?.ownerExtractionTax ?? 0],
+        ["Förmånsskatt för ägarna", result.benefit?.ownerBenefitTax ?? 0],
         [
-          "Employer contributions on benefit",
+          "Arbetsgivaravgift på förmån",
           result.benefit?.companyEmployerContributionOnBenefit ?? 0,
         ],
       ]
     : [
-        ["Capital gains tax", result.capitalGain.capitalGainTax],
-        ["Rental income tax", result.rental.privateRentalTax],
-        ["Dividend tax on funding", result.dividend?.dividendTax ?? 0],
+        ["Kapitalvinstskatt", result.capitalGain.capitalGainTax],
+        ["Skatt på hyresintäkter", result.rental.privateRentalTax],
+        ["Utdelningsskatt för att finansiera köpet", result.dividend?.dividendTax ?? 0],
         [
-          "Salary cost above net (tax + contributions)",
+          "Skatt och avgifter på lön",
           result.salary ? result.salary.companyCashCost - result.salary.grossSalary : 0,
         ],
       ];
@@ -376,34 +417,34 @@ function TaxBreakdown({ result }: { result: ScenarioResult }) {
   const total = rows.reduce((s, [, v]) => s + v, 0);
 
   return (
-    <Card title="Tax & fee breakdown" subtitle={result.label}>
-      <table className="w-full text-xs">
+    <Card title="Skatter och avgifter" subtitle={result.label}>
+      <table className="w-full text-sm">
         <tbody>
           {rows.map(([label, value]) => (
-            <tr key={label} className="border-b border-border/60 last:border-0">
-              <td className="py-1.5 text-muted">{label}</td>
-              <td className="numeric py-1.5 text-right">{formatMoney(value)}</td>
+            <tr key={label} className="border-b border-border last:border-0">
+              <td className="py-2 pr-3 text-muted">{label}</td>
+              <td className="numeric py-2 text-right">{formatMoney(value)}</td>
             </tr>
           ))}
-          <tr className="border-t border-border font-semibold">
-            <td className="py-1.5">Total</td>
-            <td className="numeric py-1.5 text-right">{formatMoney(total)}</td>
+          <tr className="border-t border-border-strong font-semibold">
+            <td className="py-2">Totalt</td>
+            <td className="numeric py-2 text-right">{formatMoney(total)}</td>
           </tr>
         </tbody>
       </table>
-      <div className="mt-3 grid grid-cols-2 gap-3">
+      <div className="mt-4 grid grid-cols-2 gap-4">
         <Stat
-          label="Effective tax on profit before tax"
-          value={
-            result.profitBeforeTax > 0
-              ? formatPercent(result.totalTax / result.profitBeforeTax)
-              : "n/a"
-          }
+          label="Andel av vinsten före skatt"
+          value={whenAssessable(
+            result.salePriceMissing || result.profitBeforeTax <= 0,
+            () => formatPercent(result.totalTax / result.profitBeforeTax),
+            "—",
+          )}
         />
         <Stat
-          label="Peak debt"
+          label="Mest lån samtidigt"
           value={formatMoney(result.cashFlow.peakDebt)}
-          hint={`Max funding need in month ${result.cashFlow.monthOfMaxFundingNeed}`}
+          hint={`Störst kapitalbehov månad ${result.cashFlow.monthOfMaxFundingNeed}`}
         />
       </div>
     </Card>
@@ -412,44 +453,46 @@ function TaxBreakdown({ result }: { result: ScenarioResult }) {
 
 function CashFlowTable({ result }: { result: ScenarioResult }) {
   return (
-    <Card
-      title="Monthly cash flow"
-      subtitle={`${result.label} — amortization reduces debt but is not a project expense.`}
-    >
+    <div>
+      <p className="mb-3 text-sm text-muted">
+        {result.label}. Amortering minskar skulden men är ingen kostnad för projektet.
+      </p>
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[900px] text-[11px]">
+        <table className="w-full min-w-[900px] text-xs">
           <thead>
             <tr className="border-b border-border text-left text-muted">
-              <th className="py-1.5 pr-2">Month</th>
-              <th className="py-1.5 pr-2 text-right">Opening</th>
-              <th className="py-1.5 pr-2 text-right">Loan</th>
-              <th className="py-1.5 pr-2 text-right">Purchase</th>
-              <th className="py-1.5 pr-2 text-right">Renovation</th>
-              <th className="py-1.5 pr-2 text-right">Running</th>
-              <th className="py-1.5 pr-2 text-right">Interest</th>
-              <th className="py-1.5 pr-2 text-right">Rental</th>
-              <th className="py-1.5 pr-2 text-right">Sale</th>
-              <th className="py-1.5 pr-2 text-right">Taxes</th>
-              <th className="py-1.5 pr-2 text-right">Amort.</th>
-              <th className="py-1.5 text-right">Closing</th>
+              <th className="py-2 pr-2">Månad</th>
+              <th className="py-2 pr-2 text-right">Ingående</th>
+              <th className="py-2 pr-2 text-right">Lån</th>
+              <th className="py-2 pr-2 text-right">Köp</th>
+              <th className="py-2 pr-2 text-right">Renovering</th>
+              <th className="py-2 pr-2 text-right">Drift</th>
+              <th className="py-2 pr-2 text-right">Ränta</th>
+              <th className="py-2 pr-2 text-right">Hyra</th>
+              <th className="py-2 pr-2 text-right">Försäljning</th>
+              <th className="py-2 pr-2 text-right">Skatt</th>
+              <th className="py-2 pr-2 text-right">Amortering</th>
+              <th className="py-2 text-right">Utgående</th>
             </tr>
           </thead>
           <tbody>
             {result.cashFlow.months.map((m) => (
-              <tr key={m.month} className="border-b border-border/50 last:border-0">
-                <td className="py-1 pr-2">{m.month}</td>
-                <td className="numeric py-1 pr-2 text-right">{formatMoney(m.openingCash)}</td>
-                <td className="numeric py-1 pr-2 text-right">{formatMoney(m.loanDrawdown)}</td>
-                <td className="numeric py-1 pr-2 text-right">{formatMoney(-m.purchaseCost)}</td>
-                <td className="numeric py-1 pr-2 text-right">{formatMoney(-m.renovationSpend)}</td>
-                <td className="numeric py-1 pr-2 text-right">{formatMoney(-m.runningCost)}</td>
-                <td className="numeric py-1 pr-2 text-right">{formatMoney(-m.interest)}</td>
-                <td className="numeric py-1 pr-2 text-right">{formatMoney(m.rentalIncome)}</td>
-                <td className="numeric py-1 pr-2 text-right">{formatMoney(m.saleIncome)}</td>
-                <td className="numeric py-1 pr-2 text-right">{formatMoney(-m.taxes)}</td>
-                <td className="numeric py-1 pr-2 text-right">{formatMoney(-m.amortization)}</td>
+              <tr key={m.month} className="border-b border-border/60 last:border-0">
+                <td className="py-1.5 pr-2">{m.month}</td>
+                <td className="numeric py-1.5 pr-2 text-right">{formatMoney(m.openingCash)}</td>
+                <td className="numeric py-1.5 pr-2 text-right">{formatMoney(m.loanDrawdown)}</td>
+                <td className="numeric py-1.5 pr-2 text-right">{formatMoney(-m.purchaseCost)}</td>
+                <td className="numeric py-1.5 pr-2 text-right">
+                  {formatMoney(-m.renovationSpend)}
+                </td>
+                <td className="numeric py-1.5 pr-2 text-right">{formatMoney(-m.runningCost)}</td>
+                <td className="numeric py-1.5 pr-2 text-right">{formatMoney(-m.interest)}</td>
+                <td className="numeric py-1.5 pr-2 text-right">{formatMoney(m.rentalIncome)}</td>
+                <td className="numeric py-1.5 pr-2 text-right">{formatMoney(m.saleIncome)}</td>
+                <td className="numeric py-1.5 pr-2 text-right">{formatMoney(-m.taxes)}</td>
+                <td className="numeric py-1.5 pr-2 text-right">{formatMoney(-m.amortization)}</td>
                 <td
-                  className={`numeric py-1 text-right font-medium ${
+                  className={`numeric py-1.5 text-right font-medium ${
                     m.closingCash < 0 ? "text-negative" : ""
                   }`}
                 >
@@ -460,12 +503,12 @@ function CashFlowTable({ result }: { result: ScenarioResult }) {
           </tbody>
         </table>
       </div>
-      <div className="mt-3 grid grid-cols-2 gap-3 sm:grid-cols-4">
-        <Stat label="Peak cash requirement" value={formatMoney(result.cashFlow.peakCashRequirement)} />
-        <Stat label="Peak debt" value={formatMoney(result.cashFlow.peakDebt)} />
-        <Stat label="Equity required" value={formatMoney(result.cashFlow.equityRequired)} />
-        <Stat label="Total interest" value={formatMoney(result.cashFlow.totalInterest)} />
+      <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
+        <Stat label="Kapital som binds" value={formatMoney(result.cashFlow.peakCashRequirement)} />
+        <Stat label="Mest lån samtidigt" value={formatMoney(result.cashFlow.peakDebt)} />
+        <Stat label="Eget kapital som krävs" value={formatMoney(result.cashFlow.equityRequired)} />
+        <Stat label="Total ränta" value={formatMoney(result.cashFlow.totalInterest)} />
       </div>
-    </Card>
+    </div>
   );
 }

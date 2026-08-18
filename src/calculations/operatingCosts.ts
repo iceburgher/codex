@@ -21,21 +21,21 @@ export const RUNNING_COST_KEYS = [
 export type RunningCostKey = (typeof RUNNING_COST_KEYS)[number];
 
 export const RUNNING_COST_LABELS: Record<RunningCostKey, string> = {
-  electricityAnnual: "Electricity",
-  heatingAnnual: "Heating",
-  waterSewerAnnual: "Water & sewer",
-  wasteAnnual: "Waste",
+  electricityAnnual: "El",
+  heatingAnnual: "Uppvärmning",
+  waterSewerAnnual: "Vatten och avlopp",
+  wasteAnnual: "Sophämtning",
   internetAnnual: "Internet",
-  insuranceAnnual: "Insurance",
-  alarmAnnual: "Alarm",
-  landscapingAnnual: "Landscaping",
-  snowRemovalAnnual: "Snow removal",
-  repairsAnnual: "Repairs",
-  travelAnnual: "Travel",
-  bookkeepingAnnual: "Bookkeeping",
-  bankingAnnual: "Banking",
-  securityAnnual: "Security",
-  otherAnnual: "Other",
+  insuranceAnnual: "Försäkring",
+  alarmAnnual: "Larm",
+  landscapingAnnual: "Trädgård",
+  snowRemovalAnnual: "Snöröjning",
+  repairsAnnual: "Reparationer",
+  travelAnnual: "Resor",
+  bookkeepingAnnual: "Bokföring",
+  bankingAnnual: "Bankkostnader",
+  securityAnnual: "Bevakning",
+  otherAnnual: "Övrigt",
 };
 
 export function calculatePropertyFee(
@@ -76,14 +76,14 @@ export function calculateRunningCosts(params: {
     projectRunningCost,
     audit: [
       {
-        title: "Running ownership costs",
+        title: "Löpande driftkostnader",
         source: "ESTIMATE",
         lines: [
-          { label: "Annual line items", value: lineTotal },
-          { label: "Property fee (annual)", value: propertyFeeAnnual },
-          { label: "Total annual", value: totalAnnual },
-          { label: "Holding factor", value: `${params.holdingPeriodMonths} mo` },
-          { label: "Cost over holding period", value: projectRunningCost },
+          { label: "Poster per år", value: lineTotal },
+          { label: "Fastighetsavgift per år", value: propertyFeeAnnual },
+          { label: "Totalt per år", value: totalAnnual },
+          { label: "Innehavstid", value: `${params.holdingPeriodMonths} mån` },
+          { label: "Kostnad under innehavstiden", value: projectRunningCost },
         ],
       },
     ],

@@ -35,10 +35,10 @@ export type ScenarioType =
   | "PROJECT_COMPANY";
 
 export const SCENARIO_LABELS: Record<ScenarioType, string> = {
-  PRIVATE_EQUITY: "Private — Equity funded",
-  PRIVATE_DEBT: "Private — Debt funded",
-  EXISTING_COMPANY: "Existing Company",
-  PROJECT_COMPANY: "Separate Project Company",
+  PRIVATE_EQUITY: "Privat — eget kapital",
+  PRIVATE_DEBT: "Privat — med lån",
+  EXISTING_COMPANY: "Befintligt bolag",
+  PROJECT_COMPANY: "Separat projektbolag",
 };
 
 export type OwnerKind = "PRIVATE" | "EXISTING_COMPANY" | "PROJECT_COMPANY";
@@ -63,12 +63,12 @@ export type OptimizationTarget =
   | "min_tax";
 
 export const OPTIMIZATION_TARGET_LABELS: Record<OptimizationTarget, string> = {
-  max_private_cash: "Maximize private cash",
-  max_company_cash: "Maximize company cash",
-  max_family_net_worth: "Maximize family net worth",
-  max_equity_roi: "Maximize equity ROI",
-  min_peak_cash_required: "Minimize peak cash required",
-  min_tax: "Minimize tax",
+  max_private_cash: "Mest pengar privat",
+  max_company_cash: "Mest kvar i bolaget",
+  max_family_net_worth: "Störst förmögenhetsökning",
+  max_equity_roi: "Högst avkastning på insatt kapital",
+  min_peak_cash_required: "Minst kapital som binds",
+  min_tax: "Lägst skatt",
 };
 
 // ---------------------------------------------------------------------------

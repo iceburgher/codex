@@ -27,12 +27,12 @@ type SortKey =
   | "roi";
 
 const STATUS_LABELS: Record<ProjectStatus, string> = {
-  draft: "Draft",
-  active: "Active",
-  renovation: "Under renovation",
-  for_sale: "For sale",
-  sold: "Sold",
-  archived: "Archived",
+  draft: "Utkast",
+  active: "Aktivt",
+  renovation: "Under renovering",
+  for_sale: "Till salu",
+  sold: "Sålt",
+  archived: "Arkiverat",
 };
 
 interface ProjectSummary {
@@ -124,7 +124,7 @@ export function ProjectLibrary() {
           {
             projectName: file.name,
             path: "(file)",
-            message: "File is not valid JSON.",
+            message: "Filen är inte giltig JSON.",
             severity: "error",
           },
         ],
@@ -140,25 +140,24 @@ export function ProjectLibrary() {
     <div className="mx-auto max-w-[1600px] px-4 py-6">
       <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
         <div>
-          <h1 className="text-lg font-semibold tracking-tight">Projects</h1>
+          <h1 className="text-2xl font-semibold tracking-tight">Projekt</h1>
           <p className="mt-0.5 text-xs text-muted">
-            Each project holds one property. Ownership scenarios are calculated from the same
-            object facts.
+            Ett projekt är ett objekt. Alla ägarformer räknas på samma uppgifter om huset.
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
           <Button variant="primary" onClick={handleCreate}>
-            New project
+            Nytt projekt
           </Button>
-          <Button onClick={() => fileInput.current?.click()}>Import JSON</Button>
+          <Button onClick={() => fileInput.current?.click()}>Importera</Button>
           <Button
             disabled={selected.length === 0}
             onClick={() => handleExport(selected, `projects-bundle-${selected.length}.json`)}
           >
-            Export selected ({selected.length})
+            Exportera valda ({selected.length})
           </Button>
           <Link href={`/compare${selected.length ? `?ids=${selected.join(",")}` : ""}`}>
-            <Button disabled={selected.length < 2}>Compare selected</Button>
+            <Button disabled={selected.length < 2}>Jämför valda</Button>
           </Link>
           <input
             ref={fileInput}
@@ -176,27 +175,27 @@ export function ProjectLibrary() {
 
       <div className="mb-4 flex flex-wrap items-end gap-3">
         <label className="block">
-          <span className="mb-1 block text-xs text-muted">Search</span>
+          <span className="mb-1.5 block text-sm text-muted">Sök</span>
           <input
             type="search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Name, address or municipality"
-            className="w-72 rounded-md border border-border bg-surface px-2 py-1.5 text-sm outline-none focus:border-accent"
+            placeholder="Namn, adress eller kommun"
+            className="w-72 rounded-lg border border-border-strong bg-surface px-3 py-2.5 text-[15px] outline-none focus:border-accent"
           />
         </label>
         <div className="w-56">
           <SelectField<SortKey>
-            label="Sort by"
+            label="Sortera efter"
             value={sortKey}
             onChange={setSortKey}
             options={[
-              { value: "updatedAt", label: "Last updated" },
-              { value: "name", label: "Name" },
-              { value: "purchasePrice", label: "Purchase price" },
-              { value: "expectedSalePrice", label: "Expected sale price" },
-              { value: "profit", label: "Projected after-tax result" },
-              { value: "roi", label: "Equity ROI" },
+              { value: "updatedAt", label: "Senast ändrat" },
+              { value: "name", label: "Namn" },
+              { value: "purchasePrice", label: "Köpeskilling" },
+              { value: "expectedSalePrice", label: "Förväntat försäljningspris" },
+              { value: "profit", label: "Resultat efter skatt" },
+              { value: "roi", label: "Avkastning" },
             ]}
           />
         </div>
@@ -204,22 +203,22 @@ export function ProjectLibrary() {
           variant={showArchived ? "primary" : "default"}
           onClick={() => setShowArchived(!showArchived)}
         >
-          {showArchived ? "Showing archived" : "Show archived"}
+          {showArchived ? "Visar arkiverade" : "Visa arkiverade"}
         </Button>
       </div>
 
       {importReport && (
         <div className="mb-4">
           <Card
-            title={`Import report — ${importReport.imported} imported, ${importReport.skipped} skipped`}
+            title={`Import: ${importReport.imported} inlästa, ${importReport.skipped} överhoppade`}
             actions={
               <Button variant="ghost" onClick={() => setImportReport(null)}>
-                Dismiss
+                Stäng
               </Button>
             }
           >
             {importReport.issues.length === 0 ? (
-              <p className="text-xs text-muted">No issues.</p>
+              <p className="text-sm text-muted">Inga anmärkningar.</p>
             ) : (
               <ul className="space-y-1 text-xs">
                 {importReport.issues.map((issue, i) => (
@@ -231,7 +230,7 @@ export function ProjectLibrary() {
                           : "font-semibold text-warn"
                       }
                     >
-                      {issue.severity === "error" ? "Error" : "Warning"}
+                      {issue.severity === "error" ? "Fel" : "Varning"}
                     </span>
                     <span className="text-muted">
                       {issue.projectName} · {issue.path}
@@ -246,17 +245,17 @@ export function ProjectLibrary() {
       )}
 
       {store.loading ? (
-        <p className="text-sm text-muted">Loading projects…</p>
+        <p className="text-sm text-muted">Laddar projekt…</p>
       ) : visible.length === 0 ? (
-        <Card title={showArchived ? "No archived projects" : "No projects yet"}>
+        <Card title={showArchived ? "Inga arkiverade projekt" : "Inga projekt än"}>
           <p className="text-xs text-muted">
             {showArchived
-              ? "Archived projects appear here and can be restored at any time."
-              : "Create a blank project or import one from JSON to get started."}
+              ? "Arkiverade projekt hamnar här och kan återställas när som helst."
+              : "Skapa ett nytt projekt eller importera en fil för att komma igång."}
           </p>
         </Card>
       ) : (
-        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+        <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {visible.map(
             ({
               project,
@@ -268,7 +267,7 @@ export function ProjectLibrary() {
             }) => (
             <article
               key={project.id}
-              className="rounded-lg border border-border bg-surface p-4"
+              className="card p-5"
             >
               <div className="mb-2 flex items-start justify-between gap-2">
                 <div className="min-w-0">
@@ -282,13 +281,13 @@ export function ProjectLibrary() {
                     />
                     <Link
                       href={`/projects/${project.id}`}
-                      className="truncate text-sm font-semibold hover:underline"
+                      className="truncate text-base font-semibold hover:underline"
                     >
                       {project.name}
                     </Link>
                   </div>
-                  <p className="mt-1 truncate text-xs text-muted">
-                    {project.facts.address ?? "No address"}
+                  <p className="mt-1 truncate text-sm text-muted">
+                    {project.facts.address ?? "Ingen adress"}
                     {project.facts.municipality ? ` · ${project.facts.municipality}` : ""}
                   </p>
                 </div>
@@ -298,32 +297,32 @@ export function ProjectLibrary() {
                   </span>
                   {riskCount > 0 && (
                     <span className="rounded bg-danger-soft px-1.5 py-0.5 text-[10px] font-semibold text-negative">
-                      {riskCount} red flag{riskCount > 1 ? "s" : ""}
+                      {riskCount} {riskCount === 1 ? "fråga" : "frågor"} för rådgivare
                     </span>
                   )}
                 </div>
               </div>
 
-              <p className="mb-2 text-[11px] text-muted">
-                Scenario: {SCENARIO_LABELS[project.selectedScenario]}
+              <p className="mb-3 text-xs text-muted">
+                Ägarform: {SCENARIO_LABELS[project.selectedScenario]}
               </p>
 
-              <dl className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-xs">
-                <Row label="Purchase" value={formatMissing(project.inputs.purchasePrice)} />
+              <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm">
+                <Row label="Köpeskilling" value={formatMissing(project.inputs.purchasePrice)} />
                 <Row
-                  label="Renovation"
+                  label="Renovering"
                   value={formatMoney(renovationBudget(project))}
                 />
                 <Row
-                  label="Expected sale"
+                  label="Förväntat pris"
                   value={formatMissing(project.inputs.expectedSalePrice)}
                 />
                 <Row
-                  label="After-tax result"
+                  label="Kvar efter skatt"
                   value={whenAssessable(
                     salePriceMissing || extractionRateUnknown,
                     () => formatMoney(profitAfterTax),
-                    extractionRateUnknown ? "Needs dividend rate" : undefined,
+                    extractionRateUnknown ? "Kräver skattesats" : undefined,
                   )}
                   tone={
                     salePriceMissing || extractionRateUnknown
@@ -334,32 +333,32 @@ export function ProjectLibrary() {
                   }
                 />
                 <Row
-                  label="Equity ROI"
+                  label="Avkastning"
                   value={whenAssessable(
                     salePriceMissing || extractionRateUnknown,
                     () => formatPercent(equityROI),
-                    extractionRateUnknown ? "Needs dividend rate" : undefined,
+                    extractionRateUnknown ? "Kräver skattesats" : undefined,
                   )}
                 />
-                <Row label="Updated" value={formatDate(project.updatedAt)} />
+                <Row label="Ändrat" value={formatDate(project.updatedAt)} />
               </dl>
 
               <div className="mt-3 flex flex-wrap gap-1.5">
                 <Link href={`/projects/${project.id}`}>
-                  <Button variant="primary">Open</Button>
+                  <Button variant="primary" size="sm">Öppna</Button>
                 </Link>
-                <Button onClick={() => void store.duplicate(project.id)}>Duplicate</Button>
+                <Button size="sm" onClick={() => void store.duplicate(project.id)}>Kopiera</Button>
                 <Button
                   onClick={() =>
                     handleExport([project.id], `${slugify(project.name)}.json`)
                   }
                 >
-                  Export
+                  Exportera
                 </Button>
                 {project.archived ? (
-                  <Button onClick={() => void store.restore(project.id)}>Restore</Button>
+                  <Button size="sm" onClick={() => void store.restore(project.id)}>Återställ</Button>
                 ) : (
-                  <Button onClick={() => void store.archive(project.id)}>Archive</Button>
+                  <Button size="sm" onClick={() => void store.archive(project.id)}>Arkivera</Button>
                 )}
                 {confirmDelete === project.id ? (
                   <>
@@ -370,15 +369,15 @@ export function ProjectLibrary() {
                         setConfirmDelete(null);
                       }}
                     >
-                      Confirm delete
+                      Ta bort på riktigt
                     </Button>
-                    <Button variant="ghost" onClick={() => setConfirmDelete(null)}>
-                      Cancel
+                    <Button variant="ghost" size="sm" onClick={() => setConfirmDelete(null)}>
+                      Avbryt
                     </Button>
                   </>
                 ) : (
-                  <Button variant="danger" onClick={() => setConfirmDelete(project.id)}>
-                    Delete
+                  <Button variant="danger" size="sm" onClick={() => setConfirmDelete(project.id)}>
+                    Ta bort
                   </Button>
                 )}
               </div>

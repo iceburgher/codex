@@ -4,39 +4,39 @@ import "./globals.css";
 import { ProjectStoreProvider } from "@/lib/store";
 
 export const metadata: Metadata = {
-  title: "Property Investment Calculator",
+  title: "Fastighetskalkylen",
   description:
-    "Compare private, company and project-company ownership of Swedish property projects on full after-tax economics.",
+    "Jämför privat ägande, bolag och projektbolag för svenska fastighetsprojekt — hela ekonomin efter skatt.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="en" className="h-full antialiased">
+    <html lang="sv" className="h-full antialiased">
       <body className="flex min-h-full flex-col">
         <ProjectStoreProvider>
           <header className="no-print border-b border-border bg-surface">
-            <div className="mx-auto flex max-w-[1600px] items-center justify-between gap-4 px-4 py-2.5">
-              <Link href="/" className="text-sm font-semibold tracking-tight">
-                Property Investment Calculator
+            <div className="mx-auto flex max-w-[1400px] items-center justify-between gap-4 px-5 py-3">
+              <Link href="/" className="text-base font-semibold tracking-tight">
+                Fastighetskalkylen
               </Link>
-              <nav className="flex items-center gap-4 text-xs text-muted">
+              <nav className="flex items-center gap-5 text-sm text-muted">
                 <Link href="/" className="hover:text-foreground">
-                  Projects
+                  Projekt
                 </Link>
                 <Link href="/compare" className="hover:text-foreground">
-                  Compare
+                  Jämför
                 </Link>
                 <Link href="/settings" className="hover:text-foreground">
-                  Tax config
+                  Skatteuppgifter
                 </Link>
               </nav>
             </div>
           </header>
           <main className="flex-1">{children}</main>
-          <footer className="no-print border-t border-border px-4 py-3 text-[11px] text-muted">
-            Decision support only. Tax outcomes depend on facts, intent and usage — confirm
-            classification, VAT treatment, benefit value and dividend allowance with a tax advisor
-            before relying on any result.
+          <footer className="no-print border-t border-border px-5 py-4 text-xs leading-relaxed text-muted">
+            Beslutsstöd, inte skatterådgivning. Utfallet beror på syfte, användning och
+            omständigheter — stäm av klassificering, moms, förmånsvärde och gränsbelopp med en
+            skatterådgivare innan ni förlitar er på siffrorna.
           </footer>
         </ProjectStoreProvider>
       </body>

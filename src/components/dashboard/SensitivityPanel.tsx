@@ -7,9 +7,9 @@ import type { PropertyProject, ScenarioType } from "@/types";
 import { Card, SelectField } from "../ui";
 
 const METRIC_OPTIONS: { value: SensitivityMetric; label: string }[] = [
-  { value: "after_tax_profit", label: "After-tax profit" },
-  { value: "equity_roi", label: "Equity ROI" },
-  { value: "family_net_worth", label: "Family net worth delta" },
+  { value: "after_tax_profit", label: "Vinst efter skatt" },
+  { value: "equity_roi", label: "Avkastning" },
+  { value: "family_net_worth", label: "Förmögenhetsförändring" },
 ];
 
 type SweepVariable = "purchasePrice" | "renovation" | "salePrice" | "interestRate" | "holdingPeriod";
@@ -51,8 +51,8 @@ export function SensitivityPanel({
   return (
     <div className="grid gap-3 lg:grid-cols-2 print-stack">
       <Card
-        title="Sensitivity matrix"
-        subtitle="Renovation cost against sale price"
+        title="Om det går sämre — eller bättre"
+        subtitle="Renoveringskostnad mot försäljningspris"
         actions={
           <div className="w-44">
             <SelectField<SensitivityMetric>
@@ -65,7 +65,7 @@ export function SensitivityPanel({
         }
       >
         <div className="overflow-x-auto">
-          <table className="w-full text-xs">
+          <table className="w-full text-sm">
             <thead>
               <tr>
                 <th className="py-1.5 pr-3 text-left font-medium text-muted"></th>
@@ -98,30 +98,30 @@ export function SensitivityPanel({
       </Card>
 
       <Card
-        title="One-variable sensitivity"
+        title="En sak i taget"
         actions={
           <div className="w-44">
             <SelectField<SweepVariable>
               label=""
               value={variable}
               options={[
-                { value: "salePrice", label: "Sale price ±20%" },
-                { value: "purchasePrice", label: "Purchase price ±20%" },
-                { value: "renovation", label: "Renovation ±30%" },
-                { value: "interestRate", label: "Interest rate ±3 pp" },
-                { value: "holdingPeriod", label: "Holding period 6–36 mo" },
+                { value: "salePrice", label: "Försäljningspris ±20 %" },
+                { value: "purchasePrice", label: "Köpeskilling ±20 %" },
+                { value: "renovation", label: "Renovering ±30 %" },
+                { value: "interestRate", label: "Ränta ±3 procentenheter" },
+                { value: "holdingPeriod", label: "Ägandetid 6–36 mån" },
               ]}
               onChange={setVariable}
             />
           </div>
         }
       >
-        <table className="w-full text-xs">
+        <table className="w-full text-sm">
           <thead>
             <tr className="border-b border-border text-left">
-              <th className="py-1.5 font-medium text-muted">Change</th>
-              <th className="py-1.5 text-right font-medium text-muted">Net profit</th>
-              <th className="py-1.5 text-right font-medium text-muted">Equity ROI</th>
+              <th className="py-2 font-medium text-muted">Ändring</th>
+              <th className="py-2 text-right font-medium text-muted">Kvar till er</th>
+              <th className="py-2 text-right font-medium text-muted">Avkastning</th>
             </tr>
           </thead>
           <tbody>

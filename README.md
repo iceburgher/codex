@@ -1,106 +1,106 @@
-# Property Investment Calculator
+# Fastighetskalkylen
 
-A reusable calculator for Swedish residential property projects. It compares the
-full after-tax economics of buying, renovating, optionally letting, holding and
-selling a property under four ownership structures:
+En kalkylator för svenska fastighetsprojekt. Den jämför hela ekonomin efter
+skatt för att köpa, renovera, eventuellt hyra ut, äga och sälja ett objekt
+under fyra ägarformer:
 
-- **Private — equity funded**
-- **Private — debt funded**
-- **Existing company**
-- **Separate project company**
+- **Privat — eget kapital**
+- **Privat — med lån**
+- **Befintligt bolag**
+- **Separat projektbolag**
 
-The point is not to compare headline tax rates. The model carries the whole
-capital flow: purchase taxes and fees, mortgage deeds, renovation, VAT
-treatment, ROT, financing, the cost of extracting money from a company to fund a
-private purchase, running costs, rental taxation, private-use benefit taxation,
-sale costs, capital gains or corporate tax, the second tax layer when company
-profit moves to the owners, opportunity cost of tied-up capital, and the
-resulting family net worth delta.
+Poängen är inte att jämföra nominella skattesatser. Modellen räknar hela
+kapitalflödet: lagfart och pantbrev, renovering, moms, ROT, räntor, vad det
+kostar att få ut pengar ur bolaget för att finansiera ett privat köp,
+driftkostnader, skatt på uthyrning, förmånsbeskattning vid privat användning,
+försäljningskostnader, kapitalvinst- eller bolagsskatt, det andra skattelagret
+när bolagets vinst ska till ägarna, alternativkostnaden för bundet kapital —
+och till slut hur familjens förmögenhet faktiskt förändras.
 
-## Running it
+## Kom igång
 
 ```bash
 npm install
 npm run dev      # http://localhost:3000
-npm test         # calculation engine + persistence tests
+npm test         # tester för beräkningar och lagring
 npm run build
 ```
 
-No backend is required. Projects persist in browser local storage behind a
-`ProjectRepository` interface, so a database can be substituted later without
-touching the calculation engine.
+Ingen server behövs. Projekten sparas i webbläsaren bakom gränssnittet
+`ProjectRepository`, så en databas kan läggas till senare utan att
+beräkningsmotorn rörs.
 
-## Structure
+## Struktur
 
 ```
 src/
-  calculations/   pure calculation modules — no React, no I/O
-    engine.ts     scenario adapter: one pipeline, four ownership structures
-  config/         central versioned tax configuration
-  components/     UI only; no financial formulas live here
-  lib/            persistence, schema validation, migrations, formatting
-  data/           example/seed project fixture
-  tests/          Vitest suites
+  calculations/   rena beräkningar — ingen React, ingen I/O
+    engine.ts     samma pipeline för alla fyra ägarformer
+  config/         gemensamma skattesatser, versionerade per skatteår
+  components/     endast gränssnitt; inga formler bor här
+  lib/            lagring, validering, migreringar, formatering
+  data/           exempelprojekt
+  tests/          Vitest
 ```
 
-Calculations are pure functions and every major output carries an audit trail
-that the UI exposes through a "Show calculation" toggle.
+Beräkningarna är rena funktioner och varje viktigt tal har en spårbar
+uträkning som visas via "Visa uträkning" i gränssnittet.
 
-## What the app deliberately refuses to assume
+## Vad appen medvetet vägrar anta
 
-The spec this was built from lists the assumptions that most often make a
-property comparison wrong. The model encodes them as refusals rather than
-defaults:
+Kravspecen listar de antaganden som oftast gör en fastighetskalkyl fel. De är
+inbyggda som vägran, inte som bekväma standardvärden:
 
-- The 22% effective private capital gains rate applies **only** when the user
-  explicitly classifies the property as a private residential property. Any
-  other classification uses a supplied rate and is flagged.
-- Renovation spend is **not** assumed deductible against a future capital gain.
-  The eligible share defaults to zero and is an advisor input. ROT-funded
-  amounts are always excluded from the basis.
-- VAT on residential renovation defaults to **0% deductible**. Claiming a
-  deduction raises a red flag.
-- Company profit is **not** assumed distributable at a low dividend rate. When
-  profit exceeds the low-tax allowance and no above-allowance rate is supplied,
-  private-cash KPIs read "needs dividend tax rate" instead of showing tax-free
-  extraction — and such a structure cannot be ranked best on private outcomes.
-- Benefit value for a company-owned property available to the owners is never
-  inferred; it is a manual or advisor input.
-- Salary taxation is an approximation and says so.
-- Amortization moves cash and reduces debt but is never counted as a project
-  expense.
-- Money retained in a company is not treated as private cash. Family net worth
-  is reported in two modes: retained (A) and fully extracted (B).
-- Missing values stay missing. Nothing tax-sensitive is silently substituted,
-  on entry or on import.
+- 22 % kapitalvinstskatt används **bara** när användaren uttryckligen klassat
+  fastigheten som privatbostad. Andra klassificeringar använder en angiven
+  skattesats och flaggas.
+- Renoveringen antas **inte** vara avdragsgill mot kapitalvinsten. Andelen är
+  noll som utgångspunkt och ska komma från rådgivare. Det ROT betalar räknas
+  aldrig med.
+- Moms på bostadsrenovering är **0 % avdragsgill** som utgångspunkt. Att dra av
+  den ger en röd flagga.
+- Bolagets vinst antas **inte** kunna delas ut till låg skatt. Överstiger
+  vinsten gränsbeloppet utan att skattesatsen däröver är ifylld visar appen
+  "Kräver skattesats" i stället för att låta uttaget se gratis ut — och det
+  alternativet kan då inte utses till bäst på privat utfall.
+- Förmånsvärdet för ett bolagsägt hus som ägarna kan använda räknas aldrig
+  fram automatiskt.
+- Skatten på lön är en uppskattning, och appen säger det.
+- Amortering flyttar pengar och minskar skulden men är aldrig en kostnad för
+  projektet.
+- Pengar kvar i bolaget är inte samma sak som pengar privat. Förmögenheten
+  redovisas i två lägen: kvar i bolaget (A) och allt uttaget (B).
+- Uppgifter som saknas förblir tomma. Inget skattekänsligt fylls i med en
+  gissning, varken vid inmatning eller import.
 
-## Tax configuration
+## Skatteuppgifter
 
-All rates live in `src/config/taxConfig.ts`, versioned by tax year and editable
-in the app. A project may lock a snapshot so that later changes to the global
-defaults leave its historical assumptions alone. Per-project overrides are
-stored separately from the global config.
+Alla satser ligger i `src/config/taxConfig.ts`, versionerade per skatteår och
+redigerbara i appen. Ett projekt kan låsa sitt skatteår så att senare
+ändringar av de gemensamma värdena inte rör historiska antaganden. Ändringar
+per projekt lagras separat.
 
-Values that must be supplied or advisor-verified — employer contribution rate,
-personal marginal salary tax, the 3:12 allowance, the rate above it, VAT
-deductibility, benefit value, property and company asset classification,
-interest deduction restrictions and capital-improvement deductibility — are
-tagged as such throughout the UI.
+Uppgifter som måste fyllas i eller bekräftas av rådgivare — arbetsgivaravgift,
+marginalskatt, gränsbelopp enligt 3:12, skattesatsen däröver, momsavdrag,
+förmånsvärde, klassificering av fastigheten och i bolaget, begränsningar i
+ränteavdrag och vilka förbättringar som är avdragsgilla — är märkta som
+sådana i gränssnittet.
 
-## Projects
+## Projekt
 
-The project library is the home screen: create, open, duplicate, rename,
-archive, restore, delete, import and export. Projects export as versioned JSON
-and re-import without loss; imports are validated and produce a report rather
-than failing silently, and a colliding ID gets a new one. Two comparison modes
-are supported and always labelled: several projects under one ownership
-scenario, or one project across its ownership scenarios.
+Projektlistan är startsidan: skapa, öppna, kopiera, byta namn, arkivera,
+återställa, ta bort, importera och exportera. Projekt exporteras som
+versionerad JSON och kan läsas in igen utan att något tappas bort. Import
+valideras och ger en rapport i stället för att tyst misslyckas, och ett id som
+krockar får ett nytt. Jämförelsevyn har två lägen som alltid är tydligt
+märkta: flera objekt under samma ägarform, eller ett objekt under olika
+ägarformer.
 
-A single example project ships on first launch only. It is user data, not part
-of the engine, and once deleted it stays deleted.
+Ett exempelprojekt skapas vid första starten. Det är användardata, inte en del
+av motorn, och tas det bort kommer det inte tillbaka.
 
-## Disclaimer
+## Ansvarsfriskrivning
 
-This is decision support, not tax advice. Classification depends on purpose,
-facts and usage. Confirm the flagged assumptions with a tax advisor before
-relying on any result.
+Det här är beslutsstöd, inte skatterådgivning. Utfallet beror på syfte,
+användning och omständigheter. Stäm av de flaggade antagandena med en
+skatterådgivare innan du förlitar dig på siffrorna.

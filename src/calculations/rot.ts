@@ -22,14 +22,14 @@ export function calculateRot(params: {
       privateRenovationCashCost: renovationTotalGross,
       audit: [
         {
-          title: "ROT deduction",
+          title: "ROT-avdrag",
           source: "VERIFIED",
           lines: [
             {
               label: "Status",
-              value: isPrivateOwned ? "Disabled" : "Not available for company ownership",
+              value: isPrivateOwned ? "Avstängt" : "Gäller inte vid bolagsägande",
             },
-            { label: "Renovation cash cost", value: renovationTotalGross },
+            { label: "Renoveringskostnad", value: renovationTotalGross },
           ],
         },
       ],
@@ -52,15 +52,15 @@ export function calculateRot(params: {
     privateRenovationCashCost,
     audit: [
       {
-        title: "ROT deduction",
+        title: "ROT-avdrag",
         source: "VERIFIED",
         lines: [
-          { label: "Eligible labour (gross)", value: rot.eligibleLaborCostGross || 0 },
-          { label: "Rate", value: `${(rotRate * 100).toFixed(0)}%` },
-          { label: "Potential ROT", value: potentialRot },
-          { label: "Available allowance", value: availableRotAllowance },
-          { label: "ROT applied", value: rotDeduction },
-          { label: "Renovation cash cost after ROT", value: privateRenovationCashCost },
+          { label: "Berättigad arbetskostnad", value: rot.eligibleLaborCostGross || 0 },
+          { label: "Andel", value: `${(rotRate * 100).toFixed(0)} %` },
+          { label: "Möjligt ROT-avdrag", value: potentialRot },
+          { label: "Kvar av årets utrymme", value: availableRotAllowance },
+          { label: "ROT som används", value: rotDeduction },
+          { label: "Renovering efter ROT", value: privateRenovationCashCost },
         ],
       },
     ],

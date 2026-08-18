@@ -18,8 +18,8 @@ import { formatMoney, formatMoneyShort } from "@/lib/format";
 import type { ScenarioResult } from "@/types";
 import { Card } from "../ui";
 
-const SERIES = ["#3a7ca5", "#5aa9a0", "#c1873b", "#8d6ba8"];
-const AXIS = { fontSize: 11, fill: "var(--muted)" };
+const SERIES = ["#2b7a99", "#4aa88f", "#c08a3e", "#7d6aa8"];
+const AXIS = { fontSize: 12, fill: "var(--muted)" };
 
 function tooltipStyle() {
   return {
@@ -27,7 +27,7 @@ function tooltipStyle() {
       background: "var(--surface)",
       border: "1px solid var(--border)",
       borderRadius: 6,
-      fontSize: 11,
+      fontSize: 12,
       color: "var(--foreground)",
     },
     labelStyle: { color: "var(--muted)", fontSize: 11 },
@@ -51,14 +51,14 @@ export function ScenarioBarCharts({ results }: { results: ScenarioResult[] }) {
 
   return (
     <div className="grid gap-3 lg:grid-cols-3 print-stack">
-      <Card title="Total project cost by scenario">
-        <ResponsiveContainer width="100%" height={200}>
+      <Card title="Vad projektet kostar totalt">
+        <ResponsiveContainer width="100%" height={220}>
           <BarChart data={costData} margin={{ top: 5, right: 5, bottom: 5, left: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
             <XAxis dataKey="name" tick={AXIS} axisLine={false} tickLine={false} />
             <YAxis tickFormatter={formatMoneyShort} tick={AXIS} axisLine={false} tickLine={false} />
             <Tooltip formatter={(v) => formatMoney(Number(v))} {...tooltipStyle()} />
-            <Bar dataKey="value" radius={[3, 3, 0, 0]}>
+            <Bar dataKey="value" radius={[4, 4, 0, 0]}>
               {costData.map((_, i) => (
                 <Cell key={i} fill={SERIES[i % SERIES.length]} />
               ))}
@@ -67,15 +67,15 @@ export function ScenarioBarCharts({ results }: { results: ScenarioResult[] }) {
         </ResponsiveContainer>
       </Card>
 
-      <Card title="Net available privately after tax">
-        <ResponsiveContainer width="100%" height={200}>
+      <Card title="Kvar till er efter skatt">
+        <ResponsiveContainer width="100%" height={220}>
           <BarChart data={profitData} margin={{ top: 5, right: 5, bottom: 5, left: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
             <XAxis dataKey="name" tick={AXIS} axisLine={false} tickLine={false} />
             <YAxis tickFormatter={formatMoneyShort} tick={AXIS} axisLine={false} tickLine={false} />
             <Tooltip formatter={(v) => formatMoney(Number(v))} {...tooltipStyle()} />
             <ReferenceLine y={0} stroke="var(--muted)" />
-            <Bar dataKey="value" radius={[3, 3, 0, 0]}>
+            <Bar dataKey="value" radius={[4, 4, 0, 0]}>
               {profitData.map((d, i) => (
                 <Cell key={i} fill={d.value < 0 ? "var(--negative)" : SERIES[i % SERIES.length]} />
               ))}
@@ -84,17 +84,20 @@ export function ScenarioBarCharts({ results }: { results: ScenarioResult[] }) {
         </ResponsiveContainer>
       </Card>
 
-      <Card title="Family net worth delta" subtitle="Mode A retained · Mode B fully extracted">
-        <ResponsiveContainer width="100%" height={200}>
+      <Card
+        title="Förmögenhetsförändring"
+        subtitle="A = pengarna kvar i bolaget · B = allt uttaget privat"
+      >
+        <ResponsiveContainer width="100%" height={220}>
           <BarChart data={netWorthData} margin={{ top: 5, right: 5, bottom: 5, left: 0 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
             <XAxis dataKey="name" tick={AXIS} axisLine={false} tickLine={false} />
             <YAxis tickFormatter={formatMoneyShort} tick={AXIS} axisLine={false} tickLine={false} />
             <Tooltip formatter={(v) => formatMoney(Number(v))} {...tooltipStyle()} />
-            <Legend wrapperStyle={{ fontSize: 11 }} />
+            <Legend wrapperStyle={{ fontSize: 12 }} />
             <ReferenceLine y={0} stroke="var(--muted)" />
-            <Bar dataKey="modeA" name="Mode A" fill={SERIES[0]} radius={[3, 3, 0, 0]} />
-            <Bar dataKey="modeB" name="Mode B" fill={SERIES[1]} radius={[3, 3, 0, 0]} />
+            <Bar dataKey="modeA" name="Kvar i bolaget" fill={SERIES[0]} radius={[4, 4, 0, 0]} />
+            <Bar dataKey="modeB" name="Allt uttaget" fill={SERIES[1]} radius={[4, 4, 0, 0]} />
           </BarChart>
         </ResponsiveContainer>
       </Card>
@@ -115,8 +118,8 @@ export function CashFlowChart({ results }: { results: ScenarioResult[] }) {
 
   return (
     <Card
-      title="Capital required over time"
-      subtitle="Cumulative project cash position before equity injection — the trough is the peak funding need."
+      title="Så mycket kapital binds över tid"
+      subtitle="Projektets kassa innan ni skjuter till eget kapital. Bottenläget är det mesta ni behöver ha tillgängligt."
     >
       <ResponsiveContainer width="100%" height={240}>
         <LineChart data={data} margin={{ top: 5, right: 10, bottom: 5, left: 0 }}>
@@ -126,11 +129,11 @@ export function CashFlowChart({ results }: { results: ScenarioResult[] }) {
             tick={AXIS}
             axisLine={false}
             tickLine={false}
-            tickFormatter={(m: number) => `${m} mo`}
+            tickFormatter={(m: number) => `${m} mån`}
           />
           <YAxis tickFormatter={formatMoneyShort} tick={AXIS} axisLine={false} tickLine={false} />
           <Tooltip formatter={(v) => formatMoney(Number(v))} {...tooltipStyle()} />
-          <Legend wrapperStyle={{ fontSize: 11 }} />
+          <Legend wrapperStyle={{ fontSize: 12 }} />
           <ReferenceLine y={0} stroke="var(--muted)" />
           {results.map((r, i) => (
             <Line
@@ -150,19 +153,19 @@ export function CashFlowChart({ results }: { results: ScenarioResult[] }) {
 
 export function CostWaterfall({ result }: { result: ScenarioResult }) {
   const steps: { label: string; delta: number }[] = [
-    { label: "Sale price", delta: result.salePrice },
-    { label: "Purchase price", delta: -result.purchasePrice },
-    { label: "Stamp duty / title", delta: -result.purchaseTaxesFees },
-    { label: "Renovation", delta: -result.renovationCashCost },
-    { label: "Financing", delta: -result.financingCost },
-    { label: "Running costs", delta: -result.runningCostsTotal },
-    { label: "Sale costs", delta: -result.saleCosts.saleCostsTotal },
+    { label: "Försäljningspris", delta: result.salePrice },
+    { label: "Köpeskilling", delta: -result.purchasePrice },
+    { label: "Lagfart och pantbrev", delta: -result.purchaseTaxesFees },
+    { label: "Renovering", delta: -result.renovationCashCost },
+    { label: "Räntor och avgifter", delta: -result.financingCost },
+    { label: "Drift", delta: -result.runningCostsTotal },
+    { label: "Försäljningskostnader", delta: -result.saleCosts.saleCostsTotal },
     {
-      label: result.corporateTax ? "Corporate tax" : "Capital gains tax",
+      label: result.corporateTax ? "Bolagsskatt" : "Kapitalvinstskatt",
       delta: -(result.corporateTax?.companyTax ?? result.capitalGain.capitalGainTax),
     },
-    { label: "Owner extraction tax", delta: -(result.extraction?.ownerExtractionTax ?? 0) },
-    { label: "Benefit tax", delta: -(result.benefit?.combinedEconomicCost ?? 0) },
+    { label: "Skatt vid uttag", delta: -(result.extraction?.ownerExtractionTax ?? 0) },
+    { label: "Förmånsskatt", delta: -(result.benefit?.combinedEconomicCost ?? 0) },
   ];
 
   let running = 0;
@@ -176,10 +179,10 @@ export function CostWaterfall({ result }: { result: ScenarioResult }) {
       delta: s.delta,
     };
   });
-  data.push({ name: "Net result", base: 0, value: Math.abs(running), delta: running });
+  data.push({ name: "Kvar", base: 0, value: Math.abs(running), delta: running });
 
   return (
-    <Card title="Cost & tax waterfall" subtitle={result.label}>
+    <Card title="Från försäljningspris till kvar i handen" subtitle={result.label}>
       <ResponsiveContainer width="100%" height={260}>
         <BarChart data={data} margin={{ top: 5, right: 5, bottom: 40, left: 0 }}>
           <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
@@ -200,7 +203,7 @@ export function CostWaterfall({ result }: { result: ScenarioResult }) {
             {...tooltipStyle()}
           />
           <Bar dataKey="base" stackId="w" fill="transparent" />
-          <Bar dataKey="value" stackId="w" radius={[3, 3, 0, 0]}>
+          <Bar dataKey="value" stackId="w" radius={[4, 4, 0, 0]}>
             {data.map((d, i) => (
               <Cell key={i} fill={d.delta >= 0 ? "var(--positive)" : "var(--negative)"} />
             ))}
@@ -213,7 +216,8 @@ export function CostWaterfall({ result }: { result: ScenarioResult }) {
 
 function shortLabel(label: string): string {
   return label
-    .replace("Private — ", "Priv ")
-    .replace("Separate Project Company", "Project AB")
-    .replace("Existing Company", "Existing AB");
+    .replace("Privat — eget kapital", "Privat, kontant")
+    .replace("Privat — med lån", "Privat, lån")
+    .replace("Separat projektbolag", "Projektbolag")
+    .replace("Befintligt bolag", "Bolaget");
 }

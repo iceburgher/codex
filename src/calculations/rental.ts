@@ -1,7 +1,7 @@
 import type { RentalInputs, RentalResult } from "@/types";
 
 export const SHORT_TERM_RENTAL_WARNING =
-  "Frequent short-term letting can resemble hotel activity, which changes both VAT and income-tax treatment. Verify with advisor.";
+  "Mycket korttidsuthyrning kan likna hotellverksamhet, vilket ändrar både moms och inkomstbeskattning. Stäm av med skatterådgivare.";
 
 export function calculateRental(params: {
   rental: RentalInputs;
@@ -67,25 +67,25 @@ export function calculateRental(params: {
     warning,
     audit: [
       {
-        title: isPrivateOwned ? "Private rental taxation" : "Company rental result",
+        title: isPrivateOwned ? "Skatt på privat uthyrning" : "Uthyrningsresultat i bolaget",
         source: "VERIFIED",
         lines: isPrivateOwned
           ? [
-              { label: "Gross rental income", value: grossRentalIncome },
-              { label: "Standard deduction (prorated)", value: -standardDeduction },
-              { label: "Percentage deduction", value: -percentDeduction },
-              { label: "Taxable surplus", value: privateTaxableRentalSurplus },
+              { label: "Hyresintäkter", value: grossRentalIncome },
+              { label: "Schablonavdrag", value: -standardDeduction },
+              { label: "Procentavdrag", value: -percentDeduction },
+              { label: "Skattepliktigt överskott", value: privateTaxableRentalSurplus },
               {
-                label: `Capital income tax @ ${(params.capitalIncomeTaxRate * 100).toFixed(0)}%`,
+                label: `Kapitalskatt, ${(params.capitalIncomeTaxRate * 100).toFixed(0)} %`,
                 value: privateRentalTax,
               },
-              { label: "Direct rental costs", value: deductibleRentalCosts },
-              { label: "Net rental cash", value: netRentalCashPrivate },
+              { label: "Direkta uthyrningskostnader", value: deductibleRentalCosts },
+              { label: "Netto från uthyrning", value: netRentalCashPrivate },
             ]
           : [
-              { label: "Gross rental income", value: grossRentalIncome },
-              { label: "Deductible rental costs", value: -deductibleRentalCosts },
-              { label: "Rental profit into company result", value: companyRentalProfit },
+              { label: "Hyresintäkter", value: grossRentalIncome },
+              { label: "Avdragsgilla kostnader", value: -deductibleRentalCosts },
+              { label: "Resultat till bolaget", value: companyRentalProfit },
             ],
       },
     ],

@@ -27,30 +27,30 @@ export function ScenarioInputsPanel({
   return (
     <div className="space-y-2">
       <p className="px-1 text-[11px] text-muted">
-        These inputs belong to <strong>{SCENARIO_LABELS[scenarioType]}</strong> only. Property
-        facts above are shared by every scenario.
+        Det här gäller bara <strong>{SCENARIO_LABELS[scenarioType]}</strong>. Uppgifterna om
+        objektet delas av alla ägarformer.
       </p>
 
       {!isCompany && (
         <>
-          <Collapsible title="Private funding" defaultOpen>
+          <Collapsible title="Privat finansiering" defaultOpen>
             <div className="space-y-3">
               <NumberField
-                label="Existing private cash"
+                label="Egna pengar som finns"
                 suffix="kr"
                 value={scenario.privateFunding.existingPrivateCash}
                 onChange={(v) => set((s) => void (s.privateFunding.existingPrivateCash = v ?? 0))}
               />
               <NumberField
-                label="Net dividend needed from company"
+                label="Utdelning som behövs, netto"
                 suffix="kr"
                 source="TAX_ADVISOR_INPUT"
-                hint="Grossed up below to show what the company must distribute."
+                hint="Räknas upp till vad bolaget måste dela ut före skatt."
                 value={scenario.privateFunding.targetNetDividend}
                 onChange={(v) => set((s) => void (s.privateFunding.targetNetDividend = v ?? 0))}
               />
               <NumberField
-                label="Net salary needed from company"
+                label="Lön som behövs, netto"
                 suffix="kr"
                 source="TAX_ADVISOR_INPUT"
                 value={scenario.privateFunding.targetNetSalary}
@@ -59,36 +59,36 @@ export function ScenarioInputsPanel({
             </div>
           </Collapsible>
 
-          <Collapsible title="Private loans" defaultOpen={scenarioType === "PRIVATE_DEBT"}>
+          <Collapsible title="Privata lån" defaultOpen={scenarioType === "PRIVATE_DEBT"}>
             <div className="space-y-3">
               <NumberField
-                label="Mortgage amount"
+                label="Bolån"
                 suffix="kr"
                 value={scenario.privateLoans.mortgageAmount}
                 onChange={(v) => set((s) => void (s.privateLoans.mortgageAmount = v ?? 0))}
               />
               <PercentField
-                label="Mortgage interest rate"
+                label="Ränta på bolån"
                 value={scenario.privateLoans.mortgageInterestRate}
                 onChange={(v) => set((s) => void (s.privateLoans.mortgageInterestRate = v ?? 0))}
               />
               <NumberField
-                label="Mortgage setup fee"
+                label="Uppläggningsavgift bolån"
                 suffix="kr"
                 value={scenario.privateLoans.mortgageSetupFee}
                 onChange={(v) => set((s) => void (s.privateLoans.mortgageSetupFee = v ?? 0))}
               />
               <NumberField
-                label="Mortgage amortization (annual)"
+                label="Amortering bolån per år"
                 suffix="kr"
-                hint="Cash flow and debt reduction — not a project expense."
+                hint="Påverkar kassaflödet och minskar skulden, men är ingen kostnad."
                 value={scenario.privateLoans.mortgageAmortizationAnnual}
                 onChange={(v) =>
                   set((s) => void (s.privateLoans.mortgageAmortizationAnnual = v ?? 0))
                 }
               />
               <PercentField
-                label="Secured interest deduction rate"
+                label="Ränteavdrag på bolån"
                 source="TAX_ADVISOR_INPUT"
                 value={scenario.privateLoans.securedLoanInterestDeductionRate}
                 onChange={(v) =>
@@ -96,24 +96,24 @@ export function ScenarioInputsPanel({
                 }
               />
               <NumberField
-                label="Unsecured loan amount"
+                label="Privatlån utan säkerhet"
                 suffix="kr"
                 value={scenario.privateLoans.unsecuredLoanAmount}
                 onChange={(v) => set((s) => void (s.privateLoans.unsecuredLoanAmount = v ?? 0))}
               />
               <PercentField
-                label="Unsecured interest rate"
+                label="Ränta på privatlån"
                 value={scenario.privateLoans.unsecuredInterestRate}
                 onChange={(v) => set((s) => void (s.privateLoans.unsecuredInterestRate = v ?? 0))}
               />
               <NumberField
-                label="Unsecured setup fee"
+                label="Uppläggningsavgift privatlån"
                 suffix="kr"
                 value={scenario.privateLoans.unsecuredSetupFee}
                 onChange={(v) => set((s) => void (s.privateLoans.unsecuredSetupFee = v ?? 0))}
               />
               <NumberField
-                label="Unsecured amortization (annual)"
+                label="Amortering privatlån per år"
                 suffix="kr"
                 value={scenario.privateLoans.unsecuredAmortizationAnnual}
                 onChange={(v) =>
@@ -121,43 +121,43 @@ export function ScenarioInputsPanel({
                 }
               />
               <p className="text-[11px] text-warn">
-                Unsecured loan interest is not deductible from income year 2026.
+                Ränta på privatlån utan säkerhet är inte avdragsgill från inkomstår 2026.
               </p>
             </div>
           </Collapsible>
 
-          <Collapsible title="ROT">
+          <Collapsible title="ROT-avdrag">
             <div className="space-y-3">
               <ToggleField
-                label="ROT enabled"
+                label="Använd ROT-avdrag"
                 value={scenario.rot.enabled}
                 onChange={(v) => set((s) => void (s.rot.enabled = v))}
               />
               <NumberField
-                label="Eligible labour cost (gross)"
+                label="Arbetskostnad som ger ROT"
                 suffix="kr"
                 value={scenario.rot.eligibleLaborCostGross}
                 onChange={(v) => set((s) => void (s.rot.eligibleLaborCostGross = v ?? 0))}
               />
               <NumberField
-                label="Eligible owners"
+                label="Antal personer med ROT-utrymme"
                 value={scenario.rot.eligibleOwners}
                 onChange={(v) => set((s) => void (s.rot.eligibleOwners = v ?? 0))}
               />
               <NumberField
-                label="Remaining allowance — owner 1"
+                label="Kvar av årets ROT, ägare 1"
                 suffix="kr"
                 value={scenario.rot.remainingAllowancePerson1}
                 onChange={(v) => set((s) => void (s.rot.remainingAllowancePerson1 = v ?? 0))}
               />
               <NumberField
-                label="Remaining allowance — owner 2"
+                label="Kvar av årets ROT, ägare 2"
                 suffix="kr"
                 value={scenario.rot.remainingAllowancePerson2}
                 onChange={(v) => set((s) => void (s.rot.remainingAllowancePerson2 = v ?? 0))}
               />
               <p className="text-[11px] text-muted">
-                ROT-funded amounts are excluded from the capital-improvement tax basis.
+                Den del som ROT betalar får inte samtidigt dras av mot kapitalvinsten.
               </p>
             </div>
           </Collapsible>
@@ -165,45 +165,45 @@ export function ScenarioInputsPanel({
       )}
 
       {scenarioType === "EXISTING_COMPANY" && (
-        <Collapsible title="Company funding" defaultOpen>
+        <Collapsible title="Bolagets finansiering" defaultOpen>
           <div className="space-y-3">
             <NumberField
-              label="Company cash invested"
+              label="Pengar från bolagets kassa"
               suffix="kr"
               value={scenario.companyFunding.companyCashInvested}
               onChange={(v) => set((s) => void (s.companyFunding.companyCashInvested = v ?? 0))}
             />
             <NumberField
-              label="External business loan"
+              label="Företagslån"
               suffix="kr"
               value={scenario.companyFunding.externalBusinessLoan}
               onChange={(v) => set((s) => void (s.companyFunding.externalBusinessLoan = v ?? 0))}
             />
             <PercentField
-              label="Business interest rate"
+              label="Ränta på företagslån"
               value={scenario.companyFunding.businessInterestRate}
               onChange={(v) => set((s) => void (s.companyFunding.businessInterestRate = v ?? 0))}
             />
             <NumberField
-              label="Setup fee"
+              label="Uppläggningsavgift"
               suffix="kr"
               value={scenario.companyFunding.setupFee}
               onChange={(v) => set((s) => void (s.companyFunding.setupFee = v ?? 0))}
             />
             <NumberField
-              label="Guarantee fee"
+              label="Borgensavgift"
               suffix="kr"
               value={scenario.companyFunding.guaranteeFee}
               onChange={(v) => set((s) => void (s.companyFunding.guaranteeFee = v ?? 0))}
             />
             <NumberField
-              label="Amortization (annual)"
+              label="Amortering per år"
               suffix="kr"
               value={scenario.companyFunding.amortizationAnnual}
               onChange={(v) => set((s) => void (s.companyFunding.amortizationAnnual = v ?? 0))}
             />
             <PercentField
-              label="Deductible interest share"
+              label="Andel avdragsgill ränta"
               source="TAX_ADVISOR_INPUT"
               value={scenario.companyFunding.deductibleInterestPercent}
               onChange={(v) =>
@@ -211,7 +211,7 @@ export function ScenarioInputsPanel({
               }
             />
             <ToggleField
-              label="Personal guarantee given"
+              label="Personlig borgen lämnas"
               value={scenario.companyFunding.personalGuarantee}
               onChange={(v) => set((s) => void (s.companyFunding.personalGuarantee = v))}
             />
@@ -220,16 +220,16 @@ export function ScenarioInputsPanel({
       )}
 
       {scenarioType === "PROJECT_COMPANY" && (
-        <Collapsible title="Project company funding" defaultOpen>
+        <Collapsible title="Projektbolagets finansiering" defaultOpen>
           <div className="space-y-3">
             <NumberField
-              label="Share capital"
+              label="Aktiekapital"
               suffix="kr"
               value={scenario.projectCompanyFunding.shareCapital}
               onChange={(v) => set((s) => void (s.projectCompanyFunding.shareCapital = v ?? 0))}
             />
             <NumberField
-              label="Shareholder contribution"
+              label="Aktieägartillskott"
               suffix="kr"
               value={scenario.projectCompanyFunding.shareholderContribution}
               onChange={(v) =>
@@ -237,7 +237,7 @@ export function ScenarioInputsPanel({
               }
             />
             <NumberField
-              label="Intercompany loan"
+              label="Lån från moderbolaget"
               suffix="kr"
               value={scenario.projectCompanyFunding.intercompanyLoan}
               onChange={(v) =>
@@ -245,27 +245,27 @@ export function ScenarioInputsPanel({
               }
             />
             <PercentField
-              label="Intercompany interest rate"
+              label="Ränta på koncernlån"
               value={scenario.projectCompanyFunding.intercompanyInterestRate}
               onChange={(v) =>
                 set((s) => void (s.projectCompanyFunding.intercompanyInterestRate = v ?? 0))
               }
             />
             <NumberField
-              label="External loan"
+              label="Externt lån"
               suffix="kr"
               value={scenario.projectCompanyFunding.externalLoan}
               onChange={(v) => set((s) => void (s.projectCompanyFunding.externalLoan = v ?? 0))}
             />
             <PercentField
-              label="External interest rate"
+              label="Ränta på externt lån"
               value={scenario.projectCompanyFunding.externalInterestRate}
               onChange={(v) =>
                 set((s) => void (s.projectCompanyFunding.externalInterestRate = v ?? 0))
               }
             />
             <NumberField
-              label="Annual accounting cost"
+              label="Redovisning per år"
               suffix="kr"
               value={scenario.projectCompanyFunding.annualAccountingCost}
               onChange={(v) =>
@@ -273,7 +273,7 @@ export function ScenarioInputsPanel({
               }
             />
             <NumberField
-              label="Annual banking cost"
+              label="Bankkostnader per år"
               suffix="kr"
               value={scenario.projectCompanyFunding.annualBankingCost}
               onChange={(v) =>
@@ -281,7 +281,7 @@ export function ScenarioInputsPanel({
               }
             />
             <NumberField
-              label="Annual admin cost"
+              label="Övrig administration per år"
               suffix="kr"
               value={scenario.projectCompanyFunding.annualAdminCost}
               onChange={(v) =>
@@ -292,42 +292,42 @@ export function ScenarioInputsPanel({
         </Collapsible>
       )}
 
-      <Collapsible title="Dividend extraction">
+      <Collapsible title="Utdelning">
         <div className="space-y-3">
           <NumberField
-            label="Available low-tax allowance (3:12)"
+            label="Gränsbelopp enligt 3:12"
             suffix="kr"
             source="TAX_ADVISOR_INPUT"
             value={scenario.dividend.availableLowTaxAllowance}
             onChange={(v) => set((s) => void (s.dividend.availableLowTaxAllowance = v ?? 0))}
           />
           <PercentField
-            label="Dividend tax within allowance"
+            label="Skatt inom gränsbeloppet"
             source="TAX_ADVISOR_INPUT"
             value={scenario.dividend.dividendTaxWithinAllowance}
             onChange={(v) => set((s) => void (s.dividend.dividendTaxWithinAllowance = v ?? 0))}
           />
           <PercentField
-            label="Dividend tax above allowance"
+            label="Skatt över gränsbeloppet"
             source="TAX_ADVISOR_INPUT"
             allowNull
-            hint="Left blank, amounts above the allowance are shown untaxed and flagged."
+            hint="Lämnas den tom visas belopp över gränsbeloppet obeskattade — och flaggas."
             value={scenario.dividend.dividendTaxAboveAllowance}
             onChange={(v) => set((s) => void (s.dividend.dividendTaxAboveAllowance = v))}
           />
         </div>
       </Collapsible>
 
-      <Collapsible title="Salary extraction">
+      <Collapsible title="Lön">
         <div className="space-y-3">
           <PercentField
-            label="Effective marginal income tax rate"
+            label="Marginalskatt på lön"
             source="TAX_ADVISOR_INPUT"
             value={scenario.salary.effectiveMarginalIncomeTaxRate}
             onChange={(v) => set((s) => void (s.salary.effectiveMarginalIncomeTaxRate = v ?? 0))}
           />
           <PercentField
-            label="Employer contribution rate"
+            label="Arbetsgivaravgift"
             source="USER_INPUT"
             value={scenario.salary.employerContributionRate}
             onChange={(v) => set((s) => void (s.salary.employerContributionRate = v ?? 0))}
@@ -336,93 +336,93 @@ export function ScenarioInputsPanel({
         </div>
       </Collapsible>
 
-      <Collapsible title="VAT">
+      <Collapsible title="Moms">
         <div className="space-y-3">
           <SelectField
-            label="VAT treatment"
+            label="Momshantering"
             source="TAX_ADVISOR_INPUT"
             value={scenario.vat.vatTreatment}
             options={[
-              { value: "none", label: "None (default for residential)" },
-              { value: "partial", label: "Partial" },
+              { value: "none", label: "Ingen (utgångspunkt för bostad)" },
+              { value: "partial", label: "Delvis" },
               { value: "full", label: "Full" },
             ]}
             onChange={(v) => set((s) => void (s.vat.vatTreatment = v))}
           />
           <PercentField
-            label="Deductible VAT share"
+            label="Andel avdragsgill moms"
             source="TAX_ADVISOR_INPUT"
             value={scenario.vat.vatDeductiblePercent}
             onChange={(v) => set((s) => void (s.vat.vatDeductiblePercent = v ?? 0))}
           />
           {scenario.vat.vatDeductiblePercent > 0 && (
             <p className="text-[11px] text-negative">
-              Residential VAT deduction requires specific tax support. Verify with advisor.
+              Momsavdrag på bostad kräver särskilt stöd i skattereglerna. Stäm av med rådgivare.
             </p>
           )}
         </div>
       </Collapsible>
 
       {isCompany && (
-        <Collapsible title="Private use / benefit" defaultOpen={scenario.privateUseLevel !== "none"}>
+        <Collapsible title="Privat användning och förmån" defaultOpen={scenario.privateUseLevel !== "none"}>
           <div className="space-y-3">
             <SelectField
-              label="Private use level"
+              label="Hur mycket används huset privat?"
               value={scenario.privateUseLevel}
               options={[
-                { value: "none", label: "None" },
-                { value: "occasional", label: "Occasional" },
-                { value: "frequent", label: "Frequent" },
-                { value: "full_disposition", label: "Full disposition right" },
+                { value: "none", label: "Inte alls" },
+                { value: "occasional", label: "Enstaka tillfällen" },
+                { value: "frequent", label: "Ofta" },
+                { value: "full_disposition", label: "Full dispositionsrätt" },
               ]}
               onChange={(v) => set((s) => void (s.privateUseLevel = v))}
             />
             <NumberField
-              label="Annual market benefit value"
+              label="Marknadsmässigt förmånsvärde per år"
               suffix="kr"
               source="TAX_ADVISOR_INPUT"
-              hint="Never inferred automatically — supply an advisor-verified value."
+              hint="Räknas aldrig fram automatiskt — fyll i ett värde från rådgivare."
               value={scenario.benefit.estimatedAnnualMarketBenefitValue}
               onChange={(v) =>
                 set((s) => void (s.benefit.estimatedAnnualMarketBenefitValue = v ?? 0))
               }
             />
             <PercentField
-              label="Owner income tax rate on benefit"
+              label="Ägarens skatt på förmånen"
               source="TAX_ADVISOR_INPUT"
               value={scenario.benefit.ownerIncomeTaxRateOnBenefit}
               onChange={(v) => set((s) => void (s.benefit.ownerIncomeTaxRateOnBenefit = v ?? 0))}
             />
             <PercentField
-              label="Employer contribution rate on benefit"
+              label="Arbetsgivaravgift på förmånen"
               source="USER_INPUT"
               value={scenario.benefit.employerContributionRate}
               onChange={(v) => set((s) => void (s.benefit.employerContributionRate = v ?? 0))}
             />
             {scenario.privateUseLevel !== "none" && (
               <p className="rounded-md bg-danger-soft p-2 text-[11px] text-negative">
-                Benefit taxation may be based on the right to use the property, not only actual
-                days used. Obtain tax advice before relying on this scenario.
+                Förmånsbeskattning kan utgå från själva dispositionsrätten, inte bara de dagar
+                huset används. Ta in skatteråd innan ni litar på det här alternativet.
               </p>
             )}
           </div>
         </Collapsible>
       )}
 
-      <Collapsible title="Tax classification" defaultOpen>
+      <Collapsible title="Skattemässig klassificering" defaultOpen>
         <div className="space-y-3">
           {!isCompany && (
             <SelectField
-              label="Private property tax classification"
+              label="Hur klassas fastigheten privat?"
               source="TAX_ADVISOR_INPUT"
-              hint="22% effective capital gains tax applies only to an explicit private residential classification."
+              hint="22 % kapitalvinstskatt gäller bara om fastigheten uttryckligen räknas som privatbostad."
               value={scenario.privatePropertyTaxClassification}
               options={[
-                { value: "private_residential_property", label: "Private residential property" },
-                { value: "business_property", label: "Business property" },
+                { value: "private_residential_property", label: "Privatbostad" },
+                { value: "business_property", label: "Näringsfastighet" },
                 {
                   value: "property_trading_inventory_risk",
-                  label: "Property trading / inventory risk",
+                  label: "Risk för handel med fastigheter",
                 },
               ]}
               onChange={(v) => set((s) => void (s.privatePropertyTaxClassification = v))}
@@ -430,41 +430,41 @@ export function ScenarioInputsPanel({
           )}
           {isCompany && (
             <SelectField
-              label="Company asset classification"
+              label="Hur klassas fastigheten i bolaget?"
               source="TAX_ADVISOR_INPUT"
               value={scenario.companyAssetClassification}
               options={[
-                { value: "capital_asset", label: "Capital asset" },
-                { value: "inventory_property", label: "Inventory property" },
+                { value: "capital_asset", label: "Kapitaltillgång" },
+                { value: "inventory_property", label: "Lagerfastighet" },
               ]}
               onChange={(v) => set((s) => void (s.companyAssetClassification = v))}
             />
           )}
           <PercentField
-            label="Renovation qualifying as improvement basis"
+            label="Andel av renoveringen som får dras av mot vinsten"
             source="TAX_ADVISOR_INPUT"
-            hint="Never assume all renovation is deductible against the capital gain."
+            hint="Utgå aldrig från att hela renoveringen är avdragsgill mot kapitalvinsten."
             value={scenario.improvementBasis.fundamentalImprovementsPercent}
             onChange={(v) =>
               set((s) => void (s.improvementBasis.fundamentalImprovementsPercent = v ?? 0))
             }
           />
           <ToggleField
-            label="Renovate-and-sell (flip) intent"
+            label="Syftet är att renovera och sälja"
             value={scenario.flipIntent}
             onChange={(v) => set((s) => void (s.flipIntent = v))}
           />
           <ToggleField
-            label="Classification confirmed by advisor"
+            label="Klassificeringen är bekräftad av rådgivare"
             value={scenario.classificationConfirmedByAdvisor}
             onChange={(v) => set((s) => void (s.classificationConfirmedByAdvisor = v))}
           />
         </div>
       </Collapsible>
 
-      <Collapsible title="Opportunity cost">
+      <Collapsible title="Alternativkostnad">
         <PercentField
-          label="Alternative annual return on capital"
+          label="Avkastning pengarna kunnat ge någon annanstans"
           source="ESTIMATE"
           value={scenario.opportunityCost.annualAlternativeReturnRate}
           onChange={(v) =>

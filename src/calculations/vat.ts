@@ -1,7 +1,7 @@
 import type { VatInputs, VatResult } from "@/types";
 
 export const RESIDENTIAL_VAT_WARNING =
-  "Residential VAT deduction requires specific tax support. Verify with advisor.";
+  "Momsavdrag på bostad kräver särskilt stöd i skattereglerna. Stäm av med skatterådgivare.";
 
 /** VAT embedded in a gross (VAT-inclusive) amount. */
 export function extractVat(grossAmount: number, vatRate: number): number {
@@ -66,14 +66,14 @@ export function calculateVat(params: {
     warning,
     audit: [
       {
-        title: "VAT on renovation",
+        title: "Moms på renovering",
         source: "TAX_ADVISOR_INPUT",
         lines: [
-          { label: "Gross renovation cost", value: renovationTotalGross },
-          { label: "VAT embedded", value: vatIncluded },
-          { label: "Deductible VAT", value: deductibleVat },
-          { label: "Non-deductible VAT", value: nonDeductibleVat },
-          { label: "Real cash cost", value: trueCashCost },
+          { label: "Renovering inkl. moms", value: renovationTotalGross },
+          { label: "Varav moms", value: vatIncluded },
+          { label: "Avdragsgill moms", value: deductibleVat },
+          { label: "Ej avdragsgill moms", value: nonDeductibleVat },
+          { label: "Verklig kostnad", value: trueCashCost },
         ],
       },
     ],

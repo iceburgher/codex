@@ -21,22 +21,22 @@ export const ALL_SCENARIOS: ScenarioType[] = [
 ];
 
 export const HIDDEN_COST_TEMPLATE: Omit<HiddenCostItem, "amount" | "included">[] = [
-  { id: "pre_purchase_inspection", label: "Pre-purchase inspection" },
-  { id: "energy_certificate", label: "Energy certificate" },
-  { id: "valuation", label: "Valuation" },
-  { id: "legal_advice", label: "Legal advice" },
-  { id: "tax_advice", label: "Tax advice" },
-  { id: "bank_valuation", label: "Bank valuation" },
-  { id: "utility_connection", label: "Utility connection fees" },
-  { id: "temporary_electricity", label: "Temporary electricity" },
-  { id: "storage", label: "Storage" },
-  { id: "temporary_accommodation", label: "Temporary accommodation" },
-  { id: "travel", label: "Travel to the property" },
-  { id: "construction_insurance", label: "Construction insurance" },
-  { id: "insurance_deductibles", label: "Insurance deductibles" },
-  { id: "cleaning", label: "Cleaning" },
-  { id: "photography", label: "Photography" },
-  { id: "post_renovation_holding", label: "Post-renovation holding costs" },
+  { id: "pre_purchase_inspection", label: "Besiktning före köp" },
+  { id: "energy_certificate", label: "Energideklaration" },
+  { id: "valuation", label: "Värdering" },
+  { id: "legal_advice", label: "Juridisk rådgivning" },
+  { id: "tax_advice", label: "Skatterådgivning" },
+  { id: "bank_valuation", label: "Bankens värdering" },
+  { id: "utility_connection", label: "Anslutningsavgifter" },
+  { id: "temporary_electricity", label: "Byggström" },
+  { id: "storage", label: "Magasinering" },
+  { id: "temporary_accommodation", label: "Tillfälligt boende" },
+  { id: "travel", label: "Resor till objektet" },
+  { id: "construction_insurance", label: "Byggförsäkring" },
+  { id: "insurance_deductibles", label: "Självrisker" },
+  { id: "cleaning", label: "Städning" },
+  { id: "photography", label: "Fotografering" },
+  { id: "post_renovation_holding", label: "Kostnader efter renovering fram till försäljning" },
 ];
 
 export function defaultHiddenCosts(): HiddenCostItem[] {
@@ -233,7 +233,7 @@ export function defaultScenarios(): Record<ScenarioType, ScenarioInputs> {
   };
 }
 
-export function createBlankProject(id: string, name = "New project"): PropertyProject {
+export function createBlankProject(id: string, name = "Nytt projekt"): PropertyProject {
   const now = new Date().toISOString();
   return {
     schemaVersion: SCHEMA_VERSION,

@@ -33,8 +33,8 @@ export function buildSensitivityMatrix(params: {
   const salePriceSteps = params.salePriceSteps ?? DEFAULT_SALE_STEPS;
   const baseSalePrice = params.project.inputs.expectedSalePrice ?? 0;
 
-  const rows = renovationSteps.map(stepLabel("Renovation"));
-  const columns = salePriceSteps.map(stepLabel("Sale price"));
+  const rows = renovationSteps.map(stepLabel("Renovering"));
+  const columns = salePriceSteps.map(stepLabel("Pris"));
 
   const cells = renovationSteps.map((rStep, ri) =>
     salePriceSteps.map((sStep, ci) => {
@@ -66,7 +66,7 @@ export function buildSensitivityMatrix(params: {
 
 function stepLabel(prefix: string) {
   return (step: number) =>
-    step === 0 ? `${prefix} base` : `${prefix} ${step > 0 ? "+" : ""}${Math.round(step * 100)}%`;
+    step === 0 ? `${prefix}, som planerat` : `${prefix} ${step > 0 ? "+" : "−"}${Math.abs(Math.round(step * 100))} %`;
 }
 
 export interface SensitivitySweepPoint {
@@ -95,25 +95,25 @@ export function sweep(params: {
     switch (variable) {
       case "purchasePrice":
         overrides = { purchasePrice: basePurchase * (1 + step) };
-        label = `${step > 0 ? "+" : ""}${Math.round(step * 100)}%`;
+        label = `${step > 0 ? "+" : "−"}${Math.abs(Math.round(step * 100))} %`;
         value = basePurchase * (1 + step);
         break;
       case "renovation":
         overrides = { renovationMultiplier: 1 + step };
-        label = `${step > 0 ? "+" : ""}${Math.round(step * 100)}%`;
+        label = `${step > 0 ? "+" : "−"}${Math.abs(Math.round(step * 100))} %`;
         break;
       case "salePrice":
         overrides = { salePrice: baseSale * (1 + step) };
-        label = `${step > 0 ? "+" : ""}${Math.round(step * 100)}%`;
+        label = `${step > 0 ? "+" : "−"}${Math.abs(Math.round(step * 100))} %`;
         value = baseSale * (1 + step);
         break;
       case "interestRate":
         overrides = { interestRateDelta: step };
-        label = `${step > 0 ? "+" : ""}${(step * 100).toFixed(1)} pp`;
+        label = `${step > 0 ? "+" : "−"}${Math.abs(step * 100).toFixed(1).replace(".", ",")} p.e.`;
         break;
       case "holdingPeriod":
         overrides = { holdingPeriodMonths: step };
-        label = `${step} mo`;
+        label = `${step} mån`;
         break;
     }
 

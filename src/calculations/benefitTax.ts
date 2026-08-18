@@ -1,7 +1,14 @@
 import type { BenefitInputs, BenefitResult, PrivateUseLevel } from "@/types";
 
+const PRIVATE_USE_LABELS: Record<PrivateUseLevel, string> = {
+  none: "Ingen",
+  occasional: "Enstaka tillfällen",
+  frequent: "Ofta",
+  full_disposition: "Full dispositionsrätt",
+};
+
 export const BENEFIT_WARNING =
-  "Benefit taxation may be based on the right to use the property, not only actual days used. Obtain tax advice before relying on this scenario.";
+  "Förmånsbeskattning kan utgå från själva dispositionsrätten, inte bara de dagar huset faktiskt används. Ta in skatteråd innan du litar på det här alternativet.";
 
 /**
  * Benefit (förmånsbeskattning) for a company-owned property available for the
@@ -40,18 +47,18 @@ export function calculateBenefitTax(params: {
     combinedEconomicCost,
     audit: [
       {
-        title: "Private use benefit taxation",
+        title: "Förmånsbeskattning vid privat användning",
         source: "TAX_ADVISOR_INPUT",
         lines: [
-          { label: "Private use level", value: privateUseLevel },
+          { label: "Grad av privat användning", value: PRIVATE_USE_LABELS[privateUseLevel] },
           {
-            label: "Annual market benefit value",
+            label: "Marknadsmässigt förmånsvärde per år",
             value: benefit.estimatedAnnualMarketBenefitValue || 0,
           },
-          { label: "Prorated benefit value", value: proratedBenefitValue },
-          { label: "Owner tax cost", value: ownerBenefitTax },
-          { label: "Company payroll cost", value: companyEmployerContributionOnBenefit },
-          { label: "Combined economic cost", value: combinedEconomicCost },
+          { label: "Förmånsvärde under perioden", value: proratedBenefitValue },
+          { label: "Ägarens skattekostnad", value: ownerBenefitTax },
+          { label: "Arbetsgivaravgift för bolaget", value: companyEmployerContributionOnBenefit },
+          { label: "Total ekonomisk kostnad", value: combinedEconomicCost },
         ],
       },
     ],

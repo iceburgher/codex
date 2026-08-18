@@ -1,31 +1,32 @@
 const NBSP = " ";
 
-/** Money: "3 600 000 kr", negatives as "-250 000 kr". No decimals. */
+/** Pengar: "3 600 000 kr", negativa som "−250 000 kr". Inga decimaler. */
 export function formatMoney(value: number | null | undefined): string {
   if (value === null || value === undefined || !Number.isFinite(value)) return "—";
   const rounded = Math.round(value);
   const abs = Math.abs(rounded)
     .toString()
     .replace(/\B(?=(\d{3})+(?!\d))/g, NBSP);
-  return `${rounded < 0 ? "-" : ""}${abs}${NBSP}kr`;
+  return `${rounded < 0 ? "−" : ""}${abs}${NBSP}kr`;
 }
 
+/** Kort form för diagramaxlar: "4,8 mkr", "825 tkr". */
 export function formatMoneyShort(value: number | null | undefined): string {
   if (value === null || value === undefined || !Number.isFinite(value)) return "—";
   const abs = Math.abs(value);
-  if (abs >= 1_000_000) return `${(value / 1_000_000).toFixed(1)}M`;
-  if (abs >= 1_000) return `${Math.round(value / 1_000)}k`;
+  if (abs >= 1_000_000) return `${decimal(value / 1_000_000, 1)}${NBSP}mkr`;
+  if (abs >= 1_000) return `${Math.round(value / 1_000)}${NBSP}tkr`;
   return `${Math.round(value)}`;
 }
 
 export function formatPercent(value: number | null | undefined, decimals = 1): string {
   if (value === null || value === undefined || !Number.isFinite(value)) return "—";
-  return `${(value * 100).toFixed(decimals)}%`;
+  return `${decimal(value * 100, decimals)}${NBSP}%`;
 }
 
 export function formatMonths(months: number | null | undefined): string {
   if (months === null || months === undefined) return "—";
-  return `${Math.round(months)}${NBSP}mo`;
+  return `${Math.round(months)}${NBSP}mån`;
 }
 
 export function formatDate(iso: string | null | undefined): string {
@@ -35,19 +36,25 @@ export function formatDate(iso: string | null | undefined): string {
   return d.toISOString().slice(0, 10);
 }
 
+/** Svenskt decimaltecken. */
+function decimal(value: number, decimals: number): string {
+  return value.toFixed(decimals).replace(".", ",");
+}
+
 /**
- * Exit-dependent KPIs are meaningless without a sale price. Showing a computed
- * loss there would present a guess as a result.
+ * Vissa nyckeltal går inte att räkna ut förrän användaren fyllt i något. Då
+ * ska de säga det rakt ut i stället för att visa en siffra som vilar på ett
+ * antagande ingen gjort.
  */
 export function whenAssessable(
   missing: boolean,
   render: () => string,
-  placeholder: string | undefined = "Needs sale price",
+  placeholder: string | undefined = "Kräver försäljningspris",
 ): string {
-  return missing ? (placeholder ?? "Needs sale price") : render();
+  return missing ? (placeholder ?? "Kräver försäljningspris") : render();
 }
 
 export function formatMissing(value: number | null | undefined): string {
-  if (value === null || value === undefined) return "Not entered";
+  if (value === null || value === undefined) return "Ej ifyllt";
   return formatMoney(value);
 }

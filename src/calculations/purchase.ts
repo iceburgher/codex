@@ -79,26 +79,26 @@ export function calculatePurchaseCosts(params: {
 
   const audit: AuditTrail[] = [
     {
-      title: params.isCompanyOwned ? "Lagfart (company)" : "Lagfart (private)",
+      title: params.isCompanyOwned ? "Lagfart (bolag)" : "Lagfart (privat)",
       source: "VERIFIED",
       lines: [
-        { label: "Tax base", value: stampDutyBase },
-        { label: "Rate", value: `${(rate * 100).toFixed(2)}%` },
-        { label: "Stamp duty", value: stampDuty },
-        { label: "Registration fee", value: params.titleRegistrationFee },
-        { label: "Total", value: titleCost },
+        { label: "Underlag", value: stampDutyBase },
+        { label: "Skattesats", value: `${(rate * 100).toFixed(2).replace(".", ",")} %` },
+        { label: "Stämpelskatt", value: stampDuty },
+        { label: "Expeditionsavgift", value: params.titleRegistrationFee },
+        { label: "Totalt", value: titleCost },
       ],
     },
     {
-      title: "New mortgage deeds (pantbrev)",
+      title: "Nya pantbrev",
       source: "VERIFIED",
       lines: [
-        { label: "Secured debt", value: params.securedDebt },
-        { label: "Existing mortgage deeds", value: params.existingMortgageDeeds },
-        { label: "Required new deeds", value: requiredMortgageDeeds },
-        { label: "Tax (2%)", value: newMortgageDeedTax },
-        { label: "Admin fee", value: params.mortgageDeedAdminFee },
-        { label: "Total", value: newMortgageDeedCost },
+        { label: "Säkerställd skuld", value: params.securedDebt },
+        { label: "Befintliga pantbrev", value: params.existingMortgageDeeds },
+        { label: "Nya pantbrev som behövs", value: requiredMortgageDeeds },
+        { label: "Stämpelskatt", value: newMortgageDeedTax },
+        { label: "Expeditionsavgift", value: params.mortgageDeedAdminFee },
+        { label: "Totalt", value: newMortgageDeedCost },
       ],
     },
   ];

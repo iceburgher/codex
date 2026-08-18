@@ -22,17 +22,17 @@ export function calculateImprovementBasis(params: {
     nonEligibleRenovation,
     audit: [
       {
-        title: "Improvement cost classification",
+        title: "Renovering mot kapitalvinst",
         source: "TAX_ADVISOR_INPUT",
         lines: [
-          { label: "Renovation total (gross)", value: renovationTotalGross },
-          { label: "ROT-funded (excluded from basis)", value: -rotDeduction },
-          { label: "Spend available for classification", value: basisEligibleSpend },
+          { label: "Renovering totalt", value: renovationTotalGross },
+          { label: "ROT-finansierat (räknas inte)", value: -rotDeduction },
+          { label: "Kvar att klassificera", value: basisEligibleSpend },
           {
-            label: `Fundamental improvements (${((split.fundamentalImprovementsPercent || 0) * 100).toFixed(0)}%)`,
+            label: `Grundförbättringar (${((split.fundamentalImprovementsPercent || 0) * 100).toFixed(0)} %)`,
             value: eligibleTaxBasis,
           },
-          { label: "Not eligible against capital gain", value: nonEligibleRenovation },
+          { label: "Ej avdragsgillt mot vinst", value: nonEligibleRenovation },
         ],
       },
     ],

@@ -15,74 +15,84 @@ type Field = {
 };
 
 const FIELDS: Field[] = [
-  { key: "corporateTaxRate", label: "Corporate tax", kind: "percent", source: "VERIFIED" },
+  { key: "corporateTaxRate", label: "Bolagsskatt", kind: "percent", source: "VERIFIED" },
   {
     key: "privateResidentialCapitalGainEffectiveRate",
-    label: "Private residential effective capital gains tax",
+    label: "Kapitalvinstskatt privatbostad",
     kind: "percent",
     source: "VERIFIED",
-    hint: "Applied only when a scenario is explicitly classified as private residential property.",
+    hint: "Används bara när fastigheten uttryckligen klassats som privatbostad.",
   },
-  { key: "capitalIncomeTaxRate", label: "Capital income tax", kind: "percent", source: "VERIFIED" },
+  { key: "capitalIncomeTaxRate", label: "Kapitalskatt", kind: "percent", source: "VERIFIED" },
   {
     key: "dividendTaxWithinAllowance",
-    label: "Dividend tax within allowance",
+    label: "Utdelningsskatt inom gränsbelopp",
     kind: "percent",
     source: "TAX_ADVISOR_INPUT",
-    hint: "3:12 depends on actual circumstances — the allowance itself is entered per scenario.",
+    hint: "3:12 beror på era förhållanden — själva gränsbeloppet fylls i per ägarform.",
   },
   {
     key: "employerContributionRate",
-    label: "Employer contributions",
+    label: "Arbetsgivaravgifter",
     kind: "percent",
     source: "USER_INPUT",
   },
-  { key: "privateStampDutyRate", label: "Stamp duty — private", kind: "percent", source: "VERIFIED" },
+  {
+    key: "privateStampDutyRate",
+    label: "Stämpelskatt, privatperson",
+    kind: "percent",
+    source: "VERIFIED",
+  },
   {
     key: "companyStampDutyRate",
-    label: "Stamp duty — legal entity",
+    label: "Stämpelskatt, juridisk person",
     kind: "percent",
     source: "VERIFIED",
   },
   {
     key: "titleRegistrationFee",
-    label: "Title registration fee",
+    label: "Expeditionsavgift lagfart",
     kind: "money",
     source: "VERIFIED",
   },
-  { key: "mortgageDeedTaxRate", label: "New mortgage deed tax", kind: "percent", source: "VERIFIED" },
+  {
+    key: "mortgageDeedTaxRate",
+    label: "Stämpelskatt nya pantbrev",
+    kind: "percent",
+    source: "VERIFIED",
+  },
   {
     key: "mortgageDeedAdminFee",
-    label: "Mortgage deed admin fee",
+    label: "Expeditionsavgift pantbrev",
     kind: "money",
     source: "USER_INPUT",
-    hint: "Set to the actual value once known.",
+    hint: "Fyll i det verkliga beloppet när det är känt.",
   },
-  { key: "rotRate", label: "ROT rate", kind: "percent", source: "VERIFIED" },
-  { key: "rotMaxPerPerson", label: "ROT max per person / year", kind: "money", source: "VERIFIED" },
+  { key: "rotRate", label: "ROT-avdrag, andel", kind: "percent", source: "VERIFIED" },
+  { key: "rotMaxPerPerson", label: "ROT, tak per person och år", kind: "money", source: "VERIFIED" },
   {
     key: "rentalStandardDeduction",
-    label: "Rental standard deduction",
+    label: "Schablonavdrag uthyrning",
     kind: "money",
     source: "VERIFIED",
   },
   {
     key: "rentalPercentDeduction",
-    label: "Rental percentage deduction",
+    label: "Procentavdrag uthyrning",
     kind: "percent",
     source: "VERIFIED",
   },
-  { key: "propertyFeeRate", label: "Municipal property fee", kind: "percent", source: "VERIFIED" },
-  { key: "propertyFeeAnnualCap", label: "Property fee annual cap", kind: "money", source: "VERIFIED" },
+  { key: "propertyFeeRate", label: "Kommunal fastighetsavgift", kind: "percent", source: "VERIFIED" },
+  { key: "propertyFeeAnnualCap", label: "Takbelopp fastighetsavgift", kind: "money", source: "VERIFIED" },
   {
     key: "unsecuredLoanInterestDeductionRate",
-    label: "Unsecured loan interest deduction",
+    label: "Ränteavdrag privatlån utan säkerhet",
     kind: "percent",
     source: "VERIFIED",
   },
   {
     key: "securedLoanInterestDeductionRateDefault",
-    label: "Secured loan interest deduction (default)",
+    label: "Ränteavdrag bolån (standard)",
     kind: "percent",
     source: "TAX_ADVISOR_INPUT",
   },
@@ -124,20 +134,20 @@ export function TaxConfigView() {
   }
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-6">
-      <h1 className="text-lg font-semibold tracking-tight">Tax configuration</h1>
+    <div className="mx-auto max-w-4xl px-5 py-6">
+      <h1 className="text-2xl font-semibold tracking-tight">Skatteuppgifter</h1>
       <p className="mt-0.5 mb-4 text-xs text-muted">
-        Central, versioned tax config (version {TAX_CONFIG_VERSION}, tax year{" "}
-        {DEFAULT_TAX_CONFIG_2026.taxYear}). Defaults are editable configuration, not business
-        logic. Project overrides are stored separately and never overwritten by a change here.
+        Gemensamma skattesatser (version {TAX_CONFIG_VERSION}, skatteår{" "}
+        {DEFAULT_TAX_CONFIG_2026.taxYear}). Värdena går att ändra. Ändringar per projekt sparas
+        separat och skrivs aldrig över av en ändring här.
       </p>
 
       <Card className="mb-4">
         <SelectField
-          label="Project overrides"
+          label="Ändra för ett visst projekt"
           value={selectedId}
           options={[
-            { value: "", label: "Global defaults (read-only reference)" },
+            { value: "", label: "Gemensamma värden (visas bara)" },
             ...store.projects.map((p) => ({ value: p.id, label: p.name })),
           ]}
           onChange={setSelectedId}
@@ -145,23 +155,23 @@ export function TaxConfigView() {
         {project && (
           <div className="mt-3 flex items-center gap-2">
             <Button onClick={toggleSnapshot}>
-              {project.taxConfigSnapshot ? "Unlock tax snapshot" : "Lock tax snapshot"}
+              {project.taxConfigSnapshot ? "Lås upp skatteår" : "Lås skatteår"}
             </Button>
             <span className="text-[11px] text-muted">
               {project.taxConfigSnapshot
-                ? `Locked ${project.taxConfigSnapshot.lockedAt?.slice(0, 10)} at version ${project.taxConfigSnapshot.sourceVersion} — global changes no longer affect this project.`
-                : "Not locked — this project follows the global defaults plus its own overrides."}
+                ? `Låst ${project.taxConfigSnapshot.lockedAt?.slice(0, 10)} i version ${project.taxConfigSnapshot.sourceVersion} — ändringar av de gemensamma värdena påverkar inte projektet.`
+                : "Inte låst — projektet följer de gemensamma värdena plus sina egna ändringar."}
             </span>
           </div>
         )}
       </Card>
 
       <Card
-        title={project ? `Values used by ${project.name}` : "Global defaults"}
+        title={project ? `Värden som används i ${project.name}` : "Gemensamma värden"}
         subtitle={
           project
-            ? "Editing a value here creates a project-specific override."
-            : "Select a project above to override any of these."
+            ? "Ändrar du ett värde här gäller det bara det här projektet."
+            : "Välj ett projekt ovan för att ändra något av värdena."
         }
       >
         <div className="grid gap-3 sm:grid-cols-2">
@@ -201,7 +211,7 @@ export function TaxConfigView() {
                     className="mt-1 text-[11px] text-accent underline"
                     onClick={() => updateOverride(field.key, null)}
                   >
-                    Reset to default
+                    Återställ
                   </button>
                 )}
               </div>
@@ -210,25 +220,25 @@ export function TaxConfigView() {
         </div>
         {!project && (
           <p className="mt-4 text-[11px] text-muted">
-            Editing without a project selected has no effect — global defaults ship with the
-            application and are versioned by tax year.
+            Utan valt projekt går värdena inte att ändra här — de gemensamma värdena följer med
+            appen och är versionerade per skatteår.
           </p>
         )}
       </Card>
 
-      <Card className="mt-4" title="Values that must be supplied or advisor-verified">
-        <ul className="grid gap-1.5 text-xs sm:grid-cols-2">
+      <Card className="mt-4" title="Uppgifter ni själva måste fylla i eller få bekräftade">
+        <ul className="grid gap-2.5 text-sm sm:grid-cols-2">
           {[
-            "Exact employer contribution rate applicable",
-            "Exact personal salary marginal tax",
-            "Actual 3:12 dividend allowance",
-            "Applicable tax above dividend allowance",
-            "VAT deductibility",
-            "Benefit taxation market value",
-            "Property tax classification",
-            "Company asset classification",
-            "Interest deduction restrictions",
-            "Capital-improvement deductibility",
+            "Vilken arbetsgivaravgift som gäller",
+            "Er faktiska marginalskatt på lön",
+            "Verkligt gränsbelopp enligt 3:12",
+            "Skattesats över gränsbeloppet",
+            "Om momsen är avdragsgill",
+            "Marknadsmässigt förmånsvärde",
+            "Fastighetens skattemässiga klassificering",
+            "Klassificering i bolaget",
+            "Eventuella begränsningar i ränteavdrag",
+            "Vilka förbättringar som är avdragsgilla",
           ].map((item) => (
             <li key={item} className="flex items-center gap-2">
               <SourceTag source="TAX_ADVISOR_INPUT" />
