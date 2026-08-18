@@ -85,4 +85,15 @@ input[type="number"] {
   .print-block {
     break-inside: avoid;
   }
+  /* The input column is hidden in print; collapse its grid track so the
+     results use the full page width instead of the remaining column. */
+  .print-full-width {
+    display: block !important;
+  }
+  .print-stack {
+    display: block !important;
+  }
+  .print-stack > * + * {
+    margin-top: 0.75rem;
+  }
 }

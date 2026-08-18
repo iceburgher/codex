@@ -49,7 +49,7 @@ export function SensitivityPanel({
   const format = (v: number) => (metric === "equity_roi" ? formatPercent(v) : formatMoney(v));
 
   return (
-    <div className="grid gap-3 lg:grid-cols-2">
+    <div className="grid gap-3 lg:grid-cols-2 print-stack">
       <Card
         title="Sensitivity matrix"
         subtitle="Renovation cost against sale price"

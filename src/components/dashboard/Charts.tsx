@@ -50,7 +50,7 @@ export function ScenarioBarCharts({ results }: { results: ScenarioResult[] }) {
   }));
 
   return (
-    <div className="grid gap-3 lg:grid-cols-3">
+    <div className="grid gap-3 lg:grid-cols-3 print-stack">
       <Card title="Total project cost by scenario">
         <ResponsiveContainer width="100%" height={200}>
           <BarChart data={costData} margin={{ top: 5, right: 5, bottom: 5, left: 0 }}>

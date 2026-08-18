@@ -182,7 +182,7 @@ export function ProjectDashboard({ projectId }: { projectId: string }) {
         </div>
       </Card>
 
-      <div className="grid gap-4 lg:grid-cols-[320px_1fr]">
+      <div className="grid gap-4 lg:grid-cols-[320px_1fr] print-full-width">
         <aside className="no-print space-y-3">
           <Card title="Compared scenarios">
             <div className="space-y-2">
@@ -248,13 +248,13 @@ export function ProjectDashboard({ projectId }: { projectId: string }) {
               <ScenarioBarCharts results={results} />
               <CashFlowChart results={results} />
               {selectedResult && (
-                <div className="grid gap-3 lg:grid-cols-2">
+                <div className="grid gap-3 lg:grid-cols-2 print-stack">
                   <CostWaterfall result={selectedResult} />
                   <TaxBreakdown result={selectedResult} />
                 </div>
               )}
               <SensitivityPanel project={project} scenario={selectedScenario} />
-              <div className="grid gap-3 lg:grid-cols-2">
+              <div className="grid gap-3 lg:grid-cols-2 print-stack">
                 <RiskFlagsPanel results={results} />
                 <div className="space-y-3">
                   <WarningsPanel results={results} />
