@@ -1,0 +1,2 @@
+import {TaxConfig} from './types';
+export const TAX_2026:TaxConfig={taxYear:2026,sourceVersion:'SE-2026.1',corporateTaxRate:.206,privateResidentialCapitalGainEffectiveRate:.22,dividendTaxWithinAllowance:.20,privateStampDutyRate:.015,companyStampDutyRate:.0425,titleRegistrationFee:825,mortgageDeedTaxRate:.02,mortgageDeedAdminFee:0,rotRate:.30,rotMaxPerPerson:50000,rentalStandardDeduction:40000,rentalPercentDeduction:.20,capitalIncomeTaxRate:.30,propertyFeeRate:.0075,propertyFeeAnnualCap:10425,securedLoanInterestDeductionRate:.30,unsecuredLoanInterestDeductionRate:0};
