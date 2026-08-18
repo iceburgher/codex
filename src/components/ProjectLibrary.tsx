@@ -1,0 +1,415 @@
+"use client";
+
+import Link from "next/link";
+import { useMemo, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
+import { calculateScenario } from "@/calculations/engine";
+import { calculateRenovation } from "@/calculations/renovation";
+import { downloadFile, slugify } from "@/lib/download";
+import {
+  formatDate,
+  formatMissing,
+  formatMoney,
+  formatPercent,
+  whenAssessable,
+} from "@/lib/format";
+import { useProjectStore } from "@/lib/store";
+import type { ImportReport } from "@/lib/schema";
+import { SCENARIO_LABELS, type ProjectStatus, type PropertyProject } from "@/types";
+import { Button, Card, SelectField } from "./ui";
+
+type SortKey =
+  | "name"
+  | "updatedAt"
+  | "purchasePrice"
+  | "expectedSalePrice"
+  | "profit"
+  | "roi";
+
+const STATUS_LABELS: Record<ProjectStatus, string> = {
+  draft: "Draft",
+  active: "Active",
+  renovation: "Under renovation",
+  for_sale: "For sale",
+  sold: "Sold",
+  archived: "Archived",
+};
+
+interface ProjectSummary {
+  project: PropertyProject;
+  profitAfterTax: number;
+  equityROI: number;
+  riskCount: number;
+  salePriceMissing: boolean;
+  extractionRateUnknown: boolean;
+}
+
+export function ProjectLibrary() {
+  const store = useProjectStore();
+  const router = useRouter();
+  const fileInput = useRef<HTMLInputElement>(null);
+
+  const [query, setQuery] = useState("");
+  const [sortKey, setSortKey] = useState<SortKey>("updatedAt");
+  const [showArchived, setShowArchived] = useState(false);
+  const [selected, setSelected] = useState<string[]>([]);
+  const [importReport, setImportReport] = useState<ImportReport | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+
+  const summaries = useMemo<ProjectSummary[]>(() => {
+    return store.projects.map((project) => {
+      const result = calculateScenario(project, project.selectedScenario);
+      return {
+        project,
+        profitAfterTax: result.netAvailablePrivately,
+        equityROI: result.roi.equityROI,
+        riskCount: result.riskFlags.filter((f) => f.severity === "high").length,
+        salePriceMissing: result.salePriceMissing,
+        extractionRateUnknown: result.extractionRateUnknown,
+      };
+    });
+  }, [store.projects]);
+
+  const visible = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    const filtered = summaries.filter(({ project }) => {
+      if (project.archived !== showArchived) return false;
+      if (!q) return true;
+      return (
+        project.name.toLowerCase().includes(q) ||
+        (project.facts.address ?? "").toLowerCase().includes(q) ||
+        (project.facts.municipality ?? "").toLowerCase().includes(q)
+      );
+    });
+
+    return [...filtered].sort((a, b) => {
+      switch (sortKey) {
+        case "name":
+          return a.project.name.localeCompare(b.project.name);
+        case "purchasePrice":
+          return (b.project.inputs.purchasePrice ?? 0) - (a.project.inputs.purchasePrice ?? 0);
+        case "expectedSalePrice":
+          return (
+            (b.project.inputs.expectedSalePrice ?? 0) - (a.project.inputs.expectedSalePrice ?? 0)
+          );
+        case "profit":
+          return b.profitAfterTax - a.profitAfterTax;
+        case "roi":
+          return b.equityROI - a.equityROI;
+        default:
+          return b.project.updatedAt.localeCompare(a.project.updatedAt);
+      }
+    });
+  }, [summaries, query, sortKey, showArchived]);
+
+  async function handleCreate() {
+    const project = await store.createBlank();
+    router.push(`/projects/${project.id}`);
+  }
+
+  async function handleExport(ids: string[], filename: string) {
+    const json = await store.exportProjects(ids);
+    downloadFile(filename, json, "application/json");
+  }
+
+  async function handleImportFile(file: File) {
+    try {
+      const report = await store.importProjects(JSON.parse(await file.text()));
+      setImportReport(report);
+    } catch {
+      setImportReport({
+        imported: 0,
+        skipped: 0,
+        issues: [
+          {
+            projectName: file.name,
+            path: "(file)",
+            message: "File is not valid JSON.",
+            severity: "error",
+          },
+        ],
+      });
+    }
+  }
+
+  function toggleSelected(id: string) {
+    setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+  }
+
+  return (
+    <div className="mx-auto max-w-[1600px] px-4 py-6">
+      <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
+        <div>
+          <h1 className="text-lg font-semibold tracking-tight">Projects</h1>
+          <p className="mt-0.5 text-xs text-muted">
+            Each project holds one property. Ownership scenarios are calculated from the same
+            object facts.
+          </p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <Button variant="primary" onClick={handleCreate}>
+            New project
+          </Button>
+          <Button onClick={() => fileInput.current?.click()}>Import JSON</Button>
+          <Button
+            disabled={selected.length === 0}
+            onClick={() => handleExport(selected, `projects-bundle-${selected.length}.json`)}
+          >
+            Export selected ({selected.length})
+          </Button>
+          <Link href={`/compare${selected.length ? `?ids=${selected.join(",")}` : ""}`}>
+            <Button disabled={selected.length < 2}>Compare selected</Button>
+          </Link>
+          <input
+            ref={fileInput}
+            type="file"
+            accept="application/json"
+            className="hidden"
+            onChange={(e) => {
+              const file = e.target.files?.[0];
+              if (file) void handleImportFile(file);
+              e.target.value = "";
+            }}
+          />
+        </div>
+      </div>
+
+      <div className="mb-4 flex flex-wrap items-end gap-3">
+        <label className="block">
+          <span className="mb-1 block text-xs text-muted">Search</span>
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Name, address or municipality"
+            className="w-72 rounded-md border border-border bg-surface px-2 py-1.5 text-sm outline-none focus:border-accent"
+          />
+        </label>
+        <div className="w-56">
+          <SelectField<SortKey>
+            label="Sort by"
+            value={sortKey}
+            onChange={setSortKey}
+            options={[
+              { value: "updatedAt", label: "Last updated" },
+              { value: "name", label: "Name" },
+              { value: "purchasePrice", label: "Purchase price" },
+              { value: "expectedSalePrice", label: "Expected sale price" },
+              { value: "profit", label: "Projected after-tax result" },
+              { value: "roi", label: "Equity ROI" },
+            ]}
+          />
+        </div>
+        <Button
+          variant={showArchived ? "primary" : "default"}
+          onClick={() => setShowArchived(!showArchived)}
+        >
+          {showArchived ? "Showing archived" : "Show archived"}
+        </Button>
+      </div>
+
+      {importReport && (
+        <div className="mb-4">
+          <Card
+            title={`Import report — ${importReport.imported} imported, ${importReport.skipped} skipped`}
+            actions={
+              <Button variant="ghost" onClick={() => setImportReport(null)}>
+                Dismiss
+              </Button>
+            }
+          >
+            {importReport.issues.length === 0 ? (
+              <p className="text-xs text-muted">No issues.</p>
+            ) : (
+              <ul className="space-y-1 text-xs">
+                {importReport.issues.map((issue, i) => (
+                  <li key={i} className="flex gap-2">
+                    <span
+                      className={
+                        issue.severity === "error"
+                          ? "font-semibold text-negative"
+                          : "font-semibold text-warn"
+                      }
+                    >
+                      {issue.severity === "error" ? "Error" : "Warning"}
+                    </span>
+                    <span className="text-muted">
+                      {issue.projectName} · {issue.path}
+                    </span>
+                    <span>{issue.message}</span>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </Card>
+        </div>
+      )}
+
+      {store.loading ? (
+        <p className="text-sm text-muted">Loading projects…</p>
+      ) : visible.length === 0 ? (
+        <Card title={showArchived ? "No archived projects" : "No projects yet"}>
+          <p className="text-xs text-muted">
+            {showArchived
+              ? "Archived projects appear here and can be restored at any time."
+              : "Create a blank project or import one from JSON to get started."}
+          </p>
+        </Card>
+      ) : (
+        <div className="grid gap-3 md:grid-cols-2 xl:grid-cols-3">
+          {visible.map(
+            ({
+              project,
+              profitAfterTax,
+              equityROI,
+              riskCount,
+              salePriceMissing,
+              extractionRateUnknown,
+            }) => (
+            <article
+              key={project.id}
+              className="rounded-lg border border-border bg-surface p-4"
+            >
+              <div className="mb-2 flex items-start justify-between gap-2">
+                <div className="min-w-0">
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="checkbox"
+                      className="h-3.5 w-3.5 accent-[var(--accent)]"
+                      checked={selected.includes(project.id)}
+                      onChange={() => toggleSelected(project.id)}
+                      aria-label={`Select ${project.name}`}
+                    />
+                    <Link
+                      href={`/projects/${project.id}`}
+                      className="truncate text-sm font-semibold hover:underline"
+                    >
+                      {project.name}
+                    </Link>
+                  </div>
+                  <p className="mt-1 truncate text-xs text-muted">
+                    {project.facts.address ?? "No address"}
+                    {project.facts.municipality ? ` · ${project.facts.municipality}` : ""}
+                  </p>
+                </div>
+                <div className="flex shrink-0 flex-col items-end gap-1">
+                  <span className="rounded bg-surface-muted px-1.5 py-0.5 text-[10px] font-medium">
+                    {STATUS_LABELS[project.status]}
+                  </span>
+                  {riskCount > 0 && (
+                    <span className="rounded bg-danger-soft px-1.5 py-0.5 text-[10px] font-semibold text-negative">
+                      {riskCount} red flag{riskCount > 1 ? "s" : ""}
+                    </span>
+                  )}
+                </div>
+              </div>
+
+              <p className="mb-2 text-[11px] text-muted">
+                Scenario: {SCENARIO_LABELS[project.selectedScenario]}
+              </p>
+
+              <dl className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-xs">
+                <Row label="Purchase" value={formatMissing(project.inputs.purchasePrice)} />
+                <Row
+                  label="Renovation"
+                  value={formatMoney(renovationBudget(project))}
+                />
+                <Row
+                  label="Expected sale"
+                  value={formatMissing(project.inputs.expectedSalePrice)}
+                />
+                <Row
+                  label="After-tax result"
+                  value={whenAssessable(
+                    salePriceMissing || extractionRateUnknown,
+                    () => formatMoney(profitAfterTax),
+                    extractionRateUnknown ? "Needs dividend rate" : undefined,
+                  )}
+                  tone={
+                    salePriceMissing || extractionRateUnknown
+                      ? undefined
+                      : profitAfterTax < 0
+                        ? "negative"
+                        : "positive"
+                  }
+                />
+                <Row
+                  label="Equity ROI"
+                  value={whenAssessable(
+                    salePriceMissing || extractionRateUnknown,
+                    () => formatPercent(equityROI),
+                    extractionRateUnknown ? "Needs dividend rate" : undefined,
+                  )}
+                />
+                <Row label="Updated" value={formatDate(project.updatedAt)} />
+              </dl>
+
+              <div className="mt-3 flex flex-wrap gap-1.5">
+                <Link href={`/projects/${project.id}`}>
+                  <Button variant="primary">Open</Button>
+                </Link>
+                <Button onClick={() => void store.duplicate(project.id)}>Duplicate</Button>
+                <Button
+                  onClick={() =>
+                    handleExport([project.id], `${slugify(project.name)}.json`)
+                  }
+                >
+                  Export
+                </Button>
+                {project.archived ? (
+                  <Button onClick={() => void store.restore(project.id)}>Restore</Button>
+                ) : (
+                  <Button onClick={() => void store.archive(project.id)}>Archive</Button>
+                )}
+                {confirmDelete === project.id ? (
+                  <>
+                    <Button
+                      variant="danger"
+                      onClick={() => {
+                        void store.remove(project.id);
+                        setConfirmDelete(null);
+                      }}
+                    >
+                      Confirm delete
+                    </Button>
+                    <Button variant="ghost" onClick={() => setConfirmDelete(null)}>
+                      Cancel
+                    </Button>
+                  </>
+                ) : (
+                  <Button variant="danger" onClick={() => setConfirmDelete(project.id)}>
+                    Delete
+                  </Button>
+                )}
+              </div>
+            </article>
+            ),
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+function Row({
+  label,
+  value,
+  tone,
+}: {
+  label: string;
+  value: string;
+  tone?: "positive" | "negative";
+}) {
+  const toneClass =
+    tone === "negative" ? "text-negative" : tone === "positive" ? "text-positive" : "";
+  return (
+    <>
+      <dt className="text-muted">{label}</dt>
+      <dd className={`numeric text-right font-medium ${toneClass}`}>{value}</dd>
+    </>
+  );
+}
+
+function renovationBudget(project: PropertyProject): number {
+  return calculateRenovation(project.renovation).renovationTotalGross;
+}

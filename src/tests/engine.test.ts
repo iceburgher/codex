@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 import { calculateAllScenarios, calculateScenario } from "@/calculations/engine";
 import { buildSensitivityMatrix } from "@/calculations/sensitivity";
 import { buildAdvisorQuestions } from "@/calculations/advisorQuestions";
+import { bestScenarioIndex } from "@/components/dashboard/ScenarioCards";
 import { createBlankProject } from "@/lib/defaults";
 import type { PropertyProject } from "@/types";
 
@@ -162,5 +163,46 @@ describe("advisor questions", () => {
     const ids = qs.map((q) => q.id);
     expect(ids).toContain("private_residence_qualification");
     expect(ids).toContain("vat_deductibility");
+  });
+});
+
+describe("unknown owner-level extraction tax", () => {
+  it("flags a company scenario whose profit exceeds the allowance with no rate supplied", () => {
+    const p = baseProject();
+    p.scenarios.EXISTING_COMPANY.dividend.availableLowTaxAllowance = 100_000;
+    p.scenarios.EXISTING_COMPANY.dividend.dividendTaxAboveAllowance = null;
+    const r = calculateScenario(p, "EXISTING_COMPANY");
+    expect(r.extraction?.aboveDividendAllowance).toBeGreaterThan(0);
+    expect(r.extractionRateUnknown).toBe(true);
+  });
+
+  it("clears the flag once a rate above the allowance is supplied", () => {
+    const p = baseProject();
+    p.scenarios.EXISTING_COMPANY.dividend.availableLowTaxAllowance = 100_000;
+    p.scenarios.EXISTING_COMPANY.dividend.dividendTaxAboveAllowance = 0.5;
+    const r = calculateScenario(p, "EXISTING_COMPANY");
+    expect(r.extractionRateUnknown).toBe(false);
+    expect(r.netAvailablePrivately).toBeLessThan(r.netRetainedInCompany);
+  });
+
+  it("never marks private ownership as extraction-unknown", () => {
+    const r = calculateScenario(baseProject(), "PRIVATE_EQUITY");
+    expect(r.extractionRateUnknown).toBe(false);
+  });
+
+  it("does not crown a structure whose private outcome is unknown", () => {
+    const p = baseProject();
+    p.scenarios.EXISTING_COMPANY.dividend.availableLowTaxAllowance = 0;
+    p.scenarios.PROJECT_COMPANY.dividend.availableLowTaxAllowance = 0;
+    const results = calculateAllScenarios(p);
+    const best = bestScenarioIndex(results, "max_family_net_worth");
+    expect(best).toBeGreaterThanOrEqual(0);
+    expect(results[best].extractionRateUnknown).toBe(false);
+  });
+
+  it("reports no winner when every scenario is unassessable", () => {
+    const blank = createBlankProject("blank2", "Blank");
+    const results = calculateAllScenarios(blank);
+    expect(bestScenarioIndex(results, "max_family_net_worth")).toBe(-1);
   });
 });

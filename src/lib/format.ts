@@ -35,6 +35,18 @@ export function formatDate(iso: string | null | undefined): string {
   return d.toISOString().slice(0, 10);
 }
 
+/**
+ * Exit-dependent KPIs are meaningless without a sale price. Showing a computed
+ * loss there would present a guess as a result.
+ */
+export function whenAssessable(
+  missing: boolean,
+  render: () => string,
+  placeholder: string | undefined = "Needs sale price",
+): string {
+  return missing ? (placeholder ?? "Needs sale price") : render();
+}
+
 export function formatMissing(value: number | null | undefined): string {
   if (value === null || value === undefined) return "Not entered";
   return formatMoney(value);

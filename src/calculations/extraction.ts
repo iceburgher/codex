@@ -18,7 +18,13 @@ export function calculateExtraction(params: {
 
   const dist = distributeDividend({ grossAvailable: distributable, dividend });
 
+  const aboveAllowanceRateMissing =
+    dist.aboveAllowanceGross > 0 &&
+    (dividend.dividendTaxAboveAllowance === null ||
+      dividend.dividendTaxAboveAllowance === undefined);
+
   return {
+    aboveAllowanceRateMissing,
     companyProfitAfterTax,
     withinDividendAllowance: dist.withinAllowanceGross,
     aboveDividendAllowance: dist.aboveAllowanceGross,

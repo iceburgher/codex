@@ -1,26 +1,88 @@
 @import "tailwindcss";
 
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #f6f7f9;
+  --surface: #ffffff;
+  --surface-muted: #f0f2f5;
+  --foreground: #14181f;
+  --muted: #5b6472;
+  --border: #dde1e8;
+  --accent: #1f5f8b;
+  --accent-soft: #e6f0f7;
+  --positive: #1a7f5a;
+  --negative: #b23c3c;
+  --warn: #b07d1a;
+  --warn-soft: #fdf4e2;
+  --danger-soft: #fbeaea;
+  --ok-soft: #e8f4ee;
 }
 
 @theme inline {
   --color-background: var(--background);
+  --color-surface: var(--surface);
+  --color-surface-muted: var(--surface-muted);
   --color-foreground: var(--foreground);
+  --color-muted: var(--muted);
+  --color-border: var(--border);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-positive: var(--positive);
+  --color-negative: var(--negative);
+  --color-warn: var(--warn);
+  --color-warn-soft: var(--warn-soft);
+  --color-danger-soft: var(--danger-soft);
+  --color-ok-soft: var(--ok-soft);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --background: #10141a;
+    --surface: #171c24;
+    --surface-muted: #1e242e;
+    --foreground: #e8ecf2;
+    --muted: #98a3b3;
+    --border: #2a323d;
+    --accent: #6aa9d8;
+    --accent-soft: #1c2c3a;
+    --positive: #55c496;
+    --negative: #e07b7b;
+    --warn: #d9ac52;
+    --warn-soft: #2c2618;
+    --danger-soft: #2e1c1c;
+    --ok-soft: #16291f;
   }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+}
+
+.numeric {
+  font-variant-numeric: tabular-nums;
+}
+
+input[type="number"]::-webkit-outer-spin-button,
+input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+input[type="number"] {
+  -moz-appearance: textfield;
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+  body {
+    background: #fff;
+    color: #000;
+  }
+  .print-block {
+    break-inside: avoid;
+  }
 }

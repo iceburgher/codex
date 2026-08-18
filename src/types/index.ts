@@ -565,6 +565,8 @@ export interface ExtractionResult {
   retainedInCompany: number;
   ownerExtractionTax: number;
   netPrivateFromCompanyProfit: number;
+  /** True when profit exceeds the allowance and no above-allowance rate was supplied. */
+  aboveAllowanceRateMissing: boolean;
   audit: AuditTrail[];
 }
 
@@ -654,6 +656,15 @@ export interface ScenarioResult {
   riskFlags: RiskFlag[];
   warnings: Warning[];
 
+  purchasePrice: number;
+  /** True when no expected sale price is entered — exit-dependent KPIs are then not assessable. */
+  salePriceMissing: boolean;
+  /**
+   * True when getting the company profit out to the owners requires a dividend
+   * tax rate above the allowance that nobody has supplied. Private-cash KPIs
+   * are then unknown rather than tax-free.
+   */
+  extractionRateUnknown: boolean;
   totalCapitalRequirement: number;
   equityCommitted: number;
   externalDebt: number;
