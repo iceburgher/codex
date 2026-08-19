@@ -127,12 +127,16 @@ export function buildWarnings(params: {
   taxDependsOnClassification: boolean;
   vatWarning?: string;
   rentalWarning?: string;
+  improvementSplitWarning?: string;
 }): Warning[] {
   const warnings: Warning[] = [];
   const { ctx } = params;
 
   if (params.vatWarning) warnings.push({ id: "vat", text: params.vatWarning });
   if (params.rentalWarning) warnings.push({ id: "rental", text: params.rentalWarning });
+  if (params.improvementSplitWarning) {
+    warnings.push({ id: "improvement_split", text: params.improvementSplitWarning });
+  }
 
   if (ctx.project.rental.enabled && ctx.monthsAvailableForRental === 0) {
     warnings.push({

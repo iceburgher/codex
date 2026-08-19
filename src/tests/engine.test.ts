@@ -69,6 +69,53 @@ describe("scenario engine", () => {
     expect(residential.capitalGain.capitalGainTax).toBeLessThan(risky.capitalGain.capitalGainTax);
   });
 
+  it("recognizes qualifying repairs in the capital-gains basis, not just fundamental improvements", () => {
+    // Regression for a real bug: qualifyingRepairsAndMaintenancePercent was
+    // defined on the type but never read by any calculation, so a large
+    // renovation reduced the real cash profit (profitBeforeTax) but not the
+    // taxable capital gain — to the point that the tax shown could exceed
+    // the actual profit.
+    const p = baseProject();
+    p.scenarios.PRIVATE_EQUITY.privatePropertyTaxClassification = "private_residential_property";
+    const withDefaultSplit = calculateScenario(p, "PRIVATE_EQUITY");
+
+    p.scenarios.PRIVATE_EQUITY.improvementBasis = {
+      fundamentalImprovementsPercent: 0,
+      qualifyingRepairsAndMaintenancePercent: 1,
+      nonDeductiblePercent: 0,
+    };
+    const withRepairsRecognized = calculateScenario(p, "PRIVATE_EQUITY");
+
+    expect(withRepairsRecognized.capitalGain.capitalGainTax).toBeLessThan(
+      withDefaultSplit.capitalGain.capitalGainTax,
+    );
+    expect(withRepairsRecognized.capitalGain.capitalGainTax).toBeLessThan(
+      withRepairsRecognized.profitBeforeTax,
+    );
+  });
+
+  it("warns when the improvement-basis shares do not sum to the whole renovation", () => {
+    const p = baseProject();
+    p.scenarios.PRIVATE_EQUITY.improvementBasis = {
+      fundamentalImprovementsPercent: 0.5,
+      qualifyingRepairsAndMaintenancePercent: 0.3,
+      nonDeductiblePercent: 0,
+    };
+    const r = calculateScenario(p, "PRIVATE_EQUITY");
+    expect(r.warnings.map((w) => w.id)).toContain("improvement_split");
+  });
+
+  it("never warns about the improvement-basis split for a company-owned scenario", () => {
+    const p = baseProject();
+    p.scenarios.EXISTING_COMPANY.improvementBasis = {
+      fundamentalImprovementsPercent: 0.5,
+      qualifyingRepairsAndMaintenancePercent: 0.3,
+      nonDeductiblePercent: 0,
+    };
+    const r = calculateScenario(p, "EXISTING_COMPANY");
+    expect(r.warnings.map((w) => w.id)).not.toContain("improvement_split");
+  });
+
   it("flags an unconfirmed private residential classification", () => {
     const p = baseProject();
     p.scenarios.PRIVATE_EQUITY.privatePropertyTaxClassification = "private_residential_property";

@@ -481,8 +481,12 @@ export interface RotResult {
 
 export interface ImprovementBasisResult {
   renovationTotal: number;
+  fundamentalImprovements: number;
+  qualifyingRepairs: number;
   eligibleTaxBasis: number;
   nonEligibleRenovation: number;
+  /** Sant om andelarna i ImprovementTaxBasisInputs inte summerar till 1. */
+  splitWarning?: string;
   audit: AuditTrail[];
 }
 

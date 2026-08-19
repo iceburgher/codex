@@ -438,6 +438,9 @@ export function calculateScenario(
     taxDependsOnClassification: !project.scenarios[scenarioType].classificationConfirmedByAdvisor,
     vatWarning: core.vat.warning,
     rentalWarning: core.rental.warning,
+    improvementSplitWarning: riskContext.isCompanyOwned
+      ? undefined
+      : core.improvementBasis.splitWarning,
   });
 
   return {

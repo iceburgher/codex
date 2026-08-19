@@ -172,4 +172,38 @@ describe("improvement tax basis", () => {
     });
     expect(r.eligibleTaxBasis).toBe(0);
   });
+
+  it("counts qualifying repairs and maintenance toward the eligible basis, not just fundamental improvements", () => {
+    // This is the bucket that was previously wired to nothing — a
+    // renovate-and-sell project's repair spend (repainting, new surfaces,
+    // fixing up rooms) is exactly what this category is for, and skipping it
+    // was silently inflating the private capital-gains tax basis.
+    const r = calculateImprovementBasis({
+      renovationTotalGross: 1_000_000,
+      rotDeduction: 0,
+      split: {
+        fundamentalImprovementsPercent: 0.3,
+        qualifyingRepairsAndMaintenancePercent: 0.5,
+        nonDeductiblePercent: 0.2,
+      },
+    });
+    expect(r.fundamentalImprovements).toBe(300_000);
+    expect(r.qualifyingRepairs).toBe(500_000);
+    expect(r.eligibleTaxBasis).toBe(800_000);
+    expect(r.nonEligibleRenovation).toBe(200_000);
+    expect(r.splitWarning).toBeUndefined();
+  });
+
+  it("warns when the three shares do not add up to the whole renovation", () => {
+    const r = calculateImprovementBasis({
+      renovationTotalGross: 1_000_000,
+      rotDeduction: 0,
+      split: {
+        fundamentalImprovementsPercent: 0.3,
+        qualifyingRepairsAndMaintenancePercent: 0.3,
+        nonDeductiblePercent: 0.2, // sums to 0.8, not 1
+      },
+    });
+    expect(r.splitWarning).toBeDefined();
+  });
 });

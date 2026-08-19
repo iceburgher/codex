@@ -194,6 +194,23 @@ function scenarioPatchSchema(): Anthropic.Tool.InputSchema {
         type: "boolean",
         description: "Om en rådgivare har bekräftat den skattemässiga klassificeringen.",
       },
+      improvementBasis: {
+        type: "object",
+        description:
+          "Bara privat: hur renoveringen delas upp mot den privata kapitalvinstskatten. De tre andelarna ska summera till 1.",
+        properties: {
+          fundamentalImprovementsPercent: {
+            type: "number",
+            description: "Andel grundförbättring (ny-, till- eller ombyggnad), ingen tidsgräns.",
+          },
+          qualifyingRepairsAndMaintenancePercent: {
+            type: "number",
+            description:
+              "Andel förbättrande reparation och underhåll — bara försäljningsåret och de fem föregående åren.",
+          },
+          nonDeductiblePercent: { type: "number", description: "Andel ej avdragsgill mot vinsten." },
+        },
+      },
     },
   };
 }
@@ -283,6 +300,10 @@ const SCENARIO_SUBFIELD_LABELS: Record<string, string> = {
   privateUseLevel: "ägarnas egen användning",
   flipIntent: "syfte: renovera och sälja",
   classificationConfirmedByAdvisor: "skattemässig klassificering bekräftad av rådgivare",
+  "improvementBasis.fundamentalImprovementsPercent": "andel grundförbättring mot kapitalvinsten",
+  "improvementBasis.qualifyingRepairsAndMaintenancePercent":
+    "andel förbättrande reparation mot kapitalvinsten",
+  "improvementBasis.nonDeductiblePercent": "andel ej avdragsgill mot kapitalvinsten",
 };
 
 /** Översätter en punktad fältväg (t.ex. "rental.rentPerWeek") till vanlig svenska. */

@@ -439,15 +439,42 @@ export function ScenarioInputsPanel({
               onChange={(v) => set((s) => void (s.companyAssetClassification = v))}
             />
           )}
-          <PercentField
-            label="Andel av renoveringen som får dras av mot vinsten"
-            source="TAX_ADVISOR_INPUT"
-            hint="Utgå aldrig från att hela renoveringen är avdragsgill mot kapitalvinsten."
-            value={scenario.improvementBasis.fundamentalImprovementsPercent}
-            onChange={(v) =>
-              set((s) => void (s.improvementBasis.fundamentalImprovementsPercent = v ?? 0))
-            }
-          />
+          {!isCompany && (
+            <>
+              <PercentField
+                label="Andel grundförbättring (ny-, till- eller ombyggnad)"
+                source="TAX_ADVISOR_INPUT"
+                hint="Läggs till omkostnadsbeloppet utan tidsgräns."
+                value={scenario.improvementBasis.fundamentalImprovementsPercent}
+                onChange={(v) =>
+                  set((s) => void (s.improvementBasis.fundamentalImprovementsPercent = v ?? 0))
+                }
+              />
+              <PercentField
+                label="Andel förbättrande reparation och underhåll"
+                source="TAX_ADVISOR_INPUT"
+                hint="Får bara räknas om huset är i bättre skick än vid köpet, och bara för försäljningsåret och de fem föregående åren."
+                value={scenario.improvementBasis.qualifyingRepairsAndMaintenancePercent}
+                onChange={(v) =>
+                  set(
+                    (s) =>
+                      void (s.improvementBasis.qualifyingRepairsAndMaintenancePercent = v ?? 0),
+                  )
+                }
+              />
+              <PercentField
+                label="Andel ej avdragsgill mot vinsten"
+                source="TAX_ADVISOR_INPUT"
+                hint="Rent underhåll som redan är avdraget på annat sätt, eller kostnader som inte höjer husets skick."
+                value={scenario.improvementBasis.nonDeductiblePercent}
+                onChange={(v) => set((s) => void (s.improvementBasis.nonDeductiblePercent = v ?? 0))}
+              />
+              <p className="text-[11px] text-muted">
+                De tre andelarna ska tillsammans täcka hela renoveringen (summera till 100 %).
+                Utgå aldrig från att hela renoveringen är avdragsgill mot kapitalvinsten.
+              </p>
+            </>
+          )}
           <ToggleField
             label="Syftet är att renovera och sälja"
             value={scenario.flipIntent}
