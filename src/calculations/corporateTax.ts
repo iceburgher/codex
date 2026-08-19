@@ -23,11 +23,16 @@ export function calculateCorporateTax(params: {
   const taxableSaleResult = disposalResult + params.otherDeductibleResult;
   const companyTax = Math.max(0, taxableSaleResult) * params.corporateTaxRate;
   const companyProfitAfterTax = taxableSaleResult - companyTax;
+  // Ett underskott ger ingen skatteåterbäring nu — bara ett sparat avdrag
+  // (rullas framåt) värt det här OM bolaget någon gång har annan vinst att
+  // kvitta det mot. Räknas inte in i companyProfitAfterTax av det skälet.
+  const deferredTaxAssetValue = Math.max(0, -taxableSaleResult) * params.corporateTaxRate;
 
   return {
     taxableSaleResult,
     companyTax,
     companyProfitAfterTax,
+    deferredTaxAssetValue,
     audit: [
       {
         title: "Bolagsskatt",
@@ -45,6 +50,14 @@ export function calculateCorporateTax(params: {
             value: companyTax,
           },
           { label: "Vinst efter bolagsskatt", value: companyProfitAfterTax },
+          ...(deferredTaxAssetValue > 0
+            ? [
+                {
+                  label: "Sparat underskott, värde om det kvittas mot annan vinst (ej intäktsfört)",
+                  value: deferredTaxAssetValue,
+                },
+              ]
+            : []),
         ],
       },
     ],

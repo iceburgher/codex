@@ -458,6 +458,12 @@ function buildContext(project: PropertyProject, results: ScenarioResult[]): stri
   lines.push(
     `Skattesats vid handel med fastigheter (grov uppskattning, inte kapitalvinst): ${formatPercent(config.propertyTradingEffectiveRateAssumption)}`,
   );
+  lines.push(
+    `Skattelättnad vid förlust, privatbostad: ${formatPercent(config.privateResidentialLossReliefRate)} (50 % avdragsgill x 30 %)`,
+  );
+  lines.push(
+    `Skattelättnad vid förlust, näringsfastighet: ${formatPercent(config.businessPropertyLossReliefRate)} (63 % avdragsgill x 30 %)`,
+  );
   lines.push(`Kapitalinkomstskatt (bl.a. hyresöverskott): ${formatPercent(config.capitalIncomeTaxRate)}`);
   lines.push(`Utdelningsskatt inom gränsbeloppet: ${formatPercent(config.dividendTaxWithinAllowance)}`);
   lines.push(`Arbetsgivaravgift: ${formatPercent(config.employerContributionRate)}`);

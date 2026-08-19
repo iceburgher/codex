@@ -16,6 +16,8 @@ describe("private capital gain", () => {
     privateResidentialEffectiveRate: 0.22,
     businessPropertyEffectiveRate: 0.27,
     propertyTradingRateAssumption: 0.5,
+    privateResidentialLossReliefRate: 0.15,
+    businessPropertyLossReliefRate: 0.189,
   };
 
   it("applies 22% only for an explicit private residential classification", () => {
@@ -44,14 +46,30 @@ describe("private capital gain", () => {
     expect(r.capitalGainTax).toBeCloseTo(1_245_175 * 0.5, 4);
   });
 
-  it("never taxes a loss", () => {
+  it("gives a private residential loss a 15% effective relief (50% deductible x 30% capital tax), not zero", () => {
     const r = calculatePrivateCapitalGain({
       ...base,
       salePrice: 3_000_000,
       classification: "private_residential_property",
     });
     expect(r.capitalGain).toBeLessThan(0);
-    expect(r.capitalGainTax).toBe(0);
+    expect(r.capitalGainTax).toBeCloseTo(-Math.abs(r.capitalGain) * 0.15, 4);
+    expect(r.capitalGainTax).toBeLessThan(0);
+  });
+
+  it("gives a business property loss a larger 18.9% relief (63% deductible x 30%)", () => {
+    const residential = calculatePrivateCapitalGain({
+      ...base,
+      salePrice: 3_000_000,
+      classification: "private_residential_property",
+    });
+    const business = calculatePrivateCapitalGain({
+      ...base,
+      salePrice: 3_000_000,
+      classification: "business_property",
+    });
+    // Larger relief rate means a bigger (more negative) tax credit.
+    expect(business.capitalGainTax).toBeLessThan(residential.capitalGainTax);
   });
 });
 
@@ -81,6 +99,34 @@ describe("corporate tax", () => {
     });
     expect(r.companyTax).toBe(0);
     expect(r.companyProfitAfterTax).toBe(-1_000_000);
+  });
+
+  it("surfaces the deferred tax asset on a loss without adding it to the profit shown", () => {
+    // A corporate loss is never cash back — it's a carried-forward deduction
+    // only worth something against future taxable profit the company may
+    // never have, so it must never be folded into companyProfitAfterTax.
+    const r = calculateCorporateTax({
+      salePrice: 4_000_000,
+      saleCosts: 200_000,
+      companyTaxBasis: 4_800_000,
+      otherDeductibleResult: 0,
+      corporateTaxRate: 0.206,
+      classification: "inventory_property",
+    });
+    expect(r.deferredTaxAssetValue).toBeCloseTo(1_000_000 * 0.206, 6);
+    expect(r.companyProfitAfterTax).toBe(-1_000_000);
+  });
+
+  it("reports no deferred tax asset when the sale is profitable", () => {
+    const r = calculateCorporateTax({
+      salePrice: 6_000_000,
+      saleCosts: 200_000,
+      companyTaxBasis: 4_800_000,
+      otherDeductibleResult: -100_000,
+      corporateTaxRate: 0.206,
+      classification: "capital_asset",
+    });
+    expect(r.deferredTaxAssetValue).toBe(0);
   });
 });
 

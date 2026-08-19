@@ -16,6 +16,8 @@ export const DEFAULT_TAX_CONFIG_2026: TaxConfig = {
   privateResidentialCapitalGainEffectiveRate: 0.22, // VERIFIED (only for private_residential_property classification)
   businessPropertyCapitalGainEffectiveRate: 0.27, // VERIFIED (IL 45:33 — 90% av vinsten tas upp i kapital: 0,9 x 30%)
   propertyTradingEffectiveRateAssumption: 0.5, // ESTIMATE — näringsverksamhet: progressiv skatt + egenavgifter, ingen fast sats. Stäm av med rådgivare.
+  privateResidentialLossReliefRate: 0.15, // VERIFIED (50% av förlusten avdragsgill x 30% kapitalskatt)
+  businessPropertyLossReliefRate: 0.189, // VERIFIED (63% av förlusten avdragsgill x 30% kapitalskatt)
   capitalIncomeTaxRate: 0.3, // VERIFIED (Swedish capital income tax, used for private rental surplus)
   dividendTaxWithinAllowance: 0.2, // USER INPUT / commonly 20% within 3:12 allowance — verify per owner
   dividendTaxAboveAllowanceDefault: null, // must be supplied by user/advisor

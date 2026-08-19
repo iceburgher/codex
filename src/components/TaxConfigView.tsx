@@ -37,6 +37,20 @@ const FIELDS: Field[] = [
     source: "TAX_ADVISOR_INPUT",
     hint: "Ingen fast sats — det här är näringsverksamhet, inte kapitalvinst. Grov uppskattning tills en rådgivare bekräftat er faktiska nivå.",
   },
+  {
+    key: "privateResidentialLossReliefRate",
+    label: "Skattelättnad vid förlust, privatbostad",
+    kind: "percent",
+    source: "VERIFIED",
+    hint: "50 % av förlusten är avdragsgill mot kapitalinkomst, dvs. 50 % x 30 %.",
+  },
+  {
+    key: "businessPropertyLossReliefRate",
+    label: "Skattelättnad vid förlust, näringsfastighet",
+    kind: "percent",
+    source: "VERIFIED",
+    hint: "63 % av förlusten är avdragsgill, dvs. 63 % x 30 %.",
+  },
   { key: "capitalIncomeTaxRate", label: "Kapitalskatt", kind: "percent", source: "VERIFIED" },
   {
     key: "dividendTaxWithinAllowance",

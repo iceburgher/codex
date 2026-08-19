@@ -135,9 +135,17 @@ export function buildWarnings(params: {
   vatWarning?: string;
   rentalWarning?: string;
   improvementSplitWarning?: string;
+  companyDeferredTaxAssetValue?: number;
 }): Warning[] {
   const warnings: Warning[] = [];
   const { ctx } = params;
+
+  if (params.companyDeferredTaxAssetValue && params.companyDeferredTaxAssetValue > 0) {
+    warnings.push({
+      id: "company_loss_deferred_tax_asset",
+      text: "Affären går med underskott i bolaget. Det ger ingen skatteåterbäring nu — bara ett sparat avdrag som är värt något först om bolaget någon gång får annan vinst att kvitta det mot. Det värdet räknas inte in i vinsten som visas här.",
+    });
+  }
 
   if (params.vatWarning) warnings.push({ id: "vat", text: params.vatWarning });
   if (params.rentalWarning) warnings.push({ id: "rental", text: params.rentalWarning });

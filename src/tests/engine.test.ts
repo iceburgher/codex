@@ -145,6 +145,21 @@ describe("scenario engine", () => {
     );
   });
 
+  it("warns about a deferred (not cash) tax asset when the company sale is a loss", () => {
+    const p = baseProject();
+    p.inputs.expectedSalePrice = 3_000_000; // below cost, forces a loss
+    const r = calculateScenario(p, "EXISTING_COMPANY");
+    expect(r.corporateTax?.deferredTaxAssetValue).toBeGreaterThan(0);
+    expect(r.warnings.map((w) => w.id)).toContain("company_loss_deferred_tax_asset");
+  });
+
+  it("never warns about a deferred tax asset when the company sale is profitable", () => {
+    const p = baseProject();
+    const r = calculateScenario(p, "EXISTING_COMPANY");
+    expect(r.corporateTax?.deferredTaxAssetValue).toBe(0);
+    expect(r.warnings.map((w) => w.id)).not.toContain("company_loss_deferred_tax_asset");
+  });
+
   it("flags private use of a company-owned property", () => {
     const p = baseProject();
     p.scenarios.EXISTING_COMPANY.privateUseLevel = "full_disposition";

@@ -191,6 +191,8 @@ function computeCore(
     privateResidentialEffectiveRate: config.privateResidentialCapitalGainEffectiveRate,
     businessPropertyEffectiveRate: config.businessPropertyCapitalGainEffectiveRate,
     propertyTradingRateAssumption: config.propertyTradingEffectiveRateAssumption,
+    privateResidentialLossReliefRate: config.privateResidentialLossReliefRate,
+    businessPropertyLossReliefRate: config.businessPropertyLossReliefRate,
   });
 
   const companyTaxBasis = purchasePrice + purchase.totalPurchaseCosts + renovationCashCost;
@@ -442,6 +444,7 @@ export function calculateScenario(
     improvementSplitWarning: riskContext.isCompanyOwned
       ? undefined
       : core.improvementBasis.splitWarning,
+    companyDeferredTaxAssetValue: core.corporateTax?.deferredTaxAssetValue,
   });
 
   return {

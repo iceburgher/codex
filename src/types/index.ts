@@ -76,6 +76,10 @@ export interface TaxConfig {
   privateResidentialCapitalGainEffectiveRate: number;
   /** IL 45:33 — 90 % av vinsten på en näringsfastighet tas upp i kapital: 0,9 x kapitalIncomeTaxRate. */
   businessPropertyCapitalGainEffectiveRate: number;
+  /** 50 % av en förlust på privatbostad är avdragsgill mot kapitalinkomst: 0,5 x kapitalIncomeTaxRate. */
+  privateResidentialLossReliefRate: number;
+  /** 63 % av en förlust på näringsfastighet är avdragsgill: 0,63 x kapitalIncomeTaxRate. */
+  businessPropertyLossReliefRate: number;
   /**
    * Handel med fastigheter beskattas inte som kapitalvinst utan som
    * inkomst av näringsverksamhet — progressiv kommunal/statlig skatt plus
@@ -593,6 +597,13 @@ export interface CorporateTaxResult {
   taxableSaleResult: number;
   companyTax: number;
   companyProfitAfterTax: number;
+  /**
+   * Värdet av underskottet om det någonsin kvittas mot annan skattepliktig
+   * vinst i bolaget — inte pengar bolaget får nu. Ett underskott ger ingen
+   * skatteåterbäring, bara ett sparat avdrag som rullas vidare, och som bara
+   * blir värt något om bolaget faktiskt har annan vinst att kvitta mot.
+   */
+  deferredTaxAssetValue: number;
   audit: AuditTrail[];
 }
 
