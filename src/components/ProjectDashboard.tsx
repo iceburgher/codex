@@ -195,6 +195,10 @@ export function ProjectDashboard({ projectId }: { projectId: string }) {
         <Tabs tabs={TABS} active={tab} onChange={setTab} />
       </div>
 
+      <div className="mb-6">
+        <AiAssistant project={project} update={update} />
+      </div>
+
       {results.length === 0 ? (
         <Card title="Inget alternativ valt">
           <p className="text-sm text-muted">
@@ -327,8 +331,6 @@ export function ProjectDashboard({ projectId }: { projectId: string }) {
           )}
         </div>
       )}
-
-      <AiAssistant project={project} update={update} />
     </div>
   );
 }
