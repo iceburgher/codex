@@ -44,6 +44,16 @@ export function vatQuestions(vat: VatInputs): VatQuestion[] {
     });
   }
 
+  if (vat.intendedUse === "rent_short_term_hotel_like") {
+    questions.push({
+      id: "vat_hotel_classification",
+      question:
+        "Liknar uthyrningen hotellverksamhet så mycket — korta vistelser, hög gästomsättning, städning eller annan service ingår — att den är momspliktig i stället för momsfri bostadsuthyrning?",
+      because:
+        "Rumsuthyrning i hotellrörelse eller liknande är momspliktig, till skillnad från vanlig bostadsuthyrning, vilket också öppnar för avdrag på renoveringsmomsen. Gränsen mot vanlig uthyrning är oskarp och avgörs i praktiken från fall till fall.",
+    });
+  }
+
   if (vat.intendedUse === "rent_commercial" || vat.intendedUse === "mixed") {
     questions.push({
       id: "vat_voluntary_liability",
@@ -107,6 +117,21 @@ export function vatRiskFlags(scenario: ScenarioInputs, type: ScenarioType): Risk
       id: "vat_deduction_without_voluntary_liability",
       severity: "high",
       text: "Momsavdraget bygger på uthyrning till lokal, men fastigheten är inte angiven som frivilligt skattskyldig. Utan det finns normalt ingen avdragsrätt.",
+    });
+  }
+
+  if (vat.intendedUse === "rent_short_term_hotel_like") {
+    // Till skillnad från vanlig bostadsuthyrning kan hotellikt korttidsboende
+    // vara momspliktigt, vilket öppnar för avdrag — men gränsen är oskarp,
+    // så varken ett avdrag eller ett uteblivet avdrag ska stå obekräftat.
+    flags.push({
+      id: deducting
+        ? "vat_hotel_classification_unconfirmed"
+        : "vat_hotel_deduction_possibly_unused",
+      severity: deducting ? "medium" : "low",
+      text: deducting
+        ? "Momsavdraget bygger på att uthyrningen räknas som hotellverksamhet, inte vanlig bostadsuthyrning. Den gränsen är oskarp — stäm av klassificeringen innan ni litar på avdraget."
+        : "Uthyrningen är angiven som hotellik men kalkylen räknar utan momsavdrag. Räknas den som momspliktig hotellverksamhet kan renoveringen bli billigare än vad som visas.",
     });
   }
 

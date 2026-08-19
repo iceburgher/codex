@@ -35,6 +35,14 @@ describe("momsfrågor", () => {
     expect(ids).toContain("vat_voluntary_liability");
   });
 
+  it("frågar om hotellklassificering vid hotellikt korttidsboende", () => {
+    const ids = vatQuestions(vat({ intendedUse: "rent_short_term_hotel_like" })).map((q) => q.id);
+    expect(ids).toContain("vat_hotel_classification");
+    // Det här är en annan fråga än den för vanlig bostadsuthyrning — de två
+    // har motsatt utgångsläge för avdragsrätt och ska inte blandas ihop.
+    expect(ids).not.toContain("vat_residential_exempt");
+  });
+
   it("frågar om fördelning vid blandad användning", () => {
     const ids = vatQuestions(vat({ intendedUse: "mixed" })).map((q) => q.id);
     expect(ids).toContain("vat_mixed_split");
@@ -87,6 +95,31 @@ describe("momsflaggor", () => {
       "EXISTING_COMPANY",
     );
     expect(flags.map((f) => f.id)).not.toContain("vat_deduction_without_voluntary_liability");
+  });
+
+  it("flaggar ett hotellikt momsavdrag som obekräftat i stället för fel", () => {
+    const flags = vatRiskFlags(
+      company({
+        vatTreatment: "full",
+        vatDeductiblePercent: 1,
+        intendedUse: "rent_short_term_hotel_like",
+      }),
+      "EXISTING_COMPANY",
+    );
+    const ids = flags.map((f) => f.id);
+    expect(ids).toContain("vat_hotel_classification_unconfirmed");
+    // Till skillnad från vanlig bostad ska det här INTE märkas som fel —
+    // hotellik uthyrning är momspliktig och kan legitimt ge avdragsrätt.
+    expect(ids).not.toContain("vat_deduction_on_residential_use");
+  });
+
+  it("påminner om ett möjligt avdrag när hotellikt läge inte utnyttjas", () => {
+    const flags = vatRiskFlags(
+      company({ intendedUse: "rent_short_term_hotel_like" }),
+      "EXISTING_COMPANY",
+    );
+    const flag = flags.find((f) => f.id === "vat_hotel_deduction_possibly_unused");
+    expect(flag?.severity).toBe("low");
   });
 
   it("påminner om uttagsbeskattning vid eget byggarbete", () => {
