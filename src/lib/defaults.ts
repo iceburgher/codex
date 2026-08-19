@@ -105,7 +105,9 @@ export function defaultRental(): RentalInputs {
 export function defaultSale(): SaleInputs {
   return {
     brokerFeeFixed: 0,
-    brokerFeePercent: 0,
+    // Uppskattning, inte ett kontrollerat pris — courtage varierar mellan
+    // mäklare och orter. Byt ut mot en offert så fort ni har en.
+    brokerFeePercent: 0.03,
     photography: 0,
     styling: 0,
     inspection: 0,

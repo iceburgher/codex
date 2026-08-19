@@ -280,6 +280,10 @@ function SideCard({
           </div>
 
           <dl className="space-y-2.5 text-sm">
+            <Row
+              label="Mäklare och försäljningskostnader"
+              value={formatMoney(r.saleCosts.saleCostsTotal)}
+            />
             {isCompany ? (
               <>
                 <Row

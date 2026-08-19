@@ -449,6 +449,10 @@ export function calculateScenario(
     renovationContingencyPercent: project.renovation.contingencyPercent,
     unsecuredLoanAmount: project.scenarios[scenarioType].privateLoans.unsecuredLoanAmount,
     salePriceMissing: project.inputs.expectedSalePrice === null,
+    noBrokerFeeAssumed:
+      project.inputs.expectedSalePrice !== null &&
+      !project.sale.brokerFeeFixed &&
+      !project.sale.brokerFeePercent,
     taxDependsOnClassification: !project.scenarios[scenarioType].classificationConfirmedByAdvisor,
     vatWarning: core.vat.warning,
     rentalWarning: core.rental.warning,

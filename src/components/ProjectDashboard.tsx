@@ -232,7 +232,7 @@ export function ProjectDashboard({ projectId }: { projectId: string }) {
             </p>
           </div>
 
-          <ScenarioCards results={results} target={HEADLINE_TARGET} />
+          <ScenarioCards results={results} target={HEADLINE_TARGET} onGoToInput={goToAssumptions} />
 
           <ThreeQuestions results={results} />
 

@@ -3,7 +3,7 @@ import { calculateAllScenarios, calculateScenario } from "@/calculations/engine"
 import { buildSensitivityMatrix } from "@/calculations/sensitivity";
 import { buildAdvisorQuestions } from "@/calculations/advisorQuestions";
 import { bestScenarioIndex } from "@/components/dashboard/ScenarioCards";
-import { createBlankProject } from "@/lib/defaults";
+import { createBlankProject, defaultSale } from "@/lib/defaults";
 import type { PropertyProject } from "@/types";
 
 function baseProject(): PropertyProject {
@@ -86,6 +86,48 @@ describe("scenario engine", () => {
     const r = calculateScenario(p, "EXISTING_COMPANY");
     expect(r.riskFlags.map((f) => f.id)).toContain("company_private_use_risk");
     expect(r.warnings.map((w) => w.id)).toContain("benefit");
+  });
+
+  it("warns when no broker fee is assumed at sale despite a sale price", () => {
+    const p = baseProject();
+    p.sale.brokerFeeFixed = 0;
+    p.sale.brokerFeePercent = 0;
+    const r = calculateScenario(p, "PRIVATE_EQUITY");
+    expect(r.warnings.map((w) => w.id)).toContain("broker_fee");
+  });
+
+  it("does not warn about the broker fee once one is set", () => {
+    const p = baseProject();
+    p.sale.brokerFeeFixed = 0;
+    p.sale.brokerFeePercent = 0.025;
+    const r = calculateScenario(p, "PRIVATE_EQUITY");
+    expect(r.warnings.map((w) => w.id)).not.toContain("broker_fee");
+  });
+
+  it("does not warn about the broker fee before a sale price is entered", () => {
+    const p = baseProject();
+    p.sale.brokerFeeFixed = 0;
+    p.sale.brokerFeePercent = 0;
+    p.inputs.expectedSalePrice = null;
+    const r = calculateScenario(p, "PRIVATE_EQUITY");
+    expect(r.warnings.map((w) => w.id)).not.toContain("broker_fee");
+  });
+
+  it("deducts the broker fee from the profit shown, not just from a side panel", () => {
+    const withFee = baseProject();
+    withFee.sale.brokerFeePercent = 0.03;
+    withFee.sale.brokerFeeFixed = 0;
+    const withoutFee = baseProject();
+    withoutFee.sale.brokerFeePercent = 0;
+    withoutFee.sale.brokerFeeFixed = 0;
+
+    const rWith = calculateScenario(withFee, "PRIVATE_EQUITY");
+    const rWithout = calculateScenario(withoutFee, "PRIVATE_EQUITY");
+    expect(rWith.profitAfterTax).toBeLessThan(rWithout.profitAfterTax);
+  });
+
+  it("defaults new projects to a non-zero broker fee estimate instead of a silent zero", () => {
+    expect(defaultSale().brokerFeePercent).toBeGreaterThan(0);
   });
 
   it("solves a break-even sale price that yields roughly zero net profit", () => {

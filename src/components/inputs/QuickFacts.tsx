@@ -6,7 +6,6 @@ import { Card, NumberField, PercentField } from "../ui";
 
 type Update = (updater: (draft: PropertyProject) => void) => void;
 
-const PRIVATE: ScenarioType[] = ["PRIVATE_EQUITY", "PRIVATE_DEBT"];
 const COMPANY: ScenarioType[] = ["EXISTING_COMPANY", "PROJECT_COMPANY"];
 
 /**
@@ -135,9 +134,13 @@ function sharedLoan(project: PropertyProject): number {
 /**
  * Räntorna hålls isär: ett företagslån mot en fastighet prissätts sällan som
  * ett bolån. Lånebeloppet är däremot detsamma, eftersom kapitalbehovet är det.
+ *
+ * "Privat, utan lån" rörs aldrig härifrån — hela poängen med det alternativet
+ * är att det inte har något lån. Det är bara "Privat, med lån" som delar
+ * fältet med bolagssidan.
  */
 function setPrivateRate(draft: PropertyProject, rate: number): void {
-  for (const type of PRIVATE) draft.scenarios[type].privateLoans.mortgageInterestRate = rate;
+  draft.scenarios.PRIVATE_DEBT.privateLoans.mortgageInterestRate = rate;
 }
 
 function setCompanyRate(draft: PropertyProject, rate: number): void {
@@ -146,7 +149,7 @@ function setCompanyRate(draft: PropertyProject, rate: number): void {
 }
 
 function setSharedLoan(draft: PropertyProject, amount: number): void {
-  for (const type of PRIVATE) draft.scenarios[type].privateLoans.mortgageAmount = amount;
+  draft.scenarios.PRIVATE_DEBT.privateLoans.mortgageAmount = amount;
   for (const type of COMPANY) draft.scenarios[type].companyFunding.externalBusinessLoan = amount;
   draft.scenarios.PROJECT_COMPANY.projectCompanyFunding.externalLoan = amount;
 }

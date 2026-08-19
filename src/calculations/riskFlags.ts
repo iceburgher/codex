@@ -123,6 +123,7 @@ export function buildWarnings(params: {
   renovationContingencyPercent: number;
   unsecuredLoanAmount: number;
   salePriceMissing: boolean;
+  noBrokerFeeAssumed: boolean;
   taxDependsOnClassification: boolean;
   vatWarning?: string;
   rentalWarning?: string;
@@ -159,6 +160,12 @@ export function buildWarnings(params: {
     warnings.push({
       id: "sale_price",
       text: "Utan ett pris ni tror på är siffrorna bara ungefärliga.",
+    });
+  }
+  if (params.noBrokerFeeAssumed) {
+    warnings.push({
+      id: "broker_fee",
+      text: "Inget mäklararvode är ifyllt vid försäljningen. Vid en vanlig försäljning kostar det oftast några procent av priset — fyll i under Försäljning.",
     });
   }
   if (params.renovationContingencyPercent < 0.05) {
