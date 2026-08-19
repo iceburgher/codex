@@ -38,10 +38,20 @@ export function AiAssistant({
   const [sending, setSending] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
   const listRef = useRef<HTMLDivElement>(null);
+  // Bara den som redan står nära botten dras med ner vid nya meddelanden —
+  // annars rycks man tillbaka mitt i att bläddra upp bland äldre inlägg.
+  const stickToBottomRef = useRef(true);
+
+  function handleScroll() {
+    const el = listRef.current;
+    if (!el) return;
+    stickToBottomRef.current = el.scrollHeight - el.scrollTop - el.clientHeight < 40;
+  }
 
   useEffect(() => {
-    if (listRef.current) {
-      listRef.current.scrollTop = listRef.current.scrollHeight;
+    const el = listRef.current;
+    if (el && stickToBottomRef.current) {
+      el.scrollTop = el.scrollHeight;
     }
   }, [project.aiChat.length, sending]);
 
@@ -106,7 +116,11 @@ export function AiAssistant({
         )}
       </header>
 
-      <div ref={listRef} className="max-h-80 space-y-3 overflow-y-auto px-5 py-4">
+      <div
+        ref={listRef}
+        onScroll={handleScroll}
+        className="h-80 space-y-3 overflow-y-auto px-5 py-4"
+      >
         {project.aiChat.length === 0 && (
           <p className="text-sm leading-relaxed text-muted">
             Fråga vad som helst om siffrorna, eller föreslå en ändring — till exempel &quot;vad
