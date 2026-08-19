@@ -149,6 +149,8 @@ function computeCore(
     taxAssessmentValue,
     propertyFeeRate: config.propertyFeeRate,
     propertyFeeAnnualCap: config.propertyFeeAnnualCap,
+    constructionYear: project.facts.constructionYear,
+    taxYear: config.taxYear,
   });
 
   const rental = calculateRental({

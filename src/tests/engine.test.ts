@@ -217,6 +217,47 @@ describe("scenario engine", () => {
     expect(r.riskFlags.map((f) => f.id)).not.toContain("related_party_purchase_price_risk");
   });
 
+  it("flags a missing tomträttsavgäld when the property sits on leasehold land", () => {
+    const p = baseProject();
+    p.facts.tenure = "leasehold";
+    const r = calculateScenario(p, "PRIVATE_DEBT");
+    const flag = r.riskFlags.find((f) => f.id === "leasehold_ground_rent_missing");
+    expect(flag?.severity).toBe("medium");
+  });
+
+  it("does not flag leasehold ground rent once it is filled in", () => {
+    const p = baseProject();
+    p.facts.tenure = "leasehold";
+    p.operatingCosts.tomtrattsavgaldAnnual = 25_000;
+    const r = calculateScenario(p, "PRIVATE_DEBT");
+    expect(r.riskFlags.map((f) => f.id)).not.toContain("leasehold_ground_rent_missing");
+  });
+
+  it("never flags leasehold ground rent for freehold property", () => {
+    const p = baseProject();
+    const r = calculateScenario(p, "PRIVATE_DEBT");
+    expect(r.riskFlags.map((f) => f.id)).not.toContain("leasehold_ground_rent_missing");
+  });
+
+  it("zeroes the calculated fastighetsavgift for a new-construction property within 15 years", () => {
+    const p = baseProject();
+    p.facts.constructionYear = 2020;
+    const r = calculateScenario(p, "PRIVATE_DEBT");
+    expect(r.runningCosts.calculatedPropertyFee).toBe(0);
+  });
+
+  it("adds samfällighetsavgift and tomträttsavgäld to the running-cost total", () => {
+    const p = baseProject();
+    const without = calculateScenario(p, "PRIVATE_DEBT");
+    p.operatingCosts.samfallighetsavgiftAnnual = 3_000;
+    p.operatingCosts.tomtrattsavgaldAnnual = 15_000;
+    const withFees = calculateScenario(p, "PRIVATE_DEBT");
+    expect(withFees.runningCosts.totalAnnual).toBeCloseTo(
+      without.runningCosts.totalAnnual + 18_000,
+      6,
+    );
+  });
+
   it("nets a building depreciation deduction to zero over the holding period under a direct asset sale", () => {
     // Deducted now, recaptured (lower tax basis) at sale — same total tax
     // either way, since both the deduction and the recapture land in the

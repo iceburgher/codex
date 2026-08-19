@@ -244,7 +244,7 @@ export function ObjectInputs({
             suffix="kr"
             allowNull
             source="VERIFIED"
-            hint="Beräknas som taxeringsvärde × 0,75 %, dock högst takbeloppet."
+            hint="Beräknas som taxeringsvärde × 0,75 %, dock högst takbeloppet. Hus med värdeår 2012 eller senare är befriade de första 15 åren (baserat på angivet byggår)."
             value={project.operatingCosts.propertyFeeAnnual}
             onChange={(v) => update((d) => void (d.operatingCosts.propertyFeeAnnual = v))}
           />

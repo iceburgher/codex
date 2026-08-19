@@ -38,6 +38,13 @@ export function buildRiskFlags(ctx: RiskContext): RiskFlag[] {
       text: "Taxeringsvärdet saknas. Lagfartskostnaden räknas på det högsta av pris och taxeringsvärde, så den kan bli något annorlunda.",
     });
   }
+  if (project.facts.tenure === "leasehold" && (project.operatingCosts.tomtrattsavgaldAnnual || 0) === 0) {
+    flags.push({
+      id: "leasehold_ground_rent_missing",
+      severity: "medium",
+      text: "Huset står på tomträtt men ingen tomträttsavgäld är ifylld. Den kostnaden tillkommer varje år utöver fastighetsavgiften och kan vara betydande — fyll i under Driftkostnader.",
+    });
+  }
   if (project.inputs.existingMortgageDeeds === null) {
     flags.push({
       id: "mortgage_deeds_missing",

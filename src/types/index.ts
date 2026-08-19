@@ -246,6 +246,10 @@ export interface RunningCosts {
   internetAnnual: number;
   insuranceAnnual: number;
   propertyFeeAnnual: number | null; // null => auto-calculate from tax assessment value
+  /** Bara tomträtt: årlig avgäld till kommunen för marken. */
+  tomtrattsavgaldAnnual: number;
+  /** Avgift till en samfällighetsförening, t.ex. för vägar eller gemensamma anläggningar. */
+  samfallighetsavgiftAnnual: number;
   alarmAnnual: number;
   landscapingAnnual: number;
   snowRemovalAnnual: number;

@@ -72,6 +72,8 @@ export function defaultRunningCosts(): RunningCosts {
     internetAnnual: 0,
     insuranceAnnual: 0,
     propertyFeeAnnual: null,
+    tomtrattsavgaldAnnual: 0,
+    samfallighetsavgiftAnnual: 0,
     alarmAnnual: 0,
     landscapingAnnual: 0,
     snowRemovalAnnual: 0,

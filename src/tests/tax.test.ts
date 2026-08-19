@@ -285,4 +285,28 @@ describe("property fee", () => {
   it("is zero without a tax assessment value", () => {
     expect(calculatePropertyFee(0, 0.0075, 10_425)).toBe(0);
   });
+
+  it("is exempt for new construction with a value year of 2012 or later, within 15 years", () => {
+    expect(
+      calculatePropertyFee(5_000_000, 0.0075, 10_425, { constructionYear: 2020, taxYear: 2026 }),
+    ).toBe(0);
+  });
+
+  it("charges the normal fee once the 15-year new-construction exemption has passed", () => {
+    expect(
+      calculatePropertyFee(5_000_000, 0.0075, 10_425, { constructionYear: 2005, taxYear: 2026 }),
+    ).toBe(10_425);
+  });
+
+  it("charges the normal fee for a value year before 2012, even within what would be the 15-year window", () => {
+    expect(
+      calculatePropertyFee(5_000_000, 0.0075, 10_425, { constructionYear: 2010, taxYear: 2020 }),
+    ).toBe(10_425);
+  });
+
+  it("charges the normal fee when the construction year is unknown", () => {
+    expect(
+      calculatePropertyFee(5_000_000, 0.0075, 10_425, { constructionYear: null, taxYear: 2026 }),
+    ).toBe(10_425);
+  });
 });
