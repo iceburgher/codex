@@ -12,6 +12,21 @@ import type { AiChatMessage, PropertyProject } from "@/types";
  * `update()` som resten av gränssnittet, så den följer med lokalt och till
  * molnet på samma sätt.
  */
+/** Bryter svaret i stycken på tomrader, eller enkla radbrytningar om inga tomrader finns. */
+function paragraphsOf(text: string): string[] {
+  const byBlankLine = text
+    .split(/\n\s*\n/)
+    .map((p) => p.trim())
+    .filter(Boolean);
+  if (byBlankLine.length > 1) return byBlankLine;
+
+  const byLine = text
+    .split("\n")
+    .map((p) => p.trim())
+    .filter(Boolean);
+  return byLine.length > 0 ? byLine : [text];
+}
+
 export function AiAssistant({
   project,
   update,
@@ -75,7 +90,7 @@ export function AiAssistant({
     <section className="card print-block flex flex-col overflow-hidden">
       <header className="flex items-center justify-between border-b border-border px-5 py-4">
         <div>
-          <h2 className="text-lg font-semibold tracking-tight">AI-assistent</h2>
+          <h2 className="text-lg font-semibold tracking-tight">Chat</h2>
           <p className="mt-0.5 text-xs text-muted">
             Svarar på frågor om kalkylen och kan ändra antaganden åt er
           </p>
@@ -94,11 +109,13 @@ export function AiAssistant({
         {project.aiChat.map((m, i) => (
           <div
             key={i}
-            className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed ${
+            className={`max-w-[85%] space-y-2.5 rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed ${
               m.role === "user" ? "ml-auto bg-ink text-white" : "bg-surface-muted"
             }`}
           >
-            {m.text}
+            {paragraphsOf(m.text).map((paragraph, j) => (
+              <p key={j}>{paragraph}</p>
+            ))}
           </div>
         ))}
         {sending && (

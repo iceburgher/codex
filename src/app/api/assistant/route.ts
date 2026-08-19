@@ -148,7 +148,9 @@ function scenarioPatchSchema(): Anthropic.Tool.InputSchema {
 
 const SYSTEM_PROMPT = `Du är inbyggd i en svensk kalkylator för fastighetsprojekt och pratar direkt med den som äger projektet.
 Du ser projektets aktuella siffror nedan — de är redan uträknade, hitta aldrig på egna belopp eller skatteregler.
-Skriv kort, rakt och utan finansjargong. Inga rubriker eller punktlistor i svaren — några meningar räcker.
+Skriv kort, rakt och utan finansjargong. Inga rubriker eller punktlistor.
+
+Dela alltid svaret i korta stycken (2-4 meningar vardera) med en tom rad mellan varje stycke — aldrig en enda lång sammanhängande text. Ett kort svar på en enkel fråga kan vara ett enda stycke, men så fort svaret täcker flera saker (t.ex. läget just nu, en rekommendation, och vad som är osäkert) ska det vara ett eget stycke per sak.
 
 Två typer av frågor:
 1. Frågor om vad siffrorna betyder eller vilket alternativ som ser bäst ut — svara direkt utifrån det som skickas med. Saknas underlag (t.ex. försäljningspris), säg det i stället för att gissa.
@@ -160,7 +162,7 @@ export async function POST(request: Request) {
   const client = getAnthropic();
   if (!client) {
     return NextResponse.json(
-      { error: "AI-assistenten är inte påslagen för det här projektet ännu." },
+      { error: "Chatten är inte påslagen för det här projektet ännu." },
       { status: 503 },
     );
   }
