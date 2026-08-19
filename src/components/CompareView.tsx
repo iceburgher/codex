@@ -140,7 +140,7 @@ export function CompareView({ initialIds }: { initialIds: string[] }) {
 
   function exportCsv() {
     const data: (string | number)[][] = [
-      ["Nyckeltal", ...columns.map((c) => `${c.heading} — ${c.subheading}`)],
+      ["Vad vi jämför", ...columns.map((c) => `${c.heading} — ${c.subheading}`)],
       ...rows.map((row) => [row.label, ...columns.map((c) => row.value(c))]),
     ];
     downloadFile("jamforelse.csv", toCsv(data), "text/csv");
@@ -250,7 +250,7 @@ export function CompareView({ initialIds }: { initialIds: string[] }) {
             <table className="w-full min-w-[720px] text-sm">
               <thead>
                 <tr className="border-b border-border text-left">
-                  <th className="py-2 pr-3 font-medium text-muted">Nyckeltal</th>
+                  <th className="py-2 pr-3 font-medium text-muted">Vad vi jämför</th>
                   {columns.map((c) => (
                     <th key={c.key} className="py-2 pl-3 text-right">
                       <div className="font-semibold">{c.heading}</div>

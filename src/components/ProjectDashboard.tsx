@@ -114,7 +114,7 @@ export function ProjectDashboard({ projectId }: { projectId: string }) {
 
   function exportCsv() {
     const rows: (string | number)[][] = [
-      ["Nyckeltal", ...results.map((r) => r.label)],
+      ["Vad vi jämför", ...results.map((r) => r.label)],
       ["Köpeskilling", ...results.map((r) => Math.round(r.purchasePrice))],
       ["Totalt kapitalbehov", ...results.map((r) => Math.round(r.totalCapitalRequirement))],
       ["Eget kapital", ...results.map((r) => Math.round(r.equityCommitted))],

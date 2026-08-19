@@ -118,7 +118,7 @@ export function ComparisonTable({ results }: { results: ScenarioResult[] }) {
         <table className="w-full min-w-[720px] text-sm">
           <thead>
             <tr className="border-b border-border text-left">
-              <th className="py-2 pr-3 font-medium text-muted">Nyckeltal</th>
+              <th className="py-2 pr-3 font-medium text-muted">Vad vi jämför</th>
               {results.map((r) => (
                 <th key={r.scenario} className="py-2 pl-3 text-right font-semibold">
                   {r.label}

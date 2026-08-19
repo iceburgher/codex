@@ -323,8 +323,8 @@ function SideCard({
               {r.extractionRateUnknown
                 ? "Pengarna ligger kvar i bolaget. Ska de till er privat tillkommer skatt — fyll i vilken under Antaganden."
                 : `Pengarna ligger kvar i bolaget. Ska de till er privat kostar det ytterligare ${formatMoney(
-                  r.extraction?.ownerExtractionTax ?? 0,
-                )} i skatt — byt läge ovan för att jämföra summorna i samma valuta.`}
+                    r.extraction?.ownerExtractionTax ?? 0,
+                  )} i skatt. Byt läge ovan för att se vad ni får i handen.`}
             </p>
           )}
         </>
