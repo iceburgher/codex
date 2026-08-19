@@ -26,6 +26,10 @@ export function calculateSaleCosts(params: {
         lines: [
           { label: "Försäljningspris", value: expectedSalePrice },
           { label: "Mäklararvode", value: brokerFee },
+          {
+            label: "Moms på mäklararvode",
+            value: "Ingår i beloppet — inte avdragsgill, eftersom försäljning av fastighet är momsfri",
+          },
           { label: "Fotografering", value: sale.photography || 0 },
           { label: "Styling", value: sale.styling || 0 },
           { label: "Besiktning", value: sale.inspection || 0 },

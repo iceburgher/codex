@@ -84,6 +84,17 @@ export function buildRiskFlags(ctx: RiskContext): RiskFlag[] {
       text: "Vid handel med fastigheter beskattas vinsten inte som en kapitalvinst utan som inkomst av näringsverksamhet — progressiv kommunal och statlig skatt plus egenavgifter, ofta betydligt mer än kapitalvinstskatten. Skattesatsen i kalkylen är en grov uppskattning, inte en fastställd nivå. Stäm av den faktiska skattebelastningen med en rådgivare.",
     });
   }
+  if (
+    !ctx.isCompanyOwned &&
+    scenario.rot.enabled &&
+    (scenario.flipIntent || scenario.privatePropertyTaxClassification === "property_trading_inventory_risk")
+  ) {
+    flags.push({
+      id: "rot_conflicts_with_trading_intent",
+      severity: "high",
+      text: "ROT-avdrag gäller bara arbete i ett hem ni bor i eller äger som privatbostad — inte vid renovera-och-sälja eller handel med fastigheter. Ni har angett flipsyfte eller att huset räknas som handelsvara, vilket inte går ihop med ett ROT-avdrag i kalkylen. Stäm av med en rådgivare eller stäng av ROT-avdraget.",
+    });
+  }
   if (!ctx.isCompanyOwned && scenario.privateUseLevel === "none") {
     flags.push({
       id: "no_private_use",
@@ -138,6 +149,13 @@ export function buildRiskFlags(ctx: RiskContext): RiskFlag[] {
       id: "dividend_allowance_exceeded",
       severity: "medium",
       text: "Vinsten är större än det ni får ta ut till låg skatt. Vad resten kostar i skatt måste ni fylla i.",
+    });
+  }
+  if (ctx.isCompanyOwned) {
+    flags.push({
+      id: "broker_fee_vat_not_deductible",
+      severity: "low",
+      text: "Mäklararvodet innehåller moms, men den går normalt inte att dra av — försäljning av fastighet är momsfri, även för ett i övrigt momsregistrerat bolag. Räkna med hela arvodet inklusive moms som en kostnad.",
     });
   }
   if (scenario.vat.vatDeductiblePercent === 0 && ctx.isCompanyOwned) {

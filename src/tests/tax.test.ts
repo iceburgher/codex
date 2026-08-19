@@ -178,6 +178,7 @@ describe("private rental tax", () => {
       rental,
       holdingPeriodMonths: 12,
       isPrivateOwned: true,
+      isPrivateResidential: true,
       rentalStandardDeduction: 40_000,
       rentalPercentDeduction: 0.2,
       capitalIncomeTaxRate: 0.3,
@@ -194,6 +195,7 @@ describe("private rental tax", () => {
       rental,
       holdingPeriodMonths: 6,
       isPrivateOwned: true,
+      isPrivateResidential: true,
       rentalStandardDeduction: 40_000,
       rentalPercentDeduction: 0.2,
       capitalIncomeTaxRate: 0.3,
@@ -206,6 +208,7 @@ describe("private rental tax", () => {
       rental: { ...rental, rentedWeeks: 1, rentPerWeek: 10_000 },
       holdingPeriodMonths: 12,
       isPrivateOwned: true,
+      isPrivateResidential: true,
       rentalStandardDeduction: 40_000,
       rentalPercentDeduction: 0.2,
       capitalIncomeTaxRate: 0.3,
@@ -219,6 +222,7 @@ describe("private rental tax", () => {
       rental: { ...rental, enabled: false },
       holdingPeriodMonths: 12,
       isPrivateOwned: true,
+      isPrivateResidential: true,
       rentalStandardDeduction: 40_000,
       rentalPercentDeduction: 0.2,
       capitalIncomeTaxRate: 0.3,
@@ -231,12 +235,31 @@ describe("private rental tax", () => {
       rental,
       holdingPeriodMonths: 12,
       isPrivateOwned: false,
+      isPrivateResidential: false,
       rentalStandardDeduction: 40_000,
       rentalPercentDeduction: 0.2,
       capitalIncomeTaxRate: 0.3,
     });
     expect(r.deductibleRentalCosts).toBeCloseTo(22_500 + 15_000 + 5_000, 6);
     expect(r.companyRentalProfit).toBeCloseTo(107_500, 6);
+  });
+
+  it("withholds the standard and percentage deductions when the property is not classified as a private residence", () => {
+    // Schablonavdraget och 20 %-avdraget gäller bara privatbostad. En
+    // näringsfastighet eller handelsklassad fastighet hyrs ut på vanliga
+    // kapitalregler: skatt på gross minus faktiska kostnader, inget schablon.
+    const r = calculateRental({
+      rental,
+      holdingPeriodMonths: 12,
+      isPrivateOwned: true,
+      isPrivateResidential: false,
+      rentalStandardDeduction: 40_000,
+      rentalPercentDeduction: 0.2,
+      capitalIncomeTaxRate: 0.3,
+    });
+    expect(r.standardDeduction).toBe(0);
+    expect(r.percentDeduction).toBe(0);
+    expect(r.privateTaxableRentalSurplus).toBeCloseTo(150_000 - (22_500 + 15_000 + 5_000), 6);
   });
 });
 

@@ -157,6 +157,7 @@ function computeCore(
     rental: project.rental,
     holdingPeriodMonths,
     isPrivateOwned: !isCompanyOwned,
+    isPrivateResidential: scenario.privatePropertyTaxClassification === "private_residential_property",
     rentalStandardDeduction: config.rentalStandardDeduction,
     rentalPercentDeduction: config.rentalPercentDeduction,
     capitalIncomeTaxRate: config.capitalIncomeTaxRate,

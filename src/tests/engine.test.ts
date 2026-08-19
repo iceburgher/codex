@@ -258,6 +258,66 @@ describe("scenario engine", () => {
     );
   });
 
+  it("flags ROT as incompatible with an explicit flip intent", () => {
+    const p = baseProject();
+    p.scenarios.PRIVATE_DEBT.rot.enabled = true;
+    p.scenarios.PRIVATE_DEBT.flipIntent = true;
+    const r = calculateScenario(p, "PRIVATE_DEBT");
+    const flag = r.riskFlags.find((f) => f.id === "rot_conflicts_with_trading_intent");
+    expect(flag?.severity).toBe("high");
+  });
+
+  it("flags ROT as incompatible with a property-trading classification", () => {
+    const p = baseProject();
+    p.scenarios.PRIVATE_DEBT.rot.enabled = true;
+    p.scenarios.PRIVATE_DEBT.flipIntent = false;
+    p.scenarios.PRIVATE_DEBT.privatePropertyTaxClassification = "property_trading_inventory_risk";
+    const r = calculateScenario(p, "PRIVATE_DEBT");
+    expect(r.riskFlags.map((f) => f.id)).toContain("rot_conflicts_with_trading_intent");
+  });
+
+  it("does not flag ROT when the property is a confirmed private residence with no flip intent", () => {
+    const p = baseProject();
+    p.scenarios.PRIVATE_DEBT.rot.enabled = true;
+    p.scenarios.PRIVATE_DEBT.flipIntent = false;
+    p.scenarios.PRIVATE_DEBT.privatePropertyTaxClassification = "private_residential_property";
+    const r = calculateScenario(p, "PRIVATE_DEBT");
+    expect(r.riskFlags.map((f) => f.id)).not.toContain("rot_conflicts_with_trading_intent");
+  });
+
+  it("notes that broker-fee VAT is not deductible for a company sale", () => {
+    const p = baseProject();
+    const r = calculateScenario(p, "EXISTING_COMPANY");
+    expect(r.riskFlags.map((f) => f.id)).toContain("broker_fee_vat_not_deductible");
+  });
+
+  it("does not raise the broker-fee VAT note for private ownership", () => {
+    const p = baseProject();
+    const r = calculateScenario(p, "PRIVATE_DEBT");
+    expect(r.riskFlags.map((f) => f.id)).not.toContain("broker_fee_vat_not_deductible");
+  });
+
+  it("withholds the private rental standard deduction outside a private-residential classification", () => {
+    const p = baseProject();
+    p.rental.enabled = true;
+    p.rental.rentedWeeks = 10;
+    p.rental.rentPerWeek = 15_000;
+    p.scenarios.PRIVATE_DEBT.privatePropertyTaxClassification = "property_trading_inventory_risk";
+    const r = calculateScenario(p, "PRIVATE_DEBT");
+    expect(r.rental.standardDeduction).toBe(0);
+    expect(r.rental.percentDeduction).toBe(0);
+  });
+
+  it("applies the private rental standard deduction for a confirmed private residence", () => {
+    const p = baseProject();
+    p.rental.enabled = true;
+    p.rental.rentedWeeks = 10;
+    p.rental.rentPerWeek = 15_000;
+    p.scenarios.PRIVATE_DEBT.privatePropertyTaxClassification = "private_residential_property";
+    const r = calculateScenario(p, "PRIVATE_DEBT");
+    expect(r.rental.standardDeduction).toBeGreaterThan(0);
+  });
+
   it("nets a building depreciation deduction to zero over the holding period under a direct asset sale", () => {
     // Deducted now, recaptured (lower tax basis) at sale — same total tax
     // either way, since both the deduction and the recapture land in the

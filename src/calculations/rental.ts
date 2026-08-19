@@ -7,6 +7,8 @@ export function calculateRental(params: {
   rental: RentalInputs;
   holdingPeriodMonths: number;
   isPrivateOwned: boolean;
+  /** Bara privatbostad har rätt till schablonavdraget/20 %-avdraget vid uthyrning. */
+  isPrivateResidential: boolean;
   rentalStandardDeduction: number;
   rentalPercentDeduction: number;
   capitalIncomeTaxRate: number;
@@ -36,12 +38,19 @@ export function calculateRental(params: {
   const deductibleRentalCosts =
     platformFee + cleaning + (rental.extraUtilities || 0) + (rental.extraWearAndTear || 0);
 
-  const standardDeduction = params.rentalStandardDeduction * ownershipFractionOfYear;
-  const percentDeduction = grossRentalIncome * params.rentalPercentDeduction;
-  const privateTaxableRentalSurplus = Math.max(
-    0,
-    grossRentalIncome - standardDeduction - percentDeduction,
-  );
+  // Schablonavdraget och 20 %-avdraget vid uthyrning gäller bara privatbostad.
+  // Näringsfastighet och handelsklassade objekt hyrs ut på vanliga
+  // kapitalregler i stället: skatt på faktiskt överskott, inget schablon.
+  const eligibleForResidentialDeductions = isPrivateOwned && params.isPrivateResidential;
+  const standardDeduction = eligibleForResidentialDeductions
+    ? params.rentalStandardDeduction * ownershipFractionOfYear
+    : 0;
+  const percentDeduction = eligibleForResidentialDeductions
+    ? grossRentalIncome * params.rentalPercentDeduction
+    : 0;
+  const privateTaxableRentalSurplus = eligibleForResidentialDeductions
+    ? Math.max(0, grossRentalIncome - standardDeduction - percentDeduction)
+    : Math.max(0, grossRentalIncome - deductibleRentalCosts);
   const privateRentalTax = privateTaxableRentalSurplus * params.capitalIncomeTaxRate;
 
   const companyRentalProfit = grossRentalIncome - deductibleRentalCosts;
@@ -70,18 +79,32 @@ export function calculateRental(params: {
         title: isPrivateOwned ? "Skatt på privat uthyrning" : "Uthyrningsresultat i bolaget",
         source: "VERIFIED",
         lines: isPrivateOwned
-          ? [
-              { label: "Hyresintäkter", value: grossRentalIncome },
-              { label: "Schablonavdrag", value: -standardDeduction },
-              { label: "Procentavdrag", value: -percentDeduction },
-              { label: "Skattepliktigt överskott", value: privateTaxableRentalSurplus },
-              {
-                label: `Kapitalskatt, ${(params.capitalIncomeTaxRate * 100).toFixed(0)} %`,
-                value: privateRentalTax,
-              },
-              { label: "Direkta uthyrningskostnader", value: deductibleRentalCosts },
-              { label: "Netto från uthyrning", value: netRentalCashPrivate },
-            ]
+          ? eligibleForResidentialDeductions
+            ? [
+                { label: "Hyresintäkter", value: grossRentalIncome },
+                { label: "Schablonavdrag", value: -standardDeduction },
+                { label: "Procentavdrag", value: -percentDeduction },
+                { label: "Skattepliktigt överskott", value: privateTaxableRentalSurplus },
+                {
+                  label: `Kapitalskatt, ${(params.capitalIncomeTaxRate * 100).toFixed(0)} %`,
+                  value: privateRentalTax,
+                },
+                { label: "Direkta uthyrningskostnader", value: deductibleRentalCosts },
+                { label: "Netto från uthyrning", value: netRentalCashPrivate },
+              ]
+            : [
+                { label: "Hyresintäkter", value: grossRentalIncome },
+                {
+                  label: "Faktiska uthyrningskostnader (inget schablonavdrag, ej privatbostad)",
+                  value: -deductibleRentalCosts,
+                },
+                { label: "Skattepliktigt överskott", value: privateTaxableRentalSurplus },
+                {
+                  label: `Kapitalskatt, ${(params.capitalIncomeTaxRate * 100).toFixed(0)} %`,
+                  value: privateRentalTax,
+                },
+                { label: "Netto från uthyrning", value: netRentalCashPrivate },
+              ]
           : [
               { label: "Hyresintäkter", value: grossRentalIncome },
               { label: "Avdragsgilla kostnader", value: -deductibleRentalCosts },
