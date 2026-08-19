@@ -467,6 +467,28 @@ export function ScenarioInputsPanel({
               </p>
             </>
           )}
+          {isCompany && (
+            <>
+              <PercentField
+                label="Andel av anskaffningsvärdet som är byggnad"
+                source="TAX_ADVISOR_INPUT"
+                hint="Marken går inte att skriva av — bara den här andelen av köpeskillingen räknas som avskrivningsbar byggnad."
+                value={scenario.buildingValueSharePercent}
+                onChange={(v) => set((s) => void (s.buildingValueSharePercent = v ?? 0))}
+              />
+              <PercentField
+                label="Värdeminskningsavdrag per år"
+                source="TAX_ADVISOR_INPUT"
+                hint={
+                  scenario.companySaleStructure === "share_sale"
+                    ? "Sänker det löpande resultatet. Vid paketering återförs det aldrig till skatt, så avdraget blir en permanent skattevinst."
+                    : "Sänker det löpande resultatet men återförs vid försäljning (sänker anskaffningsvärdet) — nettoeffekten över hela innehavstiden blir noll vid en vanlig tillgångsförsäljning."
+                }
+                value={scenario.annualDepreciationRatePercent}
+                onChange={(v) => set((s) => void (s.annualDepreciationRatePercent = v ?? 0))}
+              />
+            </>
+          )}
           {!isCompany && (
             <>
               <PercentField

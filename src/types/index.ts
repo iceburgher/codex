@@ -388,6 +388,18 @@ export interface ScenarioInputs {
   /** Köparens rabatt på priset för att ta över bolagets latenta skatteskuld, som andel av köpeskillingen. */
   buyerLatentTaxDiscountPercent: number;
 
+  /**
+   * Bara bolagsägande: värdeminskningsavdrag på byggnaden. Marken går inte
+   * att skriva av, så bara den andel av anskaffningsvärdet som är byggnad
+   * räknas. Avdraget sänker det löpande resultatet under innehavstiden och
+   * återförs normalt vid en tillgångsförsäljning (skattemässigt anskaffnings-
+   * värde sänks med det avskrivna beloppet) — nettoeffekten över hela
+   * innehavstiden blir då noll. Vid paketering (andelsförsäljning) undgår
+   * återföringen skatt helt, så avdraget blir en permanent skattevinst där.
+   */
+  buildingValueSharePercent: number;
+  annualDepreciationRatePercent: number;
+
   opportunityCost: OpportunityCostInputs;
 
   flipIntent: boolean;

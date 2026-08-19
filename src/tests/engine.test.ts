@@ -196,6 +196,48 @@ describe("scenario engine", () => {
     expect(r.riskFlags.map((f) => f.id)).not.toContain("packaging_structure_risk");
   });
 
+  it("nets a building depreciation deduction to zero over the holding period under a direct asset sale", () => {
+    // Deducted now, recaptured (lower tax basis) at sale — same total tax
+    // either way, since both the deduction and the recapture land in the
+    // same single lump-sum corporate tax event this app models.
+    const p = baseProject();
+    const withoutDepreciation = calculateScenario(p, "EXISTING_COMPANY");
+
+    p.scenarios.EXISTING_COMPANY.buildingValueSharePercent = 0.7;
+    p.scenarios.EXISTING_COMPANY.annualDepreciationRatePercent = 0.02;
+    const withDepreciation = calculateScenario(p, "EXISTING_COMPANY");
+
+    expect(withDepreciation.corporateTax?.companyTax).toBeCloseTo(
+      withoutDepreciation.corporateTax?.companyTax ?? 0,
+      2,
+    );
+  });
+
+  it("turns building depreciation into a permanent tax saving under a packaged (share) sale", () => {
+    // The recapture would normally cancel the deduction out, but a share
+    // sale never taxes the disposal at all, so the recapture escapes tax —
+    // the deduction becomes a real, permanent benefit in that structure.
+    // Needs a genuinely positive running result to show through (clamped-
+    // to-zero tax on an already-negative result would hide the effect).
+    const p = baseProject();
+    p.rental.enabled = true;
+    p.rental.rentedWeeks = 52;
+    p.rental.rentPerWeek = 10_000;
+    p.scenarios.EXISTING_COMPANY.companySaleStructure = "share_sale";
+    const withoutDepreciation = calculateScenario(p, "EXISTING_COMPANY");
+
+    p.scenarios.EXISTING_COMPANY.buildingValueSharePercent = 0.7;
+    p.scenarios.EXISTING_COMPANY.annualDepreciationRatePercent = 0.02;
+    const withDepreciation = calculateScenario(p, "EXISTING_COMPANY");
+
+    expect(withDepreciation.corporateTax?.companyTax).toBeLessThan(
+      withoutDepreciation.corporateTax?.companyTax ?? 0,
+    );
+    expect(withDepreciation.netRetainedInCompany).toBeGreaterThan(
+      withoutDepreciation.netRetainedInCompany,
+    );
+  });
+
   it("steps the mortgage interest deduction down to 21% above the per-person threshold", () => {
     const p = baseProject();
     p.inputs.ownershipSharePerson2 = 0; // a single owner, so the threshold is not doubled

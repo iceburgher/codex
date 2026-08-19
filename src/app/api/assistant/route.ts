@@ -204,6 +204,15 @@ function scenarioPatchSchema(): Anthropic.Tool.InputSchema {
         type: "number",
         description: "Bara vid share_sale: köparens rabatt på priset för att ta över den latenta skatten, t.ex. 0.08 för 8 %.",
       },
+      buildingValueSharePercent: {
+        type: "number",
+        description: "Bara bolagsägande: andel av anskaffningsvärdet som är byggnad (inte mark) — bara den delen kan skrivas av.",
+      },
+      annualDepreciationRatePercent: {
+        type: "number",
+        description:
+          "Bara bolagsägande: värdeminskningsavdrag per år på byggnaden. Återförs vid en vanlig tillgångsförsäljning (nettoeffekt noll), men blir en permanent skattevinst vid paketering (share_sale).",
+      },
       improvementBasis: {
         type: "object",
         description:
@@ -316,6 +325,8 @@ const SCENARIO_SUBFIELD_LABELS: Record<string, string> = {
   "improvementBasis.nonDeductiblePercent": "andel ej avdragsgill mot kapitalvinsten",
   companySaleStructure: "försäljningsstruktur (direktförsäljning eller paketering)",
   buyerLatentTaxDiscountPercent: "köparens rabatt för latent skatt vid paketering",
+  buildingValueSharePercent: "andel av anskaffningsvärdet som är byggnad",
+  annualDepreciationRatePercent: "värdeminskningsavdrag per år",
 };
 
 /** Översätter en punktad fältväg (t.ex. "rental.rentPerWeek") till vanlig svenska. */

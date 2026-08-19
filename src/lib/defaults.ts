@@ -194,6 +194,8 @@ export function defaultScenario(type: ScenarioType): ScenarioInputs {
     companyAssetClassification: "capital_asset",
     companySaleStructure: "asset_sale",
     buyerLatentTaxDiscountPercent: 0,
+    buildingValueSharePercent: 0,
+    annualDepreciationRatePercent: 0,
     improvementBasis: {
       fundamentalImprovementsPercent: 0,
       qualifyingRepairsAndMaintenancePercent: 0,

@@ -204,16 +204,32 @@ function computeCore(
   });
 
   const companyTaxBasis = purchasePrice + purchase.totalPurchaseCosts + renovationCashCost;
+
+  // Värdeminskningsavdrag: bara byggnaden (inte marken) går att skriva av.
+  // Avdraget sänker det löpande resultatet nu och återförs genom att sänka
+  // det skattemässiga anskaffningsvärdet vid en tillgångsförsäljning — över
+  // hela innehavstiden blir nettoeffekten då noll för den delen. Undantaget
+  // är paketering (se nedan), där återföringen aldrig blir skattepliktig.
+  const depreciableBase = isCompanyOwned
+    ? companyTaxBasis * (scenario.buildingValueSharePercent || 0)
+    : 0;
+  const accumulatedDepreciation =
+    depreciableBase * (scenario.annualDepreciationRatePercent || 0) * (holdingPeriodMonths / 12);
+  const companyTaxBasisAfterDepreciation = companyTaxBasis - accumulatedDepreciation;
+
   const companyOtherResult =
     -(runningCosts.projectRunningCost + hiddenCostsTotal) -
     (companyFunding?.deductibleInterest ?? 0) -
-    (companyFunding ? companyFunding.fees : 0) +
+    (companyFunding ? companyFunding.fees : 0) -
+    accumulatedDepreciation +
     (project.rental.enabled ? rental.companyRentalProfit : 0) -
     (benefit?.companyEmployerContributionOnBenefit ?? 0);
 
   // Paketering (andelsförsäljning) gör själva fastighetsvinsten skattefri i
   // bolaget (IL 25a), men en köpare av aktierna tar över den latenta
-  // skatteskulden och kräver normalt rabatt på priset för det.
+  // skatteskulden och kräver normalt rabatt på priset för det. Den gör
+  // också att återföringen av värdeminskningsavdraget aldrig blir
+  // skattepliktig, så avdraget blir en permanent skattevinst i det läget.
   const isShareSale = isCompanyOwned && scenario.companySaleStructure === "share_sale";
   const shareSaleDiscount = isShareSale
     ? salePrice * (scenario.buyerLatentTaxDiscountPercent || 0)
@@ -224,7 +240,7 @@ function computeCore(
     ? calculateCorporateTax({
         salePrice: companySalePrice,
         saleCosts: saleCosts.saleCostsTotal,
-        companyTaxBasis,
+        companyTaxBasis: companyTaxBasisAfterDepreciation,
         otherDeductibleResult: companyOtherResult,
         corporateTaxRate: config.corporateTaxRate,
         classification: scenario.companyAssetClassification,

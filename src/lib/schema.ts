@@ -114,6 +114,8 @@ const scenarioSchema = z.object({
   companyAssetClassification: z.enum(["capital_asset", "inventory_property"]),
   companySaleStructure: z.enum(["asset_sale", "share_sale"]).optional(),
   buyerLatentTaxDiscountPercent: z.number().optional(),
+  buildingValueSharePercent: z.number().optional(),
+  annualDepreciationRatePercent: z.number().optional(),
   improvementBasis: z.object({
     fundamentalImprovementsPercent: z.number(),
     qualifyingRepairsAndMaintenancePercent: z.number(),
