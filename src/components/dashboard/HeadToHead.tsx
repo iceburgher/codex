@@ -296,6 +296,15 @@ function SideCard({
                     value={formatMoney(r.extraction?.ownerExtractionTax ?? 0)}
                   />
                 )}
+                {r.rental.grossRentalIncome > 0 && (
+                  <>
+                    <Row label="Hyresintäkter" value={formatMoney(r.rental.grossRentalIncome)} />
+                    <Row
+                      label="Uthyrningens resultat till bolaget"
+                      value={formatMoney(r.rental.companyRentalProfit)}
+                    />
+                  </>
+                )}
               </>
             ) : (
               <>
@@ -303,8 +312,20 @@ function SideCard({
                   label="Skatt på vinsten vid försäljning"
                   value={formatMoney(r.capitalGain.capitalGainTax)}
                 />
-                {r.rental.privateRentalTax > 0 && (
-                  <Row label="Skatt på hyran" value={formatMoney(r.rental.privateRentalTax)} />
+                {r.rental.grossRentalIncome > 0 && (
+                  <>
+                    <Row label="Hyresintäkter" value={formatMoney(r.rental.grossRentalIncome)} />
+                    {r.rental.privateRentalTax > 0 && (
+                      <Row
+                        label="Skatt på hyran"
+                        value={formatMoney(r.rental.privateRentalTax)}
+                      />
+                    )}
+                    <Row
+                      label="Netto från uthyrningen"
+                      value={formatMoney(r.rental.netRentalCashPrivate)}
+                    />
+                  </>
                 )}
               </>
             )}
