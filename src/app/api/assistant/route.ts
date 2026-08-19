@@ -25,10 +25,28 @@ const UPDATE_TOOL_NAME = "uppdatera_antaganden";
 const UPDATE_TOOL: Anthropic.Tool = {
   name: UPDATE_TOOL_NAME,
   description:
-    "Föreslå en ändring av projektets antaganden. Skicka bara de fält som faktiskt ska ändras — allt annat lämnas orört. Fält som inte redan finns i projektet ignoreras.",
+    "Föreslå en ändring av projektet — allt som går att skriva i, inte bara belopp: adress, kommun, fastighetsbeteckning, areor, anteckningar och projektnamn är lika giltiga fält som pris och lån. Skicka bara de fält som faktiskt ska ändras — allt annat lämnas orört. Fält som inte redan finns i projektet ignoreras.",
   input_schema: {
     type: "object",
     properties: {
+      name: { type: "string", description: "Projektets namn." },
+      notes: { type: "string", description: "Fria anteckningar om projektet." },
+      facts: {
+        type: "object",
+        description: "Fakta om objektet — inte belopp, men lika mycket fält att ändra.",
+        properties: {
+          address: { type: "string" },
+          municipality: { type: "string" },
+          propertyDesignation: { type: "string", description: "Fastighetsbeteckning." },
+          constructionYear: { type: "number" },
+          livingAreaSqm: { type: "number", description: "Boarea." },
+          ancillaryAreaSqm: { type: "number", description: "Biarea." },
+          plotAreaSqm: { type: "number", description: "Tomtarea." },
+          structureNotes: { type: "string" },
+          siteNotes: { type: "string" },
+          notes: { type: "string" },
+        },
+      },
       inputs: {
         type: "object",
         description: "Grunduppgifter om affären.",
@@ -38,6 +56,8 @@ const UPDATE_TOOL: Anthropic.Tool = {
           priorYearTaxAssessmentValue: { type: "number" },
           existingMortgageDeeds: { type: "number" },
           holdingPeriodMonths: { type: "number" },
+          ownershipSharePerson1: { type: "number" },
+          ownershipSharePerson2: { type: "number" },
         },
       },
       rental: {
@@ -72,7 +92,8 @@ const UPDATE_TOOL: Anthropic.Tool = {
       },
       operatingCosts: {
         type: "object",
-        description: "Löpande driftkostnader per år.",
+        description:
+          "Löpande driftkostnader per år, en post i taget. Anger användaren en total driftkostnad utan att dela upp den, sätt hela beloppet på otherAnnual (Övrigt) i stället för att gissa på fördelningen mellan el, uppvärmning, vatten osv.",
         properties: Object.fromEntries(
           Object.keys(RUNNING_COST_LABELS).map((key) => [key, { type: "number" }]),
         ),
@@ -145,6 +166,27 @@ function scenarioPatchSchema(): Anthropic.Tool.InputSchema {
           dividendTaxAboveAllowance: { type: "number" },
         },
       },
+      rot: {
+        type: "object",
+        description: "ROT-avdrag, bara relevant privat.",
+        properties: {
+          enabled: { type: "boolean" },
+          eligibleLaborCostGross: { type: "number" },
+        },
+      },
+      privateUseLevel: {
+        type: "string",
+        enum: ["none", "occasional", "frequent", "full_disposition"],
+        description: "Hur mycket ägarna själva använder huset.",
+      },
+      flipIntent: {
+        type: "boolean",
+        description: "Om syftet uttryckligen är att renovera och sälja.",
+      },
+      classificationConfirmedByAdvisor: {
+        type: "boolean",
+        description: "Om en rådgivare har bekräftat den skattemässiga klassificeringen.",
+      },
     },
   };
 }
@@ -168,11 +210,25 @@ Om verktygssvaret säger att ändringen inte gick att tillämpa: förklara det t
 Svara aldrig bara "Uppdaterat" eller liknande utan att förklara konsekvensen.`;
 
 const FIELD_LABELS: Record<string, string> = {
+  name: "projektnamn",
+  notes: "anteckningar",
+  "facts.address": "adress",
+  "facts.municipality": "kommun",
+  "facts.propertyDesignation": "fastighetsbeteckning",
+  "facts.constructionYear": "byggår",
+  "facts.livingAreaSqm": "boarea",
+  "facts.ancillaryAreaSqm": "biarea",
+  "facts.plotAreaSqm": "tomtarea",
+  "facts.structureNotes": "anteckningar om byggnaden",
+  "facts.siteNotes": "anteckningar om tomten",
+  "facts.notes": "övriga anteckningar om objektet",
   "inputs.purchasePrice": "köpeskilling",
   "inputs.expectedSalePrice": "förväntat försäljningspris",
   "inputs.priorYearTaxAssessmentValue": "taxeringsvärde",
   "inputs.existingMortgageDeeds": "befintliga pantbrev",
   "inputs.holdingPeriodMonths": "innehavstid",
+  "inputs.ownershipSharePerson1": "ägarandel, person 1",
+  "inputs.ownershipSharePerson2": "ägarandel, person 2",
   "rental.enabled": "uthyrning påslagen",
   "rental.rentedWeeks": "antal uthyrningsveckor",
   "rental.rentPerWeek": "hyra per vecka",
@@ -210,6 +266,11 @@ const SCENARIO_SUBFIELD_LABELS: Record<string, string> = {
   "vat.vatDeductiblePercent": "andel avdragsgill moms",
   "vat.intendedUse": "avsedd användning (moms)",
   "dividend.dividendTaxAboveAllowance": "skatt på utdelning över gränsbeloppet",
+  "rot.enabled": "ROT-avdrag påslaget",
+  "rot.eligibleLaborCostGross": "arbetskostnad som ROT räknas på",
+  privateUseLevel: "ägarnas egen användning",
+  flipIntent: "syfte: renovera och sälja",
+  classificationConfirmedByAdvisor: "skattemässig klassificering bekräftad av rådgivare",
 };
 
 /** Översätter en punktad fältväg (t.ex. "rental.rentPerWeek") till vanlig svenska. */

@@ -225,6 +225,9 @@ export function createBlankProject(id: string, name = "Nytt projekt"): PropertyP
     createdAt: now,
     updatedAt: now,
     facts: {
+      address: "",
+      municipality: "",
+      propertyDesignation: "",
       propertyType: "detached_house",
       tenure: "freehold",
       constructionYear: null,
@@ -232,6 +235,9 @@ export function createBlankProject(id: string, name = "Nytt projekt"): PropertyP
       ancillaryAreaSqm: null,
       plotAreaSqm: null,
       taxAssessmentType: null,
+      structureNotes: "",
+      siteNotes: "",
+      notes: "",
     },
     inputs: {
       purchasePrice: null,
@@ -258,5 +264,6 @@ export function createBlankProject(id: string, name = "Nytt projekt"): PropertyP
     taxOverrides: {},
     taxConfigSnapshot: null,
     aiChat: [],
+    notes: "",
   };
 }

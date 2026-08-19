@@ -67,6 +67,26 @@ describe("applyAssistantPatch", () => {
     expect(p.rental.rentPerWeek).toBe(5769);
   });
 
+  it("fyller i objektfakta som tomtarea och kommun på ett helt nytt, orört projekt", () => {
+    // Dessa fält saknas helt tills prospektimporten eller användaren själv
+    // fyller i dem — de får inte se ut som att de "inte finns" bara för att
+    // ett splitternytt projekt inte råkat sätta dem än.
+    const p = createBlankProject("p1");
+    applyAssistantPatch(p, {
+      facts: { municipality: "Båstad", propertyDesignation: "Påarp 4:46", plotAreaSqm: 1881 },
+    });
+    expect(p.facts.municipality).toBe("Båstad");
+    expect(p.facts.propertyDesignation).toBe("Påarp 4:46");
+    expect(p.facts.plotAreaSqm).toBe(1881);
+  });
+
+  it("uppdaterar projektnamn och anteckningar", () => {
+    const p = createBlankProject("p1");
+    applyAssistantPatch(p, { name: "Påarpsvägen 165", notes: "Kräver dränering." });
+    expect(p.name).toBe("Påarpsvägen 165");
+    expect(p.notes).toBe("Kräver dränering.");
+  });
+
   it("rör aldrig aiChat-historiken, bara de ekonomiska fälten", () => {
     const p = createBlankProject("p1");
     const before = [...p.aiChat];
