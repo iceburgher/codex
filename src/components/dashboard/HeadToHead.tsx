@@ -43,6 +43,11 @@ function taxFor(r: ScenarioResult, mode: MoneyMode): number {
   return corporate + benefit + extraction;
 }
 
+/** Amortering är inte en kostnad — pengarna finns kvar som lägre skuld — men den binder kassa under vägen, oavsett ägarform. */
+function totalAmortization(r: ScenarioResult): number {
+  return r.cashFlow.months.reduce((sum, m) => sum + m.amortization, 0);
+}
+
 /** En summarad är bara meningsfull när den summerar mer än en post. */
 function showsTotalTax(r: ScenarioResult, mode: MoneyMode): boolean {
   const isCompany = r.corporateTax !== null;
@@ -281,6 +286,10 @@ function SideCard({
 
           <dl className="space-y-2.5 text-sm">
             <Row
+              label="Lagfart och pantbrev"
+              value={formatMoney(r.purchase.totalPurchaseCosts)}
+            />
+            <Row
               label="Mäklare och försäljningskostnader"
               value={formatMoney(r.saleCosts.saleCostsTotal)}
             />
@@ -336,6 +345,9 @@ function SideCard({
               label="Pengar ni måste ha tillgängliga"
               value={formatMoney(r.cashFlow.peakCashRequirement)}
             />
+            {totalAmortization(r) > 0 && (
+              <Row label="Amortering under tiden" value={formatMoney(totalAmortization(r))} />
+            )}
             <Row label="Avkastning på egna pengar" value={formatPercent(r.roi.equityROI)} />
             <Row
               label="Lägsta pris utan förlust"
