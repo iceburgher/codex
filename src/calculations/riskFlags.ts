@@ -83,6 +83,13 @@ export function buildRiskFlags(ctx: RiskContext): RiskFlag[] {
       text: "Bolaget äger huset och ni kan använda det själva. Då kan ni behöva skatta för det som en förmån — även dagar ni inte är där.",
     });
   }
+  if (!ctx.isCompanyOwned && scenario.privateLoans.companyLoanAmount > 0) {
+    flags.push({
+      id: "shareholder_loan_prohibition_risk",
+      severity: "high",
+      text: "Ni räknar med att låna pengar privat av ett bolag ni äger eller är närstående till. Sådana lån till aktieägare är i grunden förbjudna enligt aktiebolagslagen, och även när ett undantag skulle gälla riskerar hela beloppet att beskattas direkt som lön eller utdelning i stället för att räknas som ett vanligt lån. Räkna inte med det här som en billig finansieringskälla förrän en rådgivare bekräftat att upplägget är tillåtet.",
+    });
+  }
   if (ctx.vatDeductibleVat > 0) {
     flags.push({
       id: "vat_deduction_claimed_on_residence",

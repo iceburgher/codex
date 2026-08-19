@@ -142,6 +142,12 @@ function scenarioPatchSchema(): Anthropic.Tool.InputSchema {
           mortgageInterestRate: { type: "number", description: "T.ex. 0.045 för 4,5 %." },
           unsecuredLoanAmount: { type: "number" },
           unsecuredInterestRate: { type: "number" },
+          companyLoanAmount: {
+            type: "number",
+            description:
+              "Lån privat av ett bolag ägaren äger eller är närstående till, t.ex. för att finansiera kontantinsatsen. Sådana lån är i grunden förbjudna enligt aktiebolagslagen och riskerar att beskattas direkt som lön/utdelning — säg alltid det när du föreslår eller kommenterar det här fältet, gissa aldrig att det är en billig finansieringskälla.",
+          },
+          companyLoanInterestRate: { type: "number" },
         },
       },
       companyFunding: {
@@ -262,6 +268,8 @@ const SCENARIO_SUBFIELD_LABELS: Record<string, string> = {
   "privateLoans.mortgageInterestRate": "ränta (bolån)",
   "privateLoans.unsecuredLoanAmount": "lånebelopp (blancolån)",
   "privateLoans.unsecuredInterestRate": "ränta (blancolån)",
+  "privateLoans.companyLoanAmount": "lån från eget bolag",
+  "privateLoans.companyLoanInterestRate": "ränta på lån från eget bolag",
   "companyFunding.companyCashInvested": "eget kapital från bolaget",
   "companyFunding.externalBusinessLoan": "bolagets lån",
   "companyFunding.businessInterestRate": "ränta på bolagets lån",

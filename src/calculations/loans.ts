@@ -33,6 +33,17 @@ export function calculatePrivateLoans(params: {
     grossUnsecuredInterest * (loans.unsecuredLoanInterestDeductionRate || 0);
   const netUnsecuredInterest = grossUnsecuredInterest - unsecuredTaxReduction;
 
+  // Lån från ett eget/närstående bolag är inte säkerställt i huset, så det
+  // följer samma avdragsrätt som ett vanligt blancolån.
+  const grossCompanyLoanInterest = calculateInterest(
+    loans.companyLoanAmount,
+    loans.companyLoanInterestRate,
+    holdingPeriodMonths,
+  );
+  const companyLoanTaxReduction =
+    grossCompanyLoanInterest * (loans.unsecuredLoanInterestDeductionRate || 0);
+  const netCompanyLoanInterest = grossCompanyLoanInterest - companyLoanTaxReduction;
+
   const totalSetupFees = (loans.mortgageSetupFee || 0) + (loans.unsecuredSetupFee || 0);
   const totalAmortization =
     ((loans.mortgageAmortizationAnnual || 0) + (loans.unsecuredAmortizationAnnual || 0)) *
@@ -45,6 +56,9 @@ export function calculatePrivateLoans(params: {
     grossUnsecuredInterest,
     unsecuredTaxReduction,
     netUnsecuredInterest,
+    grossCompanyLoanInterest,
+    companyLoanTaxReduction,
+    netCompanyLoanInterest,
     totalSetupFees,
     totalAmortization,
     audit: [
@@ -58,6 +72,9 @@ export function calculatePrivateLoans(params: {
           { label: "Privatlåneränta före avdrag", value: grossUnsecuredInterest },
           { label: "Ränteavdrag privatlån", value: -unsecuredTaxReduction },
           { label: "Privatlåneränta efter avdrag", value: netUnsecuredInterest },
+          { label: "Ränta på lån från eget bolag, före avdrag", value: grossCompanyLoanInterest },
+          { label: "Ränteavdrag, lån från eget bolag", value: -companyLoanTaxReduction },
+          { label: "Ränta på lån från eget bolag, efter avdrag", value: netCompanyLoanInterest },
           { label: "Uppläggningsavgifter", value: totalSetupFees },
           { label: "Amortering (kassaflöde, ej kostnad)", value: totalAmortization },
         ],

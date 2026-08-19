@@ -170,7 +170,10 @@ function computeCore(
   });
 
   const privateFinancingCost =
-    loans.netMortgageInterest + loans.netUnsecuredInterest + loans.totalSetupFees;
+    loans.netMortgageInterest +
+    loans.netUnsecuredInterest +
+    loans.netCompanyLoanInterest +
+    loans.totalSetupFees;
   const companyFinancingCost = companyFunding
     ? companyFunding.businessInterest + companyFunding.fees
     : 0;
@@ -279,7 +282,9 @@ function computeCore(
 
   const externalDebt = isCompanyOwned
     ? (companyFunding?.debt ?? 0)
-    : privateLoansInput.mortgageAmount + privateLoansInput.unsecuredLoanAmount;
+    : privateLoansInput.mortgageAmount +
+      privateLoansInput.unsecuredLoanAmount +
+      privateLoansInput.companyLoanAmount;
 
   const equityCommitted = isCompanyOwned
     ? (companyFunding?.totalEquityCommitted ?? 0)
@@ -289,7 +294,7 @@ function computeCore(
 
   const interestTotal = isCompanyOwned
     ? (companyFunding?.businessInterest ?? 0)
-    : loans.netMortgageInterest + loans.netUnsecuredInterest;
+    : loans.netMortgageInterest + loans.netUnsecuredInterest + loans.netCompanyLoanInterest;
 
   // Uthyrning kan börja tidigast när renoveringen är klar, så det avgör
   // både kassaflödets tidslinje (buildCashFlow) och om uthyrningen som är

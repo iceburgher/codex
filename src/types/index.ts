@@ -291,6 +291,15 @@ export interface PrivateLoanInputs {
   unsecuredAmortizationAnnual: number;
   securedLoanInterestDeductionRate: number;
   unsecuredLoanInterestDeductionRate: number;
+  /**
+   * Lån privat från ett bolag ägarna äger eller är närstående till — t.ex.
+   * för att finansiera kontantinsatsen. Räntemässigt behandlas det som ett
+   * vanligt lån utan säkerhet, men det bär en egen, allvarlig skatterisk
+   * (se riskFlags.ts: shareholder_loan_prohibition_risk) som inte har att
+   * göra med räntesatsen.
+   */
+  companyLoanAmount: number;
+  companyLoanInterestRate: number;
 }
 
 export interface DividendInputs {
@@ -484,6 +493,9 @@ export interface LoanResult {
   grossUnsecuredInterest: number;
   unsecuredTaxReduction: number;
   netUnsecuredInterest: number;
+  grossCompanyLoanInterest: number;
+  companyLoanTaxReduction: number;
+  netCompanyLoanInterest: number;
   totalSetupFees: number;
   totalAmortization: number;
   audit: AuditTrail[];

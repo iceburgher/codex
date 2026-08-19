@@ -131,6 +131,50 @@ describe("scenario engine", () => {
     expect(r.warnings.map((w) => w.id)).not.toContain("rental_no_time_after_renovation");
   });
 
+  it("flags a shareholder loan used to fund the private purchase as a high-severity tax risk", () => {
+    const p = baseProject();
+    p.scenarios.PRIVATE_EQUITY.privateLoans.companyLoanAmount = 600_000;
+    p.scenarios.PRIVATE_EQUITY.privateLoans.companyLoanInterestRate = 0.05;
+    const r = calculateScenario(p, "PRIVATE_EQUITY");
+    const flag = r.riskFlags.find((f) => f.id === "shareholder_loan_prohibition_risk");
+    expect(flag?.severity).toBe("high");
+  });
+
+  it("does not flag a shareholder loan when none is used", () => {
+    const p = baseProject();
+    const r = calculateScenario(p, "PRIVATE_EQUITY");
+    expect(r.riskFlags.map((f) => f.id)).not.toContain("shareholder_loan_prohibition_risk");
+  });
+
+  it("never flags a shareholder loan for the company-owned scenario, where the field is unused", () => {
+    const p = baseProject();
+    p.scenarios.EXISTING_COMPANY.privateLoans.companyLoanAmount = 600_000;
+    const r = calculateScenario(p, "EXISTING_COMPANY");
+    expect(r.riskFlags.map((f) => f.id)).not.toContain("shareholder_loan_prohibition_risk");
+  });
+
+  it("counts a shareholder loan as debt that reduces the cash the owners must provide", () => {
+    const p = baseProject();
+    const without = calculateScenario(p, "PRIVATE_EQUITY");
+    p.scenarios.PRIVATE_EQUITY.privateLoans.companyLoanAmount = 600_000;
+    p.scenarios.PRIVATE_EQUITY.privateLoans.companyLoanInterestRate = 0.05;
+    const withLoan = calculateScenario(p, "PRIVATE_EQUITY");
+    expect(withLoan.externalDebt).toBe(without.externalDebt + 600_000);
+    expect(withLoan.cashFlow.peakCashRequirement).toBeLessThan(without.cashFlow.peakCashRequirement);
+  });
+
+  it("charges interest on a shareholder loan as a financing cost, reducing profit", () => {
+    const p = baseProject();
+    const without = calculateScenario(p, "PRIVATE_EQUITY");
+    p.scenarios.PRIVATE_EQUITY.privateLoans.companyLoanAmount = 600_000;
+    p.scenarios.PRIVATE_EQUITY.privateLoans.companyLoanInterestRate = 0.05;
+    const withLoan = calculateScenario(p, "PRIVATE_EQUITY");
+    // 600,000 kr at 5% over the 12-month holding period, no deduction (same
+    // treatment as an unsecured loan from 2026).
+    expect(withLoan.financingCost).toBeCloseTo(without.financingCost + 30_000, 6);
+    expect(withLoan.profitAfterTax).toBeLessThan(without.profitAfterTax);
+  });
+
   it("deducts the broker fee from the profit shown, not just from a side panel", () => {
     const withFee = baseProject();
     withFee.sale.brokerFeePercent = 0.03;

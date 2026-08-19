@@ -121,6 +121,8 @@ describe("loan interest", () => {
         unsecuredAmortizationAnnual: 0,
         securedLoanInterestDeductionRate: 0.3,
         unsecuredLoanInterestDeductionRate: 0,
+        companyLoanAmount: 0,
+        companyLoanInterestRate: 0,
       },
       holdingPeriodMonths: 12,
     });
@@ -132,5 +134,28 @@ describe("loan interest", () => {
     expect(r.netUnsecuredInterest).toBeCloseTo(45_000, 6);
     expect(r.totalSetupFees).toBe(7_000);
     expect(r.totalAmortization).toBe(40_000);
+  });
+
+  it("treats a loan from the owner's own company like an unsecured loan for interest deduction", () => {
+    const r = calculatePrivateLoans({
+      loans: {
+        mortgageAmount: 0,
+        mortgageInterestRate: 0,
+        mortgageSetupFee: 0,
+        mortgageAmortizationAnnual: 0,
+        unsecuredLoanAmount: 0,
+        unsecuredInterestRate: 0,
+        unsecuredSetupFee: 0,
+        unsecuredAmortizationAnnual: 0,
+        securedLoanInterestDeductionRate: 0.3,
+        unsecuredLoanInterestDeductionRate: 0,
+        companyLoanAmount: 600_000,
+        companyLoanInterestRate: 0.05,
+      },
+      holdingPeriodMonths: 12,
+    });
+    expect(r.grossCompanyLoanInterest).toBeCloseTo(30_000, 6);
+    expect(r.companyLoanTaxReduction).toBe(0);
+    expect(r.netCompanyLoanInterest).toBeCloseTo(30_000, 6);
   });
 });

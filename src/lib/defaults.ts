@@ -144,6 +144,8 @@ export function defaultScenario(type: ScenarioType): ScenarioInputs {
       securedLoanInterestDeductionRate:
         DEFAULT_TAX_CONFIG_2026.securedLoanInterestDeductionRateDefault,
       unsecuredLoanInterestDeductionRate: DEFAULT_TAX_CONFIG_2026.unsecuredLoanInterestDeductionRate,
+      companyLoanAmount: 0,
+      companyLoanInterestRate: 0,
     },
     dividend: {
       availableLowTaxAllowance: 0,

@@ -123,6 +123,28 @@ export function ScenarioInputsPanel({
               <p className="text-[11px] text-warn">
                 Ränta på privatlån utan säkerhet är inte avdragsgill från inkomstår 2026.
               </p>
+              <NumberField
+                label="Lån från eget bolag"
+                suffix="kr"
+                source="TAX_ADVISOR_INPUT"
+                hint="T.ex. för att finansiera kontantinsatsen med pengar ur ett bolag ni äger."
+                value={scenario.privateLoans.companyLoanAmount}
+                onChange={(v) => set((s) => void (s.privateLoans.companyLoanAmount = v ?? 0))}
+              />
+              <PercentField
+                label="Ränta på lån från eget bolag"
+                value={scenario.privateLoans.companyLoanInterestRate}
+                onChange={(v) =>
+                  set((s) => void (s.privateLoans.companyLoanInterestRate = v ?? 0))
+                }
+              />
+              {scenario.privateLoans.companyLoanAmount > 0 && (
+                <p className="text-[11px] text-negative">
+                  Lån till aktieägare från ett eget eller närstående bolag är i grunden förbjudna
+                  enligt aktiebolagslagen, och riskerar annars att beskattas direkt som lön eller
+                  utdelning. Stäm av med en rådgivare innan ni räknar med det här.
+                </p>
+              )}
             </div>
           </Collapsible>
 

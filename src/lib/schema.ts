@@ -58,6 +58,8 @@ const scenarioSchema = z.object({
     unsecuredAmortizationAnnual: z.number(),
     securedLoanInterestDeductionRate: z.number(),
     unsecuredLoanInterestDeductionRate: z.number(),
+    companyLoanAmount: z.number().optional(),
+    companyLoanInterestRate: z.number().optional(),
   }),
   dividend: z.object({
     availableLowTaxAllowance: z.number(),
