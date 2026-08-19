@@ -257,5 +257,6 @@ export function createBlankProject(id: string, name = "Nytt projekt"): PropertyP
     optimizationTarget: "max_family_net_worth",
     taxOverrides: {},
     taxConfigSnapshot: null,
+    aiChat: [],
   };
 }

@@ -178,6 +178,15 @@ export const projectSchema = z.object({
       values: z.record(z.string(), z.union([z.number(), z.null()])),
     })
     .nullable(),
+  aiChat: z
+    .array(
+      z.object({
+        role: z.enum(["user", "assistant"]),
+        text: z.string(),
+        ts: z.string(),
+      }),
+    )
+    .optional(),
   notes: z.string().optional(),
 });
 

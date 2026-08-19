@@ -51,6 +51,7 @@ export function migrateProject(raw: Record<string, unknown>): PropertyProject {
     hiddenCosts: Array.isArray(working.hiddenCosts)
       ? (working.hiddenCosts as PropertyProject["hiddenCosts"])
       : defaultHiddenCosts(),
+    aiChat: Array.isArray(working.aiChat) ? (working.aiChat as PropertyProject["aiChat"]) : [],
     scenarios: { ...skeleton.scenarios },
     taxOverrides: (working.taxOverrides as PropertyProject["taxOverrides"]) ?? {},
     taxConfigSnapshot:

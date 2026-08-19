@@ -401,7 +401,15 @@ export interface PropertyProject {
   taxOverrides: Partial<TaxConfig>;
   taxConfigSnapshot: TaxConfigSnapshot | null;
 
+  aiChat: AiChatMessage[];
+
   notes?: string;
+}
+
+export interface AiChatMessage {
+  role: "user" | "assistant";
+  text: string;
+  ts: string;
 }
 
 export interface SavedProjectFile {
