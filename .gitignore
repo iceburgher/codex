@@ -39,3 +39,6 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Mallen ska följa med i repot — den innehåller inga hemligheter.
+!.env.example

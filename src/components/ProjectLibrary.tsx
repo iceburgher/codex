@@ -147,6 +147,18 @@ export function ProjectLibrary() {
           <p className="mt-1 text-sm text-muted">
             Ett projekt är ett objekt. Alla ägarformer räknas på samma uppgifter om huset.
           </p>
+          {store.storageMode !== "unknown" && (
+            <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-surface px-3 py-1.5 text-xs text-muted shadow-[var(--shadow-card)]">
+              <span
+                className={`h-2 w-2 rounded-full ${
+                  store.storageMode === "cloud" ? "bg-positive" : "bg-warn"
+                }`}
+              />
+              {store.storageMode === "cloud"
+                ? "Sparas i molnet — projekten följer med mellan enheter"
+                : "Sparas bara i den här webbläsaren"}
+            </p>
+          )}
         </div>
 
         <label className="no-print relative hidden min-w-[320px] items-center sm:flex">

@@ -11,6 +11,7 @@ import {
   type ReactNode,
 } from "react";
 import type { PropertyProject } from "@/types";
+import { CloudSync, type StorageMode } from "./cloudSync";
 import { LocalStorageProjectRepository } from "./repository";
 import type { ImportReport } from "./schema";
 
@@ -20,6 +21,8 @@ interface ProjectStore {
   projects: PropertyProject[];
   loading: boolean;
   saveState: SaveState;
+  /** Var projekten faktiskt hamnar — molnet eller bara den här webbläsaren. */
+  storageMode: StorageMode;
   reload: () => Promise<void>;
   createBlank: (name?: string) => Promise<PropertyProject>;
   getProject: (id: string) => PropertyProject | undefined;
@@ -39,6 +42,8 @@ const AUTOSAVE_DEBOUNCE_MS = 600;
 
 export function ProjectStoreProvider({ children }: { children: ReactNode }) {
   const repo = useMemo(() => new LocalStorageProjectRepository(), []);
+  const cloud = useMemo(() => new CloudSync(), []);
+  const [storageMode, setStorageMode] = useState<StorageMode>("unknown");
   const [projects, setProjects] = useState<PropertyProject[]>([]);
   const [loading, setLoading] = useState(true);
   const [saveState, setSaveState] = useState<SaveState>("saved");
@@ -54,16 +59,25 @@ export function ProjectStoreProvider({ children }: { children: ReactNode }) {
     let cancelled = false;
     (async () => {
       await repo.ensureSeed();
+
+      // Molnet går före: har en annan enhet sparat något är det den bilden
+      // som gäller, och den skrivs ned lokalt som snabb kopia.
+      const remote = await cloud.hydrate(repo);
+      if (remote !== null) {
+        await repo.replaceAll(remote);
+      }
+
       const list = await repo.list();
       if (!cancelled) {
         setProjects(list);
+        setStorageMode(cloud.getMode());
         setLoading(false);
       }
     })();
     return () => {
       cancelled = true;
     };
-  }, [repo]);
+  }, [repo, cloud]);
 
   const flush = useCallback(async () => {
     if (pending.current.size === 0) return;
@@ -71,11 +85,12 @@ export function ProjectStoreProvider({ children }: { children: ReactNode }) {
     const entries = [...pending.current.values()];
     pending.current.clear();
     for (const project of entries) {
-      await repo.update(project.id, project);
+      const stored = await repo.update(project.id, project);
+      await cloud.push(stored);
     }
     await reload();
     setSaveState("saved");
-  }, [repo, reload]);
+  }, [repo, reload, cloud]);
 
   const updateProject = useCallback(
     (project: PropertyProject) => {
@@ -104,9 +119,11 @@ export function ProjectStoreProvider({ children }: { children: ReactNode }) {
     projects,
     loading,
     saveState,
+    storageMode,
     reload,
     createBlank: async (name) => {
       const created = await repo.createBlank(name);
+      await cloud.push(created);
       await reload();
       return created;
     },
@@ -115,24 +132,31 @@ export function ProjectStoreProvider({ children }: { children: ReactNode }) {
     saveNow: flush,
     duplicate: async (id, name) => {
       const copy = await repo.duplicate(id, name);
+      await cloud.push(copy);
       await reload();
       return copy;
     },
     remove: async (id) => {
       await repo.delete(id);
+      await cloud.remove(id);
       await reload();
     },
     archive: async (id) => {
       await repo.archive(id);
+      const archived = await repo.get(id);
+      if (archived) await cloud.push(archived);
       await reload();
     },
     restore: async (id) => {
       await repo.restore(id);
+      const restored = await repo.get(id);
+      if (restored) await cloud.push(restored);
       await reload();
     },
     exportProjects: (ids) => repo.export(ids),
     importProjects: async (payload) => {
-      const { report } = await repo.import(payload);
+      const { projects: imported, report } = await repo.import(payload);
+      await Promise.all(imported.map((p) => cloud.push(p)));
       await reload();
       return report;
     },

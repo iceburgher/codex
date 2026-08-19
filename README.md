@@ -4,10 +4,10 @@ En kalkylator för svenska fastighetsprojekt. Den jämför hela ekonomin efter
 skatt för att köpa, renovera, eventuellt hyra ut, äga och sälja ett objekt
 under fyra ägarformer:
 
-- **Privat — eget kapital**
-- **Privat — med lån**
-- **Befintligt bolag**
-- **Separat projektbolag**
+- **Privat, egna pengar**
+- **Privat, med bolån**
+- **Bolaget äger**
+- **Nytt projektbolag**
 
 Poängen är inte att jämföra nominella skattesatser. Modellen räknar hela
 kapitalflödet: lagfart och pantbrev, renovering, moms, ROT, räntor, vad det
@@ -16,6 +16,23 @@ driftkostnader, skatt på uthyrning, förmånsbeskattning vid privat användning
 försäljningskostnader, kapitalvinst- eller bolagsskatt, det andra skattelagret
 när bolagets vinst ska till ägarna, alternativkostnaden för bundet kapital —
 och till slut hur familjens förmögenhet faktiskt förändras.
+
+## Huvudfrågan
+
+Vyn för ett objekt börjar med jämförelsen: **privat ägande mot bolagsägande**,
+med skillnaden i kronor emellan. Privat köp finansieras med egna pengar — som
+ytterst tas ur bolaget som lön eller utdelning — plus bolån. Bolagsköp
+finansieras med bolagets kassa plus företagslån. Inom varje sida vinner den
+finansiering som ger mest kvar efter skatt, och varianterna visas under.
+
+## Läs in objektet
+
+Ett projekt kan fyllas i från ett prospekt (PDF) eller en länk till annonsen.
+Servern läser texten och plockar ut adress, kommun, fastighetsbeteckning,
+utgångspris, areor, byggår, driftkostnad och taxeringsvärde. Allt som hittas
+visas för granskning tillsammans med textutdraget det kom ifrån — inget skrivs
+in förrän du bockar av det. Hittas ingenting sägs det rakt ut i stället för att
+fältet fylls med en gissning.
 
 ## Kom igång
 
@@ -26,9 +43,29 @@ npm test         # tester för beräkningar och lagring
 npm run build
 ```
 
-Ingen server behövs. Projekten sparas i webbläsaren bakom gränssnittet
-`ProjectRepository`, så en databas kan läggas till senare utan att
-beräkningsmotorn rörs.
+Appen fungerar utan konfiguration — då sparas projekten bara i webbläsaren.
+
+### Spara i molnet (Supabase)
+
+Sätt två miljövariabler, i Vercel under Project Settings → Environment
+Variables, eller lokalt i `.env.local` (se `.env.example`):
+
+```
+SUPABASE_URL=https://ditt-projekt.supabase.co
+SUPABASE_SECRET_KEY=...
+```
+
+Kör `supabase/schema.sql` en gång i Supabase SQL Editor för att skapa
+tabellen.
+
+Nyckeln är hemlig och läses enbart på servern — den får aldrig hamna i en
+`NEXT_PUBLIC_`-variabel eller i koden. All åtkomst går via `/api/projects`, och
+tabellen har radnivåsäkerhet påslagen utan någon policy, så en läckt publik
+nyckel ger ingen åtkomst.
+
+Webbläsarlagringen är kvar som lokal kopia: gränssnittet svarar direkt och
+appen fungerar utan nät. Vid start hämtas molnets bild, och varje ändring
+skickas upp. Projektlistan visar vilket läge som gäller.
 
 ## Struktur
 

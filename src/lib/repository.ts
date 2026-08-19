@@ -185,6 +185,11 @@ export class LocalStorageProjectRepository implements ProjectRepository {
   async createBlank(name?: string): Promise<PropertyProject> {
     return this.create(createBlankProject(newId(), name));
   }
+
+  /** Ersätter den lokala kopian med molnets bild vid start. */
+  async replaceAll(projects: PropertyProject[]): Promise<void> {
+    this.writeAll(projects);
+  }
 }
 
 function normalizeImportPayload(payload: unknown): unknown {

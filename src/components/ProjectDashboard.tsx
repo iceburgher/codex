@@ -15,6 +15,7 @@ import {
 } from "@/types";
 import { ALL_SCENARIOS } from "@/lib/defaults";
 import { ObjectInputs } from "./inputs/ObjectInputs";
+import { ProspectImport } from "./inputs/ProspectImport";
 import { QuickFacts } from "./inputs/QuickFacts";
 import { ScenarioInputsPanel } from "./inputs/ScenarioInputsPanel";
 import { CashFlowChart, CostWaterfall, ScenarioBarCharts } from "./dashboard/Charts";
@@ -28,7 +29,7 @@ import {
 import { KpiStrip } from "./dashboard/KpiStrip";
 import { ScenarioCards } from "./dashboard/ScenarioCards";
 import { SensitivityPanel } from "./dashboard/SensitivityPanel";
-import { Verdict } from "./dashboard/Verdict";
+import { HeadToHead } from "./dashboard/HeadToHead";
 import { Button, Card, Collapsible, SelectField, Stat, Tabs, ToggleField } from "./ui";
 
 type TabKey = "oversikt" | "antaganden" | "detaljer";
@@ -186,17 +187,23 @@ export function ProjectDashboard({ projectId }: { projectId: string }) {
             onGoToRenovation={() => setTab("antaganden")}
           />
 
-          <Verdict
+          <HeadToHead
             results={results}
-            target={HEADLINE_TARGET}
             onGoToInput={() => setTab("antaganden")}
+            onSetExtractionRate={(rate) =>
+              update((d) => {
+                for (const key of ["EXISTING_COMPANY", "PROJECT_COMPANY"] as const) {
+                  d.scenarios[key].dividend.dividendTaxAboveAllowance = rate;
+                }
+              })
+            }
           />
 
           <div>
-            <h2 className="text-lg font-semibold tracking-tight">Ägarformerna sida vid sida</h2>
+            <h2 className="text-lg font-semibold tracking-tight">Finansieringsvarianterna</h2>
             <p className="mt-1 text-sm text-muted">
-              Privat köp finansieras med egna pengar — som i sin tur tas ur bolaget som lön eller
-              utdelning — plus bolån. Bolagsköp finansieras med bolagets kassa plus företagslån.
+              Inom varje ägarform går köpet att finansiera på två sätt. Det här är varianterna
+              bakom siffrorna ovan.
             </p>
           </div>
 
@@ -216,6 +223,7 @@ export function ProjectDashboard({ projectId }: { projectId: string }) {
             <p className="text-sm text-muted">
               Gäller alla ägarformer. Ändrar du något här räknas alla alternativ om.
             </p>
+            <ProspectImport update={update} />
             <ObjectInputs project={project} update={update} />
           </div>
 
