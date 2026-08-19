@@ -66,8 +66,14 @@ function ScenarioCardsInner({
 }) {
   const best = bestScenarioIndex(results, target);
 
+  // Högst tre alternativ kan någonsin vara på samtidigt, så rutnätet
+  // anpassas efter hur många som faktiskt visas i stället för att alltid
+  // reservera plats för fyra — annars blir det ett tomt hål till höger.
+  const columns =
+    results.length >= 3 ? "sm:grid-cols-2 xl:grid-cols-3" : results.length === 2 ? "sm:grid-cols-2" : "";
+
   return (
-    <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
+    <div className={`grid gap-4 ${columns}`}>
       {results.map((r, i) => {
         const isCompany = r.corporateTax !== null;
         const blocked = r.salePriceMissing || r.extractionRateUnknown;
