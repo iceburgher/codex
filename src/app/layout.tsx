@@ -1,7 +1,15 @@
 import type { Metadata } from "next";
-import Link from "next/link";
+import { Poppins } from "next/font/google";
 import "./globals.css";
+import { AppShell } from "@/components/AppShell";
 import { ProjectStoreProvider } from "@/lib/store";
+
+const poppins = Poppins({
+  weight: ["400", "500", "600", "700"],
+  subsets: ["latin"],
+  variable: "--font-poppins",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "Fastighetskalkylen",
@@ -11,29 +19,14 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
-    <html lang="sv" className="h-full antialiased">
-      <body className="flex min-h-full flex-col">
+    <html lang="sv" className={`${poppins.variable} h-full antialiased`}>
+      <body
+        className="min-h-full"
+        style={{ fontFamily: "var(--font-poppins), ui-sans-serif, system-ui, sans-serif" }}
+      >
         <ProjectStoreProvider>
-          <header className="no-print border-b border-border bg-surface">
-            <div className="mx-auto flex max-w-[1400px] items-center justify-between gap-4 px-5 py-3">
-              <Link href="/" className="text-base font-semibold tracking-tight">
-                Fastighetskalkylen
-              </Link>
-              <nav className="flex items-center gap-5 text-sm text-muted">
-                <Link href="/" className="hover:text-foreground">
-                  Projekt
-                </Link>
-                <Link href="/compare" className="hover:text-foreground">
-                  Jämför
-                </Link>
-                <Link href="/settings" className="hover:text-foreground">
-                  Skatteuppgifter
-                </Link>
-              </nav>
-            </div>
-          </header>
-          <main className="flex-1">{children}</main>
-          <footer className="no-print border-t border-border px-5 py-4 text-xs leading-relaxed text-muted">
+          <AppShell>{children}</AppShell>
+          <footer className="no-print mx-auto max-w-[1500px] px-6 pb-6 pt-1 text-xs leading-relaxed text-muted">
             Beslutsstöd, inte skatterådgivning. Utfallet beror på syfte, användning och
             omständigheter — stäm av klassificering, moms, förmånsvärde och gränsbelopp med en
             skatterådgivare innan ni förlitar er på siffrorna.

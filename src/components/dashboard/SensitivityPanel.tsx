@@ -83,7 +83,7 @@ export function SensitivityPanel({
                   {row.map((cell, ci) => (
                     <td key={ci} className="py-1 pl-1">
                       <div
-                        className="numeric rounded px-2 py-1.5 text-right font-medium"
+                        className="numeric rounded-xl px-3 py-2.5 text-right font-medium"
                         style={{ background: heatColor(cell.value, min, max) }}
                       >
                         {format(cell.value)}
@@ -143,10 +143,11 @@ export function SensitivityPanel({
   );
 }
 
+/** Rött i sämsta hörnet, salvia i bästa — dämpat så tabellen inte skriker. */
 function heatColor(value: number, min: number, max: number): string {
   if (max === min) return "var(--surface-muted)";
   const t = (value - min) / (max - min);
-  // Red at the worst outcome, green at the best, muted in between.
-  const hue = 8 + t * 132;
-  return `color-mix(in srgb, hsl(${hue} 55% 45%) 22%, var(--surface))`;
+  const from = t < 0.5 ? "var(--negative)" : "var(--accent-strong)";
+  const strength = Math.abs(t - 0.5) * 2;
+  return `color-mix(in srgb, ${from} ${8 + strength * 22}%, var(--surface-muted))`;
 }

@@ -7,7 +7,6 @@ import { downloadFile, slugify, toCsv } from "@/lib/download";
 import { formatMoney, formatPercent, whenAssessable } from "@/lib/format";
 import { useProjectStore } from "@/lib/store";
 import {
-  OPTIMIZATION_TARGET_LABELS,
   SCENARIO_LABELS,
   type OptimizationTarget,
   type PropertyProject,
@@ -26,12 +25,19 @@ import {
   TopRisks,
   WarningsPanel,
 } from "./dashboard/RiskPanels";
+import { KpiStrip } from "./dashboard/KpiStrip";
 import { ScenarioCards } from "./dashboard/ScenarioCards";
 import { SensitivityPanel } from "./dashboard/SensitivityPanel";
 import { Verdict } from "./dashboard/Verdict";
 import { Button, Card, Collapsible, SelectField, Stat, Tabs, ToggleField } from "./ui";
 
 type TabKey = "oversikt" | "antaganden" | "detaljer";
+
+/**
+ * Frågan är alltid densamma: vad blir kvar till ägarna efter skatt när huset
+ * är sålt och pengarna tagits ut. Därför finns inget mål att välja mellan.
+ */
+const HEADLINE_TARGET: OptimizationTarget = "max_family_net_worth";
 
 const TABS: { value: TabKey; label: string }[] = [
   { value: "oversikt", label: "Översikt" },
@@ -114,13 +120,15 @@ export function ProjectDashboard({ projectId }: { projectId: string }) {
   }
 
   return (
-    <div className="mx-auto max-w-[1400px] px-5 py-6">
+    <div>
       <header className="mb-6 flex flex-wrap items-start justify-between gap-4">
         <div>
-          <Link href="/" className="no-print text-sm font-medium text-accent hover:underline">
+          <Link href="/" className="no-print text-sm font-medium text-accent-strong hover:underline">
             ← Alla projekt
           </Link>
-          <h1 className="mt-2 text-2xl font-semibold tracking-tight">{project.name}</h1>
+          <h1 className="mt-2 text-[28px] font-semibold leading-tight tracking-tight">
+            {project.name}
+          </h1>
           <p className="mt-1 text-sm text-muted">
             {project.facts.address ?? "Ingen adress angiven"}
             {project.facts.municipality ? ` · ${project.facts.municipality}` : ""} · Skatteår{" "}
@@ -129,7 +137,7 @@ export function ProjectDashboard({ projectId }: { projectId: string }) {
         </div>
         <div className="no-print flex flex-wrap items-center gap-2">
           <span
-            className={`rounded-lg px-2.5 py-1.5 text-xs font-medium ${
+            className={`rounded-full px-3.5 py-2 text-xs font-medium ${
               store.saveState === "saved"
                 ? "bg-positive-soft text-positive"
                 : "bg-warn-soft text-warn"
@@ -142,18 +150,18 @@ export function ProjectDashboard({ projectId }: { projectId: string }) {
                 : "Osparade ändringar"}
           </span>
           <Button size="sm" onClick={exportJson}>
-            Exportera JSON
+            JSON
           </Button>
           <Button size="sm" onClick={exportCsv}>
-            Exportera CSV
+            CSV
           </Button>
-          <Button size="sm" onClick={() => window.print()}>
+          <Button size="sm" variant="dark" onClick={() => window.print()}>
             Skriv ut
           </Button>
         </div>
       </header>
 
-      <div className="mb-6 max-w-md">
+      <div className="mb-6">
         <Tabs tabs={TABS} active={tab} onChange={setTab} />
       </div>
 
@@ -165,6 +173,13 @@ export function ProjectDashboard({ projectId }: { projectId: string }) {
         </Card>
       ) : tab === "oversikt" ? (
         <div className="space-y-5">
+          {selectedResult && (
+            <KpiStrip
+              result={selectedResult}
+              expectedSalePrice={project.inputs.expectedSalePrice}
+            />
+          )}
+
           <QuickFacts
             project={project}
             update={update}
@@ -173,30 +188,19 @@ export function ProjectDashboard({ projectId }: { projectId: string }) {
 
           <Verdict
             results={results}
-            target={project.optimizationTarget}
+            target={HEADLINE_TARGET}
             onGoToInput={() => setTab("antaganden")}
           />
 
-          <div className="flex flex-wrap items-end justify-between gap-4">
+          <div>
             <h2 className="text-lg font-semibold tracking-tight">Ägarformerna sida vid sida</h2>
-            <div className="no-print w-64">
-              <SelectField<OptimizationTarget>
-                label="Vad är viktigast för er?"
-                value={project.optimizationTarget}
-                options={(Object.keys(OPTIMIZATION_TARGET_LABELS) as OptimizationTarget[]).map(
-                  (t) => ({ value: t, label: OPTIMIZATION_TARGET_LABELS[t] }),
-                )}
-                onChange={(v) => update((d) => void (d.optimizationTarget = v))}
-                hint={
-                  project.optimizationTarget === "min_tax"
-                    ? "Lägst skatt är inte samma sak som bästa affär."
-                    : undefined
-                }
-              />
-            </div>
+            <p className="mt-1 text-sm text-muted">
+              Privat köp finansieras med egna pengar — som i sin tur tas ur bolaget som lön eller
+              utdelning — plus bolån. Bolagsköp finansieras med bolagets kassa plus företagslån.
+            </p>
           </div>
 
-          <ScenarioCards results={results} target={project.optimizationTarget} />
+          <ScenarioCards results={results} target={HEADLINE_TARGET} />
 
           <ThreeQuestions results={results} />
 

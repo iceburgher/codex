@@ -1,36 +1,47 @@
 @import "tailwindcss";
 
 :root {
-  --background: #f4f6f8;
+  /* Varm greige bakgrund, vita kort, salvia som accent. */
+  --background: #eae8e3;
   --surface: #ffffff;
-  --surface-muted: #eef1f5;
-  --foreground: #10151c;
-  --muted: #5d6a7a;
-  --border: #e0e5ec;
-  --border-strong: #cfd6e0;
-  --accent: #10617e;
-  --accent-strong: #0b4a61;
-  --accent-soft: #e4f0f5;
-  --positive: #10714f;
-  --positive-soft: #e3f2eb;
-  --negative: #a83232;
-  --negative-soft: #fbe9e8;
-  --warn: #9a6a12;
-  --warn-soft: #fcf2df;
-  --shadow: 0 1px 2px rgb(16 21 28 / 0.04), 0 8px 24px -12px rgb(16 21 28 / 0.14);
+  --surface-muted: #f4f3f0;
+  --surface-sunken: #eef0ec;
+  --foreground: #1f2421;
+  --muted: #8a8f8b;
+  --border: #e6e4df;
+
+  --accent: #7c9482;
+  --accent-strong: #5f7a68;
+  --accent-deep: #46604f;
+  --accent-soft: #e7eee9;
+
+  --ink: #1f2421;
+
+  --positive: #3e7a57;
+  --positive-soft: #e2efe7;
+  --negative: #bf5450;
+  --negative-soft: #fae9e8;
+  --warn: #a87c34;
+  --warn-soft: #f7efdf;
+
+  --radius-card: 24px;
+  --radius-field: 14px;
+  --shadow-card: 0 1px 2px rgb(31 36 33 / 0.03), 0 12px 28px -18px rgb(31 36 33 / 0.25);
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-surface: var(--surface);
   --color-surface-muted: var(--surface-muted);
+  --color-surface-sunken: var(--surface-sunken);
   --color-foreground: var(--foreground);
   --color-muted: var(--muted);
   --color-border: var(--border);
-  --color-border-strong: var(--border-strong);
   --color-accent: var(--accent);
   --color-accent-strong: var(--accent-strong);
+  --color-accent-deep: var(--accent-deep);
   --color-accent-soft: var(--accent-soft);
+  --color-ink: var(--ink);
   --color-positive: var(--positive);
   --color-positive-soft: var(--positive-soft);
   --color-negative: var(--negative);
@@ -41,54 +52,53 @@
 
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0d1116;
-    --surface: #151b23;
-    --surface-muted: #1c242e;
-    --foreground: #e9edf3;
-    --muted: #96a3b4;
-    --border: #262f3a;
-    --border-strong: #35414f;
-    --accent: #5fb0cf;
-    --accent-strong: #8ecbe3;
-    --accent-soft: #14303c;
-    --positive: #4fc196;
-    --positive-soft: #122c22;
-    --negative: #e0817b;
-    --negative-soft: #2e1b1a;
-    --warn: #d6a84f;
-    --warn-soft: #2b2416;
-    --shadow: 0 1px 2px rgb(0 0 0 / 0.3), 0 8px 24px -12px rgb(0 0 0 / 0.6);
-  }
-}
+    --background: #14171a;
+    --surface: #1b1f21;
+    --surface-muted: #23282a;
+    --surface-sunken: #202628;
+    --foreground: #ecedea;
+    --muted: #9aa19c;
+    --border: #2a3033;
 
-html {
-  font-size: 16px;
+    --accent: #8fae96;
+    --accent-strong: #a7c4ad;
+    --accent-deep: #6d8b76;
+    --accent-soft: #223029;
+
+    --ink: #0f1214;
+
+    --positive: #77c396;
+    --positive-soft: #1b2d23;
+    --negative: #dd8b87;
+    --negative-soft: #2d1e1d;
+    --warn: #d6ae66;
+    --warn-soft: #2b2418;
+    --shadow-card: 0 1px 2px rgb(0 0 0 / 0.3), 0 12px 28px -18px rgb(0 0 0 / 0.8);
+  }
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family:
-    ui-sans-serif,
-    system-ui,
-    -apple-system,
-    "Segoe UI",
-    Roboto,
-    "Helvetica Neue",
-    Arial,
-    sans-serif;
   -webkit-font-smoothing: antialiased;
-}
-
-.numeric {
-  font-variant-numeric: tabular-nums;
 }
 
 .card {
   background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  box-shadow: var(--shadow);
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+}
+
+/* Mörkt/grönt framhävt kort, som aktivitetskortet i referensen. */
+.card-accent {
+  background: linear-gradient(150deg, var(--accent) 0%, var(--accent-strong) 100%);
+  color: #fff;
+  border-radius: var(--radius-card);
+  box-shadow: var(--shadow-card);
+}
+
+.numeric {
+  font-variant-numeric: tabular-nums;
 }
 
 input[type="number"]::-webkit-outer-spin-button,
@@ -105,16 +115,24 @@ select {
   color: var(--foreground);
 }
 
+::placeholder {
+  color: var(--muted);
+}
+
 @media print {
   .no-print {
     display: none !important;
   }
   body {
     background: #fff;
-    color: #000;
   }
-  .card {
+  .card,
+  .card-accent {
     box-shadow: none;
+  }
+  .card-accent {
+    background: #f0f3f0;
+    color: #1f2421;
   }
   .print-block {
     break-inside: avoid;

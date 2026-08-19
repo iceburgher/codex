@@ -16,6 +16,7 @@ import {
 import { useProjectStore } from "@/lib/store";
 import type { ImportReport } from "@/lib/schema";
 import { SCENARIO_LABELS, type ProjectStatus, type PropertyProject } from "@/types";
+import { IconSearch } from "./Icons";
 import { Button, Card, SelectField } from "./ui";
 
 type SortKey =
@@ -137,17 +138,34 @@ export function ProjectLibrary() {
   }
 
   return (
-    <div className="mx-auto max-w-[1600px] px-4 py-6">
-      <div className="mb-5 flex flex-wrap items-end justify-between gap-3">
+    <div>
+      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-semibold tracking-tight">Projekt</h1>
-          <p className="mt-0.5 text-xs text-muted">
+          <h1 className="text-[28px] font-semibold leading-tight tracking-tight">
+            Era fastighetsprojekt
+          </h1>
+          <p className="mt-1 text-sm text-muted">
             Ett projekt är ett objekt. Alla ägarformer räknas på samma uppgifter om huset.
           </p>
         </div>
-        <div className="flex flex-wrap gap-2">
-          <Button variant="primary" onClick={handleCreate}>
-            Nytt projekt
+
+        <label className="no-print relative hidden min-w-[320px] items-center sm:flex">
+          <span className="sr-only">Sök</span>
+          <input
+            type="search"
+            value={query}
+            onChange={(e) => setQuery(e.target.value)}
+            placeholder="Sök på namn, adress eller kommun…"
+            className="w-full rounded-full bg-surface py-3.5 pl-6 pr-14 text-sm shadow-[var(--shadow-card)] outline-none focus:ring-2 focus:ring-accent/40"
+          />
+          <span className="pointer-events-none absolute right-2 flex h-10 w-10 items-center justify-center rounded-full bg-ink text-white">
+            <IconSearch className="h-4 w-4" />
+          </span>
+        </label>
+
+        <div className="no-print flex flex-wrap gap-2">
+          <Button variant="dark" onClick={handleCreate}>
+            Nytt projekt +
           </Button>
           <Button onClick={() => fileInput.current?.click()}>Importera</Button>
           <Button
@@ -173,17 +191,7 @@ export function ProjectLibrary() {
         </div>
       </div>
 
-      <div className="mb-4 flex flex-wrap items-end gap-3">
-        <label className="block">
-          <span className="mb-1.5 block text-sm text-muted">Sök</span>
-          <input
-            type="search"
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Namn, adress eller kommun"
-            className="w-72 rounded-lg border border-border-strong bg-surface px-3 py-2.5 text-[15px] outline-none focus:border-accent"
-          />
-        </label>
+      <div className="mb-5 flex flex-wrap items-end gap-3">
         <div className="w-56">
           <SelectField<SortKey>
             label="Sortera efter"

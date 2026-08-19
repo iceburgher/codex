@@ -18,15 +18,16 @@ import { formatMoney, formatMoneyShort } from "@/lib/format";
 import type { ScenarioResult } from "@/types";
 import { Card } from "../ui";
 
-const SERIES = ["#2b7a99", "#4aa88f", "#c08a3e", "#7d6aa8"];
+const SERIES = ["#7c9482", "#5f7a68", "#b0c2b3", "#46604f"];
 const AXIS = { fontSize: 12, fill: "var(--muted)" };
 
 function tooltipStyle() {
   return {
     contentStyle: {
       background: "var(--surface)",
-      border: "1px solid var(--border)",
-      borderRadius: 6,
+      border: "none",
+      boxShadow: "var(--shadow-card)",
+      borderRadius: 12,
       fontSize: 12,
       color: "var(--foreground)",
     },
@@ -54,7 +55,7 @@ export function ScenarioBarCharts({ results }: { results: ScenarioResult[] }) {
       <Card title="Vad projektet kostar totalt">
         <ResponsiveContainer width="100%" height={220}>
           <BarChart data={costData} margin={{ top: 5, right: 5, bottom: 5, left: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} strokeOpacity={0.7} />
             <XAxis dataKey="name" tick={AXIS} axisLine={false} tickLine={false} />
             <YAxis tickFormatter={formatMoneyShort} tick={AXIS} axisLine={false} tickLine={false} />
             <Tooltip formatter={(v) => formatMoney(Number(v))} {...tooltipStyle()} />
@@ -70,7 +71,7 @@ export function ScenarioBarCharts({ results }: { results: ScenarioResult[] }) {
       <Card title="Kvar till er efter skatt">
         <ResponsiveContainer width="100%" height={220}>
           <BarChart data={profitData} margin={{ top: 5, right: 5, bottom: 5, left: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} strokeOpacity={0.7} />
             <XAxis dataKey="name" tick={AXIS} axisLine={false} tickLine={false} />
             <YAxis tickFormatter={formatMoneyShort} tick={AXIS} axisLine={false} tickLine={false} />
             <Tooltip formatter={(v) => formatMoney(Number(v))} {...tooltipStyle()} />
@@ -90,7 +91,7 @@ export function ScenarioBarCharts({ results }: { results: ScenarioResult[] }) {
       >
         <ResponsiveContainer width="100%" height={220}>
           <BarChart data={netWorthData} margin={{ top: 5, right: 5, bottom: 5, left: 0 }}>
-            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+            <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} strokeOpacity={0.7} />
             <XAxis dataKey="name" tick={AXIS} axisLine={false} tickLine={false} />
             <YAxis tickFormatter={formatMoneyShort} tick={AXIS} axisLine={false} tickLine={false} />
             <Tooltip formatter={(v) => formatMoney(Number(v))} {...tooltipStyle()} />
@@ -123,7 +124,7 @@ export function CashFlowChart({ results }: { results: ScenarioResult[] }) {
     >
       <ResponsiveContainer width="100%" height={240}>
         <LineChart data={data} margin={{ top: 5, right: 10, bottom: 5, left: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} strokeOpacity={0.7} />
           <XAxis
             dataKey="month"
             tick={AXIS}
@@ -138,10 +139,10 @@ export function CashFlowChart({ results }: { results: ScenarioResult[] }) {
           {results.map((r, i) => (
             <Line
               key={r.scenario}
-              type="monotone"
+              type="natural"
               dataKey={shortLabel(r.label)}
               stroke={SERIES[i % SERIES.length]}
-              strokeWidth={2}
+              strokeWidth={2.5}
               dot={false}
             />
           ))}
@@ -185,7 +186,7 @@ export function CostWaterfall({ result }: { result: ScenarioResult }) {
     <Card title="Från försäljningspris till kvar i handen" subtitle={result.label}>
       <ResponsiveContainer width="100%" height={260}>
         <BarChart data={data} margin={{ top: 5, right: 5, bottom: 40, left: 0 }}>
-          <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} />
+          <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} strokeOpacity={0.7} />
           <XAxis
             dataKey="name"
             tick={{ ...AXIS, fontSize: 10 }}
