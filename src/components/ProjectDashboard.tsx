@@ -30,6 +30,7 @@ import { KpiStrip } from "./dashboard/KpiStrip";
 import { ScenarioCards } from "./dashboard/ScenarioCards";
 import { SensitivityPanel } from "./dashboard/SensitivityPanel";
 import { HeadToHead } from "./dashboard/HeadToHead";
+import { AiSummary } from "./dashboard/AiSummary";
 import { Button, Card, Collapsible, SelectField, Stat, Tabs, ToggleField } from "./ui";
 
 type TabKey = "oversikt" | "antaganden" | "detaljer";
@@ -221,6 +222,8 @@ export function ProjectDashboard({ projectId }: { projectId: string }) {
             onGoToInput={goToAssumptions}
             onSetExtractionRate={setExtractionRate}
           />
+
+          <AiSummary project={project} />
 
           <div>
             <h2 className="text-lg font-semibold tracking-tight">Alternativen i detalj</h2>
