@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import type Anthropic from "@anthropic-ai/sdk";
 import { calculateAllScenarios } from "@/calculations/engine";
 import { RUNNING_COST_LABELS } from "@/calculations/operatingCosts";
+import { mergeTaxConfig } from "@/config/taxConfig";
 import { applyAssistantPatch } from "@/lib/assistantPatch";
 import { getAnthropic, ASSISTANT_MODEL } from "@/lib/anthropic";
 import { formatMoney, formatPercent } from "@/lib/format";
@@ -197,8 +198,8 @@ function scenarioPatchSchema(): Anthropic.Tool.InputSchema {
   };
 }
 
-const SYSTEM_PROMPT = `Du är inbyggd i en svensk kalkylator för fastighetsprojekt och pratar direkt med den som äger projektet.
-Du ser projektets aktuella siffror nedan — de är redan uträknade, hitta aldrig på egna belopp eller skatteregler.
+const SYSTEM_PROMPT = `Du är inbyggd i en svensk kalkylator för fastighetsprojekt och fungerar som projektets rådgivare — men bara grundad i det kalkylen faktiskt vet, aldrig i egen allmän kunskap om skatt.
+Nedan står projektets aktuella siffror OCH de satser/regler kalkylen är inställd på (skatteår, skattesatser, avdragsregler, gränsbelopp för ROT osv.) — de är alla redan uträknade eller konfigurerade. Använd dem rakt av när du svarar på vad kalkylen räknar med. Hitta ALDRIG på egna belopp, procentsatser eller skatteregler utöver det som står här — även om du tror dig veta bättre. Skiljer sig verkligheten från dessa satser (lagen ändras, undantag gäller) är det något att flagga för avstämning, inte något att tyst räkna om.
 Skriv kort, rakt och utan finansjargong. Inga rubriker eller punktlistor.
 
 Dela alltid svaret i korta stycken (2-4 meningar vardera) med en tom rad mellan varje stycke — aldrig en enda lång sammanhängande text. Ett kort svar på en enkel fråga kan vara ett enda stycke, men så fort svaret täcker flera saker (t.ex. läget just nu, en rekommendation, och vad som är osäkert) ska det vara ett eget stycke per sak.
@@ -422,7 +423,35 @@ export async function POST(request: Request) {
 
 function buildContext(project: PropertyProject, results: ScenarioResult[]): string {
   const lines: string[] = [];
+  const config = mergeTaxConfig(project.taxConfigSnapshot?.values ?? project.taxOverrides);
 
+  lines.push("REGLER OCH SATSER SOM KALKYLEN FAKTISKT RÄKNAR MED FÖR DET HÄR PROJEKTET");
+  lines.push(`Skatteår: ${config.taxYear}`);
+  lines.push(`Bolagsskatt: ${formatPercent(config.corporateTaxRate)}`);
+  lines.push(
+    `Kapitalvinstskatt, privatbostad: ${formatPercent(config.privateResidentialCapitalGainEffectiveRate)}`,
+  );
+  lines.push(`Kapitalinkomstskatt (bl.a. hyresöverskott): ${formatPercent(config.capitalIncomeTaxRate)}`);
+  lines.push(`Utdelningsskatt inom gränsbeloppet: ${formatPercent(config.dividendTaxWithinAllowance)}`);
+  lines.push(`Arbetsgivaravgift: ${formatPercent(config.employerContributionRate)}`);
+  lines.push(`Stämpelskatt, privat lagfart: ${formatPercent(config.privateStampDutyRate)}`);
+  lines.push(`Stämpelskatt, bolags lagfart: ${formatPercent(config.companyStampDutyRate)}`);
+  lines.push(`Expeditionsavgift lagfart: ${formatMoney(config.titleRegistrationFee)}`);
+  lines.push(`Stämpelskatt nya pantbrev: ${formatPercent(config.mortgageDeedTaxRate)}`);
+  lines.push(`ROT-avdrag: ${formatPercent(config.rotRate)}, max ${formatMoney(config.rotMaxPerPerson)} per person`);
+  lines.push(
+    `Schablonavdrag privat uthyrning: ${formatMoney(config.rentalStandardDeduction)} + ${formatPercent(config.rentalPercentDeduction)} av hyresintäkten`,
+  );
+  lines.push(
+    `Fastighetsavgift: ${formatPercent(config.propertyFeeRate)} av taxeringsvärdet, tak ${formatMoney(config.propertyFeeAnnualCap)} per år`,
+  );
+  lines.push(`Ränteavdrag, lån utan säkerhet (blancolån och lån från eget bolag): ${formatPercent(config.unsecuredLoanInterestDeductionRate)}`);
+  lines.push(`Ränteavdrag, lån med säkerhet i huset (antagande): ${formatPercent(config.securedLoanInterestDeductionRateDefault)}`);
+  lines.push(
+    "Dessa satser kommer från projektets egna skatteinställningar (Skatteuppgifter). Använd dem rakt av i svar om vad kalkylen räknar med — hitta aldrig på andra satser.",
+  );
+
+  lines.push("");
   lines.push("PROJEKTETS NUVARANDE SIFFROR");
   lines.push(`Adress: ${project.facts.address ?? "okänd"}`);
   lines.push(`Köpeskilling: ${formatMoney(project.inputs.purchasePrice)}`);
@@ -459,6 +488,11 @@ function buildContext(project: PropertyProject, results: ScenarioResult[]): stri
     }
     lines.push(`Avkastning på egna pengar: ${formatPercent(r.roi.equityROI)}`);
     lines.push(`Pengar som måste finnas tillgängliga: ${formatMoney(r.cashFlow.peakCashRequirement)}`);
+    lines.push(
+      `Lagfart och pantbrev: ${formatMoney(r.purchase.totalPurchaseCosts)} (varav pantbrev ${formatMoney(r.purchase.newMortgageDeedCost)})`,
+    );
+    lines.push(`Lån totalt (drivs och löses vid försäljning): ${formatMoney(r.externalDebt)}`);
+    lines.push(`Räntekostnad under innehavstiden: ${formatMoney(r.financingCost)}`);
     if (r.rental.grossRentalIncome > 0) {
       lines.push(`Hyresintäkter: ${formatMoney(r.rental.grossRentalIncome)}`);
     }
