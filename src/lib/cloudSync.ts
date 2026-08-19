@@ -21,22 +21,39 @@ interface ProjectsResponse {
 
 export class CloudSync {
   private mode: StorageMode = "unknown";
+  private lastError: string | null = null;
 
   getMode(): StorageMode {
     return this.mode;
   }
 
+  /** Sista felet från molnet, för att kunna säga det i gränssnittet. */
+  getLastError(): string | null {
+    return this.lastError;
+  }
+
   /**
    * Hämtar molnets projekt vid start. Finns inget där uppe men lokalt, laddas
    * det lokala upp så att första enheten inte tappar sitt arbete.
+   *
+   * Svarar servern med ett fel — fel nyckel, tabellen saknas — räknas läget
+   * som lokalt. Att visa "sparas i molnet" när ingenting sparas vore värre
+   * än att inte ha molnlagring alls.
    */
   async hydrate(local: LocalStorageProjectRepository): Promise<PropertyProject[] | null> {
+    let response: Response;
     let data: ProjectsResponse;
     try {
-      const response = await fetch("/api/projects", { cache: "no-store" });
+      response = await fetch("/api/projects", { cache: "no-store" });
       data = (await response.json()) as ProjectsResponse;
     } catch {
       this.mode = "local";
+      return null;
+    }
+
+    if (!response.ok || data.error) {
+      this.mode = "local";
+      this.lastError = data.error ?? `Servern svarade ${response.status}.`;
       return null;
     }
 
@@ -50,7 +67,7 @@ export class CloudSync {
 
     if (remote.length === 0) {
       const localProjects = await local.list();
-      await Promise.all(localProjects.map((p) => this.push(p)));
+      for (const project of localProjects) await this.push(project);
       return localProjects.length > 0 ? localProjects : [];
     }
 
@@ -58,25 +75,34 @@ export class CloudSync {
   }
 
   async push(project: PropertyProject): Promise<void> {
-    if (this.mode === "local") return;
+    if (this.mode !== "cloud") return;
     try {
-      await fetch("/api/projects", {
+      const response = await fetch("/api/projects", {
         method: "PUT",
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ project }),
       });
+      this.noteResult(response);
     } catch {
       // Nätet kan vara nere. Den lokala kopian är redan skriven, och nästa
       // ändring skickar upp projektet igen.
+      this.lastError = "Ingen kontakt med servern — ändringen finns bara lokalt.";
     }
   }
 
   async remove(id: string): Promise<void> {
-    if (this.mode === "local") return;
+    if (this.mode !== "cloud") return;
     try {
-      await fetch(`/api/projects?id=${encodeURIComponent(id)}`, { method: "DELETE" });
+      const response = await fetch(`/api/projects?id=${encodeURIComponent(id)}`, {
+        method: "DELETE",
+      });
+      this.noteResult(response);
     } catch {
-      // Se kommentaren i push.
+      this.lastError = "Ingen kontakt med servern — borttagningen gäller bara lokalt.";
     }
+  }
+
+  private noteResult(response: Response): void {
+    this.lastError = response.ok ? null : `Servern svarade ${response.status}.`;
   }
 }

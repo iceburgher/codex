@@ -23,6 +23,8 @@ interface ProjectStore {
   saveState: SaveState;
   /** Var projekten faktiskt hamnar — molnet eller bara den här webbläsaren. */
   storageMode: StorageMode;
+  /** Satt när molnet svarat med fel, så att gränssnittet kan säga det. */
+  storageError: string | null;
   reload: () => Promise<void>;
   createBlank: (name?: string) => Promise<PropertyProject>;
   getProject: (id: string) => PropertyProject | undefined;
@@ -44,6 +46,7 @@ export function ProjectStoreProvider({ children }: { children: ReactNode }) {
   const repo = useMemo(() => new LocalStorageProjectRepository(), []);
   const cloud = useMemo(() => new CloudSync(), []);
   const [storageMode, setStorageMode] = useState<StorageMode>("unknown");
+  const [storageError, setStorageError] = useState<string | null>(null);
   const [projects, setProjects] = useState<PropertyProject[]>([]);
   const [loading, setLoading] = useState(true);
   const [saveState, setSaveState] = useState<SaveState>("saved");
@@ -71,6 +74,7 @@ export function ProjectStoreProvider({ children }: { children: ReactNode }) {
       if (!cancelled) {
         setProjects(list);
         setStorageMode(cloud.getMode());
+        setStorageError(cloud.getLastError());
         setLoading(false);
       }
     })();
@@ -89,6 +93,7 @@ export function ProjectStoreProvider({ children }: { children: ReactNode }) {
       await cloud.push(stored);
     }
     await reload();
+    setStorageError(cloud.getLastError());
     setSaveState("saved");
   }, [repo, reload, cloud]);
 
@@ -120,6 +125,7 @@ export function ProjectStoreProvider({ children }: { children: ReactNode }) {
     loading,
     saveState,
     storageMode,
+    storageError,
     reload,
     createBlank: async (name) => {
       const created = await repo.createBlank(name);

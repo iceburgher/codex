@@ -151,12 +151,18 @@ export function ProjectLibrary() {
             <p className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-surface px-3 py-1.5 text-xs text-muted shadow-[var(--shadow-card)]">
               <span
                 className={`h-2 w-2 rounded-full ${
-                  store.storageMode === "cloud" ? "bg-positive" : "bg-warn"
+                  store.storageMode === "cloud"
+                    ? "bg-positive"
+                    : store.storageError
+                      ? "bg-negative"
+                      : "bg-warn"
                 }`}
               />
               {store.storageMode === "cloud"
                 ? "Sparas i molnet — projekten följer med mellan enheter"
-                : "Sparas bara i den här webbläsaren"}
+                : store.storageError
+                  ? `Molnlagringen svarar inte — sparas bara här. ${store.storageError}`
+                  : "Sparas bara i den här webbläsaren"}
             </p>
           )}
         </div>
