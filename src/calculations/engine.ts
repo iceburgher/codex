@@ -373,6 +373,7 @@ function computeCore(
     project,
     scenario,
     isCompanyOwned,
+    scenarioType,
     vatDeductibleVat: vat.deductibleVat,
     dividendAllowanceExceeded:
       (dividend?.allowanceExceeded ?? false) ||

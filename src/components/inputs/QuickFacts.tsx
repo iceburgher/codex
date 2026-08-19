@@ -14,7 +14,8 @@ const COMPANY: ScenarioType[] = ["EXISTING_COMPANY", "PROJECT_COMPANY"];
  *
  * Ett hus av den här storleken kräver lån oavsett vem som äger det, så
  * lånebelopp och ränta hör hemma här och gäller båda sidorna: privat som
- * bolån, i bolaget som företagslån. Allt annat är finjustering.
+ * bolån, i bolaget som företagslån — med var sin ränta, eftersom de
+ * prissätts olika. Allt annat är finjustering.
  */
 export function QuickFacts({
   project,
@@ -30,7 +31,8 @@ export function QuickFacts({
 }) {
   const itemised = itemisedRenovation(project);
   const loan = sharedLoan(project);
-  const rate = sharedRate(project);
+  const privateRate = project.scenarios.PRIVATE_DEBT.privateLoans.mortgageInterestRate;
+  const companyRate = project.scenarios.EXISTING_COMPANY.companyFunding.businessInterestRate;
   const ownMoney = capitalNeeded === undefined ? null : capitalNeeded - (loan ?? 0);
 
   return (
@@ -85,9 +87,16 @@ export function QuickFacts({
         />
 
         <PercentField
-          label="Ränta på lånet"
-          value={rate}
-          onChange={(v) => update((d) => setSharedRate(d, v ?? 0))}
+          label="Ränta, bolån privat"
+          value={privateRate}
+          onChange={(v) => update((d) => setPrivateRate(d, v ?? 0))}
+        />
+
+        <PercentField
+          label="Ränta, företagslån"
+          value={companyRate}
+          onChange={(v) => update((d) => setCompanyRate(d, v ?? 0))}
+          hint="Ligger normalt högre än ett bolån."
         />
 
         <NumberField
@@ -123,20 +132,23 @@ function sharedLoan(project: PropertyProject): number {
   return project.scenarios.PRIVATE_DEBT.privateLoans.mortgageAmount;
 }
 
-function sharedRate(project: PropertyProject): number {
-  return project.scenarios.PRIVATE_DEBT.privateLoans.mortgageInterestRate;
+/**
+ * Räntorna hålls isär: ett företagslån mot en fastighet prissätts sällan som
+ * ett bolån. Lånebeloppet är däremot detsamma, eftersom kapitalbehovet är det.
+ */
+function setPrivateRate(draft: PropertyProject, rate: number): void {
+  for (const type of PRIVATE) draft.scenarios[type].privateLoans.mortgageInterestRate = rate;
+}
+
+function setCompanyRate(draft: PropertyProject, rate: number): void {
+  for (const type of COMPANY) draft.scenarios[type].companyFunding.businessInterestRate = rate;
+  draft.scenarios.PROJECT_COMPANY.projectCompanyFunding.externalInterestRate = rate;
 }
 
 function setSharedLoan(draft: PropertyProject, amount: number): void {
   for (const type of PRIVATE) draft.scenarios[type].privateLoans.mortgageAmount = amount;
   for (const type of COMPANY) draft.scenarios[type].companyFunding.externalBusinessLoan = amount;
   draft.scenarios.PROJECT_COMPANY.projectCompanyFunding.externalLoan = amount;
-}
-
-function setSharedRate(draft: PropertyProject, rate: number): void {
-  for (const type of PRIVATE) draft.scenarios[type].privateLoans.mortgageInterestRate = rate;
-  for (const type of COMPANY) draft.scenarios[type].companyFunding.businessInterestRate = rate;
-  draft.scenarios.PROJECT_COMPANY.projectCompanyFunding.externalInterestRate = rate;
 }
 
 /** Summan av alla renoveringsposter utom "Övrigt", som snabbfältet styr. */

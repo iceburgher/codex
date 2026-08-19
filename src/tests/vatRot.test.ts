@@ -4,7 +4,20 @@ import { calculateRot } from "@/calculations/rot";
 import { calculateImprovementBasis } from "@/calculations/improvementBasis";
 import type { RotInputs, VatInputs } from "@/types";
 
-const noVat: VatInputs = { vatTreatment: "none", vatDeductiblePercent: 0, lines: [] };
+/** Momsfrågorna om hur projektet drivs påverkar inte själva uträkningen. */
+function vat(overrides: Partial<VatInputs> = {}): VatInputs {
+  return {
+    vatTreatment: "none",
+    vatDeductiblePercent: 0,
+    lines: [],
+    buildWorkBy: "unknown",
+    intendedUse: "unknown",
+    voluntaryTaxLiability: "unknown",
+    ...overrides,
+  };
+}
+
+const noVat: VatInputs = vat();
 
 describe("VAT extraction", () => {
   it("extracts 25% VAT from a gross amount", () => {
@@ -40,7 +53,7 @@ describe("VAT module", () => {
   it("warns when a company scenario claims VAT deduction", () => {
     const r = calculateVat({
       renovationTotalGross: 1_000_000,
-      vat: { vatTreatment: "full", vatDeductiblePercent: 1, lines: [] },
+      vat: vat({ vatTreatment: "full", vatDeductiblePercent: 1 }),
       defaultVatRate: 0.25,
       isCompanyOwned: true,
     });
@@ -52,13 +65,11 @@ describe("VAT module", () => {
   it("applies line-level overrides before the scenario default", () => {
     const r = calculateVat({
       renovationTotalGross: 1_000_000,
-      vat: {
-        vatTreatment: "none",
-        vatDeductiblePercent: 0,
+      vat: vat({
         lines: [
           { id: "l1", label: "Commercial part", grossAmount: 250_000, vatRate: 0.25, deductiblePercent: 1 },
         ],
-      },
+      }),
       defaultVatRate: 0.25,
       isCompanyOwned: true,
     });

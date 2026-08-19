@@ -2,13 +2,16 @@ import type {
   PropertyProject,
   RiskFlag,
   ScenarioInputs,
+  ScenarioType,
   ScenarioResult,
   Warning,
 } from "@/types";
+import { vatRiskFlags } from "./vatGuidance";
 
 export interface RiskContext {
   project: PropertyProject;
   scenario: ScenarioInputs;
+  scenarioType: ScenarioType;
   isCompanyOwned: boolean;
   vatDeductibleVat: number;
   dividendAllowanceExceeded: boolean;
@@ -108,6 +111,9 @@ export function buildRiskFlags(ctx: RiskContext): RiskFlag[] {
       text: "Vi räknar med noll momsavdrag på renoveringen, vilket är det försiktiga antagandet. Ändra bara om en rådgivare säger något annat.",
     });
   }
+
+  // Momsen bedöms för sig, utifrån hur projektet ska drivas.
+  flags.push(...vatRiskFlags(scenario, ctx.scenarioType));
 
   return flags;
 }

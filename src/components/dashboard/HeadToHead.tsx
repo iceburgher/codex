@@ -1,10 +1,19 @@
 "use client";
 
-import { useState, memo } from "react";
+import { memo, useState } from "react";
 import { formatMoney, formatPercent } from "@/lib/format";
 import type { ScenarioResult, ScenarioType } from "@/types";
 
 const PRIVATE_SCENARIOS: ScenarioType[] = ["PRIVATE_EQUITY", "PRIVATE_DEBT"];
+
+/**
+ * Var pengarna hamnar är två olika frågor med två olika svar.
+ *
+ * Stannar vinsten i bolaget är bolagsskatten den enda skatt som betalats.
+ * Ska den ut till ägarna tillkommer skatt på uttaget. Att blanda de två i
+ * samma kolumn gör jämförelsen missvisande, så läget väljs uttryckligen.
+ */
+export type MoneyMode = "in_company" | "extracted";
 
 export interface Side {
   key: "private" | "company";
@@ -12,29 +21,51 @@ export interface Side {
   financing: string;
   best: ScenarioResult | null;
   blockedReason: string | null;
-  /** Sant när det enda som saknas är skattesatsen över gränsbeloppet. */
+  /** Sant när det enda som saknas är skatten på uttaget. */
   needsExtractionRate: boolean;
 }
 
-/**
- * Delar upp resultaten i de två läger frågan egentligen står mellan: äga
- * privat eller äga i bolag. Inom varje läger vinner den finansiering som ger
- * mest kvar efter skatt.
- */
-export function splitSides(results: ScenarioResult[]): [Side, Side] {
+/** Vad som blir kvar, räknat i det valda läget. */
+function amountFor(r: ScenarioResult, mode: MoneyMode): number {
+  const isCompany = r.corporateTax !== null;
+  if (!isCompany) return r.profitAfterTax;
+  return mode === "in_company" ? r.netRetainedInCompany : r.familyNetWorth.familyNetWorthDeltaModeB;
+}
+
+/** Skatten som faktiskt är betald i det valda läget. */
+function taxFor(r: ScenarioResult, mode: MoneyMode): number {
+  const isCompany = r.corporateTax !== null;
+  if (!isCompany) return r.capitalGain.capitalGainTax + r.rental.privateRentalTax;
+
+  const corporate = r.corporateTax?.companyTax ?? 0;
+  const benefit = r.benefit?.combinedEconomicCost ?? 0;
+  const extraction = mode === "extracted" ? (r.extraction?.ownerExtractionTax ?? 0) : 0;
+  return corporate + benefit + extraction;
+}
+
+/** En summarad är bara meningsfull när den summerar mer än en post. */
+function showsTotalTax(r: ScenarioResult, mode: MoneyMode): boolean {
+  const isCompany = r.corporateTax !== null;
+  if (!isCompany) return r.rental.privateRentalTax > 0;
+  const benefit = r.benefit?.combinedEconomicCost ?? 0;
+  return mode === "extracted" || benefit > 0;
+}
+
+/** Skatten på uttaget behöver bara vara känd i det läge som tar ut pengarna. */
+function needsRate(r: ScenarioResult, mode: MoneyMode): boolean {
+  return mode === "extracted" && r.extractionRateUnknown;
+}
+
+export function splitSides(results: ScenarioResult[], mode: MoneyMode): [Side, Side] {
   const build = (
     key: Side["key"],
     title: string,
     financing: string,
     members: ScenarioResult[],
   ): Side => {
-    const usable = members.filter((r) => !r.salePriceMissing && !r.extractionRateUnknown);
+    const usable = members.filter((r) => !r.salePriceMissing && !needsRate(r, mode));
     const best = usable.reduce<ScenarioResult | null>(
-      (acc, r) =>
-        acc === null ||
-        r.familyNetWorth.familyNetWorthDeltaModeB > acc.familyNetWorth.familyNetWorthDeltaModeB
-          ? r
-          : acc,
+      (acc, r) => (acc === null || amountFor(r, mode) > amountFor(acc, mode) ? r : acc),
       null,
     );
 
@@ -63,13 +94,12 @@ export function splitSides(results: ScenarioResult[]): [Side, Side] {
     build(
       "company",
       "Bolaget äger",
-      "Bolaget lånar och använder pengar som redan finns i kassan. Ingen skatt förrän ni vill ta ut vinsten.",
+      "Bolaget lånar och använder pengar som redan finns i kassan.",
       results.filter((r) => !PRIVATE_SCENARIOS.includes(r.scenario)),
     ),
   ];
 }
 
-/** Huvudnumret för ett objekt: privat mot bolag, och skillnaden i kronor. */
 function HeadToHeadInner({
   results,
   onGoToInput,
@@ -77,35 +107,55 @@ function HeadToHeadInner({
 }: {
   results: ScenarioResult[];
   onGoToInput?: () => void;
-  /** Sätter skatten över gränsbeloppet för bolagsalternativen. */
   onSetExtractionRate?: (rate: number) => void;
 }) {
-  const [privateSide, companySide] = splitSides(results);
-  const bothKnown = privateSide.best !== null && companySide.best !== null;
+  const [mode, setMode] = useState<MoneyMode>("in_company");
+  const [privateSide, companySide] = splitSides(results, mode);
 
-  const diff = bothKnown
-    ? privateSide.best!.familyNetWorth.familyNetWorthDeltaModeB -
-      companySide.best!.familyNetWorth.familyNetWorthDeltaModeB
-    : null;
+  const diff =
+    privateSide.best && companySide.best
+      ? amountFor(privateSide.best, mode) - amountFor(companySide.best, mode)
+      : null;
 
   const winner =
     diff === null ? null : Math.abs(diff) < 1000 ? "tie" : diff > 0 ? "private" : "company";
 
   return (
     <section className="space-y-4">
-      <div className="flex flex-wrap items-end justify-between gap-3">
+      <div className="flex flex-wrap items-end justify-between gap-4">
         <div>
           <h2 className="text-lg font-semibold tracking-tight">Privat eller via bolaget?</h2>
-          <p className="mt-1 text-sm text-muted">
+          <p className="mt-1 max-w-2xl text-sm text-muted">
             Samma hus, samma renovering, samma pris vid försäljning. Det enda som skiljer är vem
-            som står som ägare — och vad det kostar i skatt att få ut pengarna till er själva.
+            som står som ägare — och vad det kostar i skatt.
           </p>
+        </div>
+
+        <div className="no-print flex rounded-full bg-surface p-1 shadow-[var(--shadow-card)]">
+          {(
+            [
+              ["in_company", "Pengarna stannar i bolaget"],
+              ["extracted", "Vi tar ut allt privat"],
+            ] as const
+          ).map(([value, label]) => (
+            <button
+              key={value}
+              type="button"
+              onClick={() => setMode(value)}
+              className={`rounded-full px-4 py-2 text-xs font-medium transition-colors ${
+                mode === value ? "bg-ink text-white" : "text-muted hover:text-foreground"
+              }`}
+            >
+              {label}
+            </button>
+          ))}
         </div>
       </div>
 
       <div className="grid items-stretch gap-4 lg:grid-cols-[1fr_auto_1fr]">
         <SideCard
           side={privateSide}
+          mode={mode}
           highlighted={winner === "private"}
           onSetExtractionRate={onSetExtractionRate}
         />
@@ -137,12 +187,22 @@ function HeadToHeadInner({
             ) : (
               <>
                 <p className="text-xs text-muted">
-                  {winner === "private" ? "Privat ger mer" : "Bolaget ger mer"}
+                  {mode === "in_company"
+                    ? winner === "private"
+                      ? "Privat har mer"
+                      : "Bolaget har mer"
+                    : winner === "private"
+                      ? "Privat ger mer"
+                      : "Bolaget ger mer"}
                 </p>
                 <p className="numeric mt-1 text-2xl font-semibold tracking-tight text-accent-strong">
                   {formatMoney(Math.abs(diff))}
                 </p>
-                <p className="mt-1 text-xs leading-snug text-muted">mer kvar till er</p>
+                <p className="mt-1 text-xs leading-snug text-muted">
+                  {mode === "in_company"
+                    ? "men bolagets pengar är inte uttagna än"
+                    : "mer kvar till er"}
+                </p>
               </>
             )}
           </div>
@@ -150,6 +210,7 @@ function HeadToHeadInner({
 
         <SideCard
           side={companySide}
+          mode={mode}
           highlighted={winner === "company"}
           onSetExtractionRate={onSetExtractionRate}
         />
@@ -158,16 +219,26 @@ function HeadToHeadInner({
   );
 }
 
+/**
+ * Ritas bara om när siffrorna faktiskt ändrats. Under inmatning byts
+ * projektet vid varje tangenttryck, men resultaten hinner ikapp först
+ * efteråt — utan detta skulle hela vyn ritas om i onödan.
+ */
+export const HeadToHead = memo(HeadToHeadInner);
+
 function SideCard({
   side,
+  mode,
   highlighted,
   onSetExtractionRate,
 }: {
   side: Side;
+  mode: MoneyMode;
   highlighted: boolean;
   onSetExtractionRate?: (rate: number) => void;
 }) {
   const r = side.best;
+  const isCompany = side.key === "company";
 
   return (
     <article className={`${highlighted ? "card-accent" : "card"} p-6 print-block`}>
@@ -178,7 +249,7 @@ function SideCard({
         </div>
         {highlighted && (
           <span className="shrink-0 rounded-full bg-accent-soft px-3 py-1 text-[11px] font-semibold text-accent-strong">
-            Ger mest
+            {mode === "in_company" ? "Störst belopp" : "Ger mest"}
           </span>
         )}
       </header>
@@ -193,28 +264,69 @@ function SideCard({
       ) : (
         <>
           <div className="mb-5">
-            <p className="text-sm text-muted">Kvar till er när allt är sålt och skattat</p>
+            <p className="text-sm text-muted">
+              {isCompany && mode === "in_company"
+                ? "Kvar i bolaget efter bolagsskatt"
+                : "Kvar till er när allt är sålt och skattat"}
+            </p>
             <p
               className={`numeric mt-1 text-[34px] font-semibold leading-none tracking-tight ${
-                r.familyNetWorth.familyNetWorthDeltaModeB < 0
-                  ? "text-negative"
-                  : highlighted
-                    ? "text-accent-strong"
-                    : ""
+                amountFor(r, mode) < 0 ? "text-negative" : highlighted ? "text-accent-strong" : ""
               }`}
             >
-              {formatMoney(r.familyNetWorth.familyNetWorthDeltaModeB)}
+              {formatMoney(amountFor(r, mode))}
             </p>
             <p className="mt-2 text-xs text-muted">Räknat på: {r.label}</p>
           </div>
 
           <dl className="space-y-2.5 text-sm">
-            <Row label="Vinst på affären efter skatt" value={formatMoney(r.profitAfterTax)} />
-            <Row label="Skatt och avgifter" value={formatMoney(r.totalTax)} />
-            <Row label="Pengar ni måste ha tillgängliga" value={formatMoney(r.cashFlow.peakCashRequirement)} />
+            {isCompany ? (
+              <>
+                <Row
+                  label="Bolagsskatt på vinsten"
+                  value={formatMoney(r.corporateTax?.companyTax ?? 0)}
+                />
+                {mode === "extracted" && (
+                  <Row
+                    label="Skatt när ni tar ut pengarna"
+                    value={formatMoney(r.extraction?.ownerExtractionTax ?? 0)}
+                  />
+                )}
+              </>
+            ) : (
+              <>
+                <Row
+                  label="Skatt på vinsten vid försäljning"
+                  value={formatMoney(r.capitalGain.capitalGainTax)}
+                />
+                {r.rental.privateRentalTax > 0 && (
+                  <Row label="Skatt på hyran" value={formatMoney(r.rental.privateRentalTax)} />
+                )}
+              </>
+            )}
+            {showsTotalTax(r, mode) && (
+              <Row label="Skatt och avgifter totalt" value={formatMoney(taxFor(r, mode))} />
+            )}
+            <Row
+              label="Pengar ni måste ha tillgängliga"
+              value={formatMoney(r.cashFlow.peakCashRequirement)}
+            />
             <Row label="Avkastning på egna pengar" value={formatPercent(r.roi.equityROI)} />
-            <Row label="Lägsta pris utan förlust" value={formatMoney(r.breakEven.breakEvenSalePrice)} />
+            <Row
+              label="Lägsta pris utan förlust"
+              value={formatMoney(r.breakEven.breakEvenSalePrice)}
+            />
           </dl>
+
+          {isCompany && mode === "in_company" && (
+            <p className="mt-4 rounded-2xl bg-surface-muted px-4 py-3 text-xs leading-relaxed text-muted">
+              {r.extractionRateUnknown
+                ? "Pengarna ligger kvar i bolaget. Ska de till er privat tillkommer skatt — fyll i vilken under Antaganden."
+                : `Pengarna ligger kvar i bolaget. Ska de till er privat kostar det ytterligare ${formatMoney(
+                  r.extraction?.ownerExtractionTax ?? 0,
+                )} i skatt — byt läge ovan för att jämföra summorna i samma valuta.`}
+            </p>
+          )}
         </>
       )}
     </article>
@@ -222,12 +334,16 @@ function SideCard({
 }
 
 /**
- * Skatten över gränsbeloppet är det enda som stoppar jämförelsen, så den
- * frågas efter här i stället för att gömmas i en annan flik. Den har medvetet
- * inget standardvärde — 3:12 beror på ägarnas egna förhållanden.
+ * Skatten på uttaget behövs bara i det ena läget, så den frågas efter där
+ * den saknas i stället för att gömmas i en annan flik.
  */
 function ExtractionRatePrompt({ onSet }: { onSet: (rate: number) => void }) {
   const [value, setValue] = useState("");
+
+  function submit() {
+    const parsed = Number(value.replace(",", "."));
+    if (Number.isFinite(parsed) && parsed >= 0 && parsed <= 100) onSet(parsed / 100);
+  }
 
   return (
     <div className="mt-4">
@@ -264,11 +380,6 @@ function ExtractionRatePrompt({ onSet }: { onSet: (rate: number) => void }) {
       </p>
     </div>
   );
-
-  function submit() {
-    const parsed = Number(value.replace(",", "."));
-    if (Number.isFinite(parsed) && parsed >= 0 && parsed <= 100) onSet(parsed / 100);
-  }
 }
 
 function Row({ label, value }: { label: string; value: string }) {
@@ -279,10 +390,3 @@ function Row({ label, value }: { label: string; value: string }) {
     </div>
   );
 }
-
-/**
- * Ritas bara om när siffrorna faktiskt ändrats. Under inmatning byts
- * projektet vid varje tangenttryck, men resultaten hinner ikapp först
- * efteråt — utan detta skulle hela vyn ritas om i onödan.
- */
-export const HeadToHead = memo(HeadToHeadInner);

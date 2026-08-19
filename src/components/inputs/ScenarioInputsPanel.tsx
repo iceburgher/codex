@@ -337,6 +337,52 @@ export function ScenarioInputsPanel({
       </Collapsible>
 
       <Collapsible title="Moms">
+        {/*
+          Frågorna nedan avgör inte momsen — de avgör vilka frågor som är
+          värda att ställa till rådgivaren, och när kalkylens antagande går
+          på tvärs mot hur projektet faktiskt ska drivas.
+        */}
+        <div className="mb-4 grid gap-3 sm:grid-cols-2">
+          <SelectField
+            label="Vem utför byggarbetet?"
+            value={scenario.vat.buildWorkBy}
+            onChange={(v) => update((d) => void (d.scenarios[scenarioType].vat.buildWorkBy = v))}
+            options={[
+              { value: "unknown", label: "Vet inte" },
+              { value: "contractors", label: "Anlitade hantverkare" },
+              { value: "own_staff", label: "Bolagets egen personal" },
+            ]}
+          />
+          <SelectField
+            label="Vad ska huset användas till?"
+            value={scenario.vat.intendedUse}
+            onChange={(v) => update((d) => void (d.scenarios[scenarioType].vat.intendedUse = v))}
+            options={[
+              { value: "unknown", label: "Vet inte" },
+              { value: "sell_residential", label: "Säljas som bostad" },
+              { value: "rent_residential", label: "Hyras ut som bostad" },
+              { value: "rent_commercial", label: "Hyras ut som lokal" },
+              { value: "mixed", label: "Både bostad och lokal" },
+            ]}
+          />
+          {(scenario.vat.intendedUse === "rent_commercial" ||
+            scenario.vat.intendedUse === "mixed") && (
+            <SelectField
+              label="Är fastigheten frivilligt skattskyldig för moms?"
+              value={scenario.vat.voluntaryTaxLiability}
+              onChange={(v) =>
+                update((d) => void (d.scenarios[scenarioType].vat.voluntaryTaxLiability = v))
+              }
+              options={[
+                { value: "unknown", label: "Vet inte" },
+                { value: "yes", label: "Ja" },
+                { value: "no", label: "Nej" },
+              ]}
+              hint="Gäller bara lokaler, aldrig bostad."
+            />
+          )}
+        </div>
+
         <div className="space-y-3">
           <SelectField
             label="Momshantering"

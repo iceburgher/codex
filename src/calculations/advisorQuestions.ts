@@ -1,5 +1,6 @@
 import type { PropertyProject, ScenarioType } from "@/types";
 import { isCompanyScenario } from "./engine";
+import { vatQuestions } from "./vatGuidance";
 
 export interface AdvisorQuestion {
   id: string;
@@ -43,12 +44,16 @@ export function buildAdvisorQuestions(
   }
 
   if (hasCompany) {
+    // Momsfrågorna följer av hur projektet ska drivas, så de byggs separat.
+    for (const scenarioType of scenarios.filter(isCompanyScenario)) {
+      for (const q of vatQuestions(project.scenarios[scenarioType].vat)) {
+        if (!questions.some((existing) => existing.id === q.id)) {
+          questions.push({ id: q.id, scope: "Moms", question: `${q.question} (${q.because})` });
+        }
+      }
+    }
+
     questions.push(
-      {
-        id: "vat_deductibility",
-        scope: "Bolagsköp",
-        question: "Är någon del av renoveringsmomsen avdragsgill för den här bostaden?",
-      },
       {
         id: "company_classification",
         scope: "Bolagsköp",

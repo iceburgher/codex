@@ -191,6 +191,9 @@ export function defaultScenario(type: ScenarioType): ScenarioInputs {
       vatTreatment: "none",
       vatDeductiblePercent: 0,
       lines: [],
+      buildWorkBy: "unknown",
+      intendedUse: "unknown",
+      voluntaryTaxLiability: "unknown",
     },
     rot: {
       enabled: !isCompany,

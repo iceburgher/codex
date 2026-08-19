@@ -169,7 +169,9 @@ describe("advisor questions", () => {
     ]);
     const ids = qs.map((q) => q.id);
     expect(ids).toContain("private_residence_qualification");
-    expect(ids).toContain("vat_deductibility");
+    // Momsfrågan är inte längre en generisk rad, utan följer av hur projektet
+    // ska drivas. Är användningen inte ifylld är det den frågan som ställs.
+    expect(ids).toContain("vat_use_unknown");
   });
 });
 

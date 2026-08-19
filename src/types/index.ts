@@ -175,10 +175,32 @@ export interface VatLineOverride {
   deductiblePercent: number;
 }
 
+/**
+ * Faktafrågor om hur projektet ska drivas.
+ *
+ * Svaren avgör inte momsen — de avgör vilka frågor som är relevanta att
+ * ställa. Appen drar aldrig slutsatsen att avdrag medges; den pekar ut när
+ * frågan behöver ställas till någon som kan svara.
+ */
+export type BuildWorkBy = "unknown" | "contractors" | "own_staff";
+export type IntendedPropertyUse =
+  | "unknown"
+  | "sell_residential"
+  | "rent_residential"
+  | "rent_commercial"
+  | "mixed";
+export type YesNoUnknown = "unknown" | "yes" | "no";
+
 export interface VatInputs {
   vatTreatment: VatTreatment;
   vatDeductiblePercent: number;
   lines: VatLineOverride[];
+  /** Vem som utför byggarbetet — egen personal kan utlösa uttagsbeskattning. */
+  buildWorkBy: BuildWorkBy;
+  /** Vad huset ska användas till, vilket styr om verksamheten är momsfri. */
+  intendedUse: IntendedPropertyUse;
+  /** Om fastigheten är frivilligt skattskyldig, vilket bara gäller lokaler. */
+  voluntaryTaxLiability: YesNoUnknown;
 }
 
 export interface RotInputs {
