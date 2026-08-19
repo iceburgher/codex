@@ -2,10 +2,12 @@ import { NextResponse } from "next/server";
 import type Anthropic from "@anthropic-ai/sdk";
 import { calculateAllScenarios } from "@/calculations/engine";
 import { RUNNING_COST_LABELS } from "@/calculations/operatingCosts";
+import { applyAssistantPatch } from "@/lib/assistantPatch";
 import { getAnthropic, ASSISTANT_MODEL } from "@/lib/anthropic";
 import { formatMoney, formatPercent } from "@/lib/format";
 import { migrateProject } from "@/lib/migrations";
-import type { AiChatMessage, PropertyProject, ScenarioResult } from "@/types";
+import { SCENARIO_LABELS } from "@/types";
+import type { AiChatMessage, PropertyProject, ScenarioResult, ScenarioType } from "@/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -152,11 +154,91 @@ Skriv kort, rakt och utan finansjargong. Inga rubriker eller punktlistor.
 
 Dela alltid svaret i korta stycken (2-4 meningar vardera) med en tom rad mellan varje stycke — aldrig en enda lång sammanhängande text. Ett kort svar på en enkel fråga kan vara ett enda stycke, men så fort svaret täcker flera saker (t.ex. läget just nu, en rekommendation, och vad som är osäkert) ska det vara ett eget stycke per sak.
 
-Två typer av frågor:
+Tre typer av meddelanden:
 1. Frågor om vad siffrorna betyder eller vilket alternativ som ser bäst ut — svara direkt utifrån det som skickas med. Saknas underlag (t.ex. försäljningspris), säg det i stället för att gissa.
-2. Förslag på en ändring ("tänk om vi hyr ut för...", "höj lånet till...", "sätt räntan till...") — räkna ut vad det betyder i projektets fält och anropa verktyget ${UPDATE_TOOL_NAME} med bara de fält som ska ändras. Ange alltid belopp i grundenheten fältet använder (t.ex. kr per VECKA för hyra, inte per månad — räkna om själv och nämn omräkningen i svaret så det går att rätta om den blir fel). Skriv alltid en kort mening om vad du ändrade och varför, även när du anropar verktyget.
+2. Ett konkret, fullständigt förslag på en ändring ("tänk om vi hyr ut för 25 000 kr i månaden i ett år", "höj lånet till 3,2 miljoner") — räkna ut vad det betyder i projektets fält och anropa verktyget ${UPDATE_TOOL_NAME} med bara de fält som ska ändras. Ange alltid belopp i grundenheten fältet använder (t.ex. kr per VECKA för hyra, inte per månad — räkna om själv, till exempel 25 000 kr/månad i tolv månader blir 52 veckor à ca 5 769 kr). Anropa aldrig verktyget utan att också skriva text — texten ska säga vad du ändrar och varför, aldrig bara bekräfta i efterhand.
+3. Ett vagt eller ofullständigt förslag där du inte kan avgöra konkreta tal (t.ex. saknar belopp, eller är tvetydigt), eller ett förslag som verkar strida mot något som redan är ifyllt (t.ex. en uthyrningsperiod längre än projektets innehavstid) — anropa INTE verktyget då. Ställ i stället en kort, konkret fråga om exakt vad som saknas eller är oklart, i stället för att gissa dig fram.
 
 Var tydlig när en fråga egentligen kräver en skatterådgivare — gissa aldrig på skatteklassificeringar.`;
+
+const CONSEQUENCE_SYSTEM_PROMPT = `Du föreslog nyss en ändring av projektets antaganden. Ett verktygssvar visar om den gick att tillämpa, och om den gjorde det, de omräknade siffrorna efteråt.
+Förklara kort vad ändringen faktiskt betyder: vilka av de jämförda alternativen som påverkas och hur, jämfört med innan. Använd bara talen i verktygssvaret — hitta aldrig på egna. Skriv i korta stycken (2-4 meningar) med tom rad mellan om det är mer än en sak att säga.
+Om verktygssvaret säger att ändringen inte gick att tillämpa: förklara det tydligt och fråga vad som menades i stället för att låtsas att något hände.
+Svara aldrig bara "Uppdaterat" eller liknande utan att förklara konsekvensen.`;
+
+const FIELD_LABELS: Record<string, string> = {
+  "inputs.purchasePrice": "köpeskilling",
+  "inputs.expectedSalePrice": "förväntat försäljningspris",
+  "inputs.priorYearTaxAssessmentValue": "taxeringsvärde",
+  "inputs.existingMortgageDeeds": "befintliga pantbrev",
+  "inputs.holdingPeriodMonths": "innehavstid",
+  "rental.enabled": "uthyrning påslagen",
+  "rental.rentedWeeks": "antal uthyrningsveckor",
+  "rental.rentPerWeek": "hyra per vecka",
+  "rental.platformFeePercent": "plattformsavgift vid uthyrning",
+  "rental.cleaningPerStay": "städkostnad per uthyrning",
+  "rental.numberOfStays": "antal uthyrningstillfällen",
+  "rental.extraUtilities": "extra driftkostnader vid uthyrning",
+  "rental.extraWearAndTear": "extra slitage vid uthyrning",
+  "sale.brokerFeePercent": "mäklararvode, andel",
+  "sale.brokerFeeFixed": "mäklararvode, fast belopp",
+  "optimizationTarget": "vad kalkylen optimeras mot",
+  "renovation.laborGross": "renovering: arbete",
+  "renovation.materialsGross": "renovering: material",
+  "renovation.appliances": "renovering: vitvaror",
+  "renovation.fixedInterior": "renovering: fast inredning",
+  "renovation.looseInterior": "renovering: lös inredning",
+  "renovation.styling": "renovering: styling",
+  "renovation.landscaping": "renovering: trädgård",
+  "renovation.other": "renovering: övrigt",
+  "renovation.contingencyPercent": "renovering: oförutsett",
+};
+for (const [key, label] of Object.entries(RUNNING_COST_LABELS)) {
+  FIELD_LABELS[`operatingCosts.${key}`] = `driftkostnad: ${label.toLowerCase()}`;
+}
+
+const SCENARIO_SUBFIELD_LABELS: Record<string, string> = {
+  "privateLoans.mortgageAmount": "lånebelopp (bolån)",
+  "privateLoans.mortgageInterestRate": "ränta (bolån)",
+  "privateLoans.unsecuredLoanAmount": "lånebelopp (blancolån)",
+  "privateLoans.unsecuredInterestRate": "ränta (blancolån)",
+  "companyFunding.companyCashInvested": "eget kapital från bolaget",
+  "companyFunding.externalBusinessLoan": "bolagets lån",
+  "companyFunding.businessInterestRate": "ränta på bolagets lån",
+  "vat.vatTreatment": "momshantering",
+  "vat.vatDeductiblePercent": "andel avdragsgill moms",
+  "vat.intendedUse": "avsedd användning (moms)",
+  "dividend.dividendTaxAboveAllowance": "skatt på utdelning över gränsbeloppet",
+};
+
+/** Översätter en punktad fältväg (t.ex. "rental.rentPerWeek") till vanlig svenska. */
+function labelFor(path: string): string {
+  if (FIELD_LABELS[path]) return FIELD_LABELS[path];
+  const scenarioMatch = /^scenarios\.([A-Z_]+)\.(.+)$/.exec(path);
+  if (scenarioMatch) {
+    const [, type, rest] = scenarioMatch;
+    const scenarioLabel = SCENARIO_LABELS[type as ScenarioType] ?? type;
+    const fieldLabel = SCENARIO_SUBFIELD_LABELS[rest] ?? rest;
+    return `${fieldLabel} (${scenarioLabel})`;
+  }
+  return path;
+}
+
+/** En deterministisk bekräftelse — bygger aldrig på vad modellen själv säger att den gjorde. */
+function describeChange(changed: string[]): string {
+  if (changed.length === 0) {
+    return "Inget av det jag föreslog gick att koppla till ett fält i projektet, så inget uppdaterades.";
+  }
+  return `Uppdaterat: ${changed.map(labelFor).join(", ")}.`;
+}
+
+function textOf(message: Anthropic.Message): string {
+  return message.content
+    .filter((b): b is Anthropic.TextBlock => b.type === "text")
+    .map((b) => b.text)
+    .join("\n")
+    .trim();
+}
 
 export async function POST(request: Request) {
   const client = getAnthropic();
@@ -194,7 +276,7 @@ export async function POST(request: Request) {
   };
 
   try {
-    const message = await client.messages.create({
+    const firstPass = await client.messages.create({
       model: ASSISTANT_MODEL,
       max_tokens: 800,
       system: SYSTEM_PROMPT,
@@ -202,22 +284,59 @@ export async function POST(request: Request) {
       messages,
     });
 
-    const textBlocks = message.content.filter(
-      (block): block is Anthropic.TextBlock => block.type === "text",
-    );
-    const toolUse = message.content.find(
+    const toolUse = firstPass.content.find(
       (block): block is Anthropic.ToolUseBlock =>
         block.type === "tool_use" && block.name === UPDATE_TOOL_NAME,
     );
 
-    const reply = textBlocks
-      .map((b) => b.text)
-      .join("\n")
-      .trim();
+    if (!toolUse) {
+      const reply = textOf(firstPass);
+      return NextResponse.json({
+        reply: reply || "Fick inget svar från AI-tjänsten.",
+        patch: null,
+      });
+    }
+
+    // Simulera ändringen mot en kopia av projektet i stället för att låta
+    // modellen gissa på konsekvenserna — nästa anrop får förklara utifrån
+    // faktiskt omräknade tal.
+    const patched: PropertyProject = JSON.parse(JSON.stringify(project));
+    const { changed } = applyAssistantPatch(patched, toolUse.input);
+    const patchedResults =
+      patched.compareScenarios.length > 0 ? calculateAllScenarios(patched) : [];
+    const statusLine = describeChange(changed);
+
+    const toolResultContent =
+      changed.length > 0
+        ? `Ändringen tillämpades. ${statusLine}\n\nNya siffror efter ändringen:\n\n${buildContext(patched, patchedResults)}`
+        : `${statusLine} Fälten i förslaget matchade inget i projektets nuvarande struktur.`;
+
+    const secondPass = await client.messages.create({
+      model: ASSISTANT_MODEL,
+      max_tokens: 500,
+      system: CONSEQUENCE_SYSTEM_PROMPT,
+      messages: [
+        ...messages,
+        { role: "assistant", content: firstPass.content as unknown as Anthropic.MessageParam["content"] },
+        {
+          role: "user",
+          content: [
+            {
+              type: "tool_result",
+              tool_use_id: toolUse.id,
+              content: toolResultContent,
+            },
+          ],
+        },
+      ],
+    });
+
+    const explanation = textOf(secondPass);
+    const reply = [statusLine, explanation].filter(Boolean).join("\n\n");
 
     return NextResponse.json({
-      reply: reply || (toolUse ? "Uppdaterat." : "Fick inget svar från AI-tjänsten."),
-      patch: toolUse ? toolUse.input : null,
+      reply: reply || statusLine,
+      patch: toolUse.input,
     });
   } catch (error) {
     const message = error instanceof Error ? error.message : "Okänt fel";

@@ -95,6 +95,15 @@ export function AiAssistant({
             Svarar på frågor om kalkylen och kan ändra antaganden åt er
           </p>
         </div>
+        {project.aiChat.length > 0 && (
+          <button
+            type="button"
+            onClick={() => update((d) => void (d.aiChat = []))}
+            className="no-print shrink-0 rounded-full px-3 py-1.5 text-xs font-medium text-muted hover:bg-surface-muted hover:text-foreground"
+          >
+            Rensa chatt
+          </button>
+        )}
       </header>
 
       <div ref={listRef} className="max-h-80 space-y-3 overflow-y-auto px-5 py-4">
