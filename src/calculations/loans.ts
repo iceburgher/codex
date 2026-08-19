@@ -9,19 +9,48 @@ export function calculateInterest(
   return (principal || 0) * (annualRate || 0) * (holdingPeriodMonths / 12);
 }
 
+/**
+ * Skattereduktion för underskott av kapital är trappad, inte platt: 30 % upp
+ * till 100 000 kr per person, 21 % på det som ligger över. Två ägare med
+ * hälften var av räntan får alltså dubbla tröskeln innan den lägre satsen
+ * slår in — approximerat här som en gemensam tröskel för hela räntebeloppet
+ * (100 000 kr x antal ägare) snarare än en fullständig per-person-uppdelning
+ * av hela kalkylen.
+ */
+export function calculateTieredInterestDeduction(params: {
+  grossInterest: number;
+  numberOfOwners: number;
+  tier1Rate: number;
+  tier2Rate: number;
+  thresholdPerPerson: number;
+}): number {
+  const threshold = params.thresholdPerPerson * Math.max(1, params.numberOfOwners);
+  const tier1Base = Math.min(params.grossInterest, threshold);
+  const tier2Base = Math.max(0, params.grossInterest - threshold);
+  return tier1Base * params.tier1Rate + tier2Base * params.tier2Rate;
+}
+
 export function calculatePrivateLoans(params: {
   loans: PrivateLoanInputs;
   holdingPeriodMonths: number;
+  numberOfOwners: number;
+  securedLoanInterestDeductionRateTier2: number;
+  securedLoanInterestDeductionThresholdPerPerson: number;
 }): LoanResult {
-  const { loans, holdingPeriodMonths } = params;
+  const { loans, holdingPeriodMonths, numberOfOwners } = params;
 
   const grossMortgageInterest = calculateInterest(
     loans.mortgageAmount,
     loans.mortgageInterestRate,
     holdingPeriodMonths,
   );
-  const mortgageTaxReduction =
-    grossMortgageInterest * (loans.securedLoanInterestDeductionRate || 0);
+  const mortgageTaxReduction = calculateTieredInterestDeduction({
+    grossInterest: grossMortgageInterest,
+    numberOfOwners,
+    tier1Rate: loans.securedLoanInterestDeductionRate || 0,
+    tier2Rate: params.securedLoanInterestDeductionRateTier2,
+    thresholdPerPerson: params.securedLoanInterestDeductionThresholdPerPerson,
+  });
   const netMortgageInterest = grossMortgageInterest - mortgageTaxReduction;
 
   const grossUnsecuredInterest = calculateInterest(
@@ -67,7 +96,10 @@ export function calculatePrivateLoans(params: {
         source: "USER_INPUT",
         lines: [
           { label: "Bolåneränta före avdrag", value: grossMortgageInterest },
-          { label: "Ränteavdrag", value: -mortgageTaxReduction },
+          {
+            label: `Ränteavdrag (${(numberOfOwners * params.securedLoanInterestDeductionThresholdPerPerson).toLocaleString("sv-SE")} kr @ ${((loans.securedLoanInterestDeductionRate || 0) * 100).toFixed(0)} %, resten @ ${(params.securedLoanInterestDeductionRateTier2 * 100).toFixed(0)} %)`,
+            value: -mortgageTaxReduction,
+          },
           { label: "Bolåneränta efter avdrag", value: netMortgageInterest },
           { label: "Privatlåneränta före avdrag", value: grossUnsecuredInterest },
           { label: "Ränteavdrag privatlån", value: -unsecuredTaxReduction },

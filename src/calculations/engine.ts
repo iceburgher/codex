@@ -99,7 +99,15 @@ function computeCore(
     unsecuredInterestRate: Math.max(0, scenario.privateLoans.unsecuredInterestRate + rateDelta),
     unsecuredLoanInterestDeductionRate: config.unsecuredLoanInterestDeductionRate,
   };
-  const loans = calculatePrivateLoans({ loans: privateLoansInput, holdingPeriodMonths });
+  const numberOfOwners = project.inputs.ownershipSharePerson2 > 0 ? 2 : 1;
+  const loans = calculatePrivateLoans({
+    loans: privateLoansInput,
+    holdingPeriodMonths,
+    numberOfOwners,
+    securedLoanInterestDeductionRateTier2: config.securedLoanInterestDeductionRateTier2,
+    securedLoanInterestDeductionThresholdPerPerson:
+      config.securedLoanInterestDeductionThresholdPerPerson,
+  });
 
   let companyFunding = null;
   if (scenarioType === "EXISTING_COMPANY") {

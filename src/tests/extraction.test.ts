@@ -125,8 +125,12 @@ describe("loan interest", () => {
         companyLoanInterestRate: 0,
       },
       holdingPeriodMonths: 12,
+      numberOfOwners: 1,
+      securedLoanInterestDeductionRateTier2: 0.21,
+      securedLoanInterestDeductionThresholdPerPerson: 100_000,
     });
     expect(r.grossMortgageInterest).toBeCloseTo(90_000, 6);
+    // Under tröskeln (100 000 kr för en ägare), så hela beloppet stannar i 30 %-steget.
     expect(r.mortgageTaxReduction).toBeCloseTo(27_000, 6);
     expect(r.netMortgageInterest).toBeCloseTo(63_000, 6);
     expect(r.grossUnsecuredInterest).toBeCloseTo(45_000, 6);
@@ -153,9 +157,85 @@ describe("loan interest", () => {
         companyLoanInterestRate: 0.05,
       },
       holdingPeriodMonths: 12,
+      numberOfOwners: 1,
+      securedLoanInterestDeductionRateTier2: 0.21,
+      securedLoanInterestDeductionThresholdPerPerson: 100_000,
     });
     expect(r.grossCompanyLoanInterest).toBeCloseTo(30_000, 6);
     expect(r.companyLoanTaxReduction).toBe(0);
     expect(r.netCompanyLoanInterest).toBeCloseTo(30_000, 6);
+  });
+
+  it("steps the mortgage interest deduction down to 21% above the per-person threshold", () => {
+    // 150,000 kr ränta, en ägare: 100,000 @ 30 % + 50,000 @ 21 %.
+    const r = calculatePrivateLoans({
+      loans: {
+        mortgageAmount: 3_000_000,
+        mortgageInterestRate: 0.05, // gross interest = 150,000 over 12 months
+        mortgageSetupFee: 0,
+        mortgageAmortizationAnnual: 0,
+        unsecuredLoanAmount: 0,
+        unsecuredInterestRate: 0,
+        unsecuredSetupFee: 0,
+        unsecuredAmortizationAnnual: 0,
+        securedLoanInterestDeductionRate: 0.3,
+        unsecuredLoanInterestDeductionRate: 0,
+        companyLoanAmount: 0,
+        companyLoanInterestRate: 0,
+      },
+      holdingPeriodMonths: 12,
+      numberOfOwners: 1,
+      securedLoanInterestDeductionRateTier2: 0.21,
+      securedLoanInterestDeductionThresholdPerPerson: 100_000,
+    });
+    expect(r.grossMortgageInterest).toBeCloseTo(150_000, 6);
+    expect(r.mortgageTaxReduction).toBeCloseTo(100_000 * 0.3 + 50_000 * 0.21, 6);
+  });
+
+  it("doubles the threshold for two owners before the lower rate applies", () => {
+    const oneOwner = calculatePrivateLoans({
+      loans: {
+        mortgageAmount: 3_000_000,
+        mortgageInterestRate: 0.05,
+        mortgageSetupFee: 0,
+        mortgageAmortizationAnnual: 0,
+        unsecuredLoanAmount: 0,
+        unsecuredInterestRate: 0,
+        unsecuredSetupFee: 0,
+        unsecuredAmortizationAnnual: 0,
+        securedLoanInterestDeductionRate: 0.3,
+        unsecuredLoanInterestDeductionRate: 0,
+        companyLoanAmount: 0,
+        companyLoanInterestRate: 0,
+      },
+      holdingPeriodMonths: 12,
+      numberOfOwners: 1,
+      securedLoanInterestDeductionRateTier2: 0.21,
+      securedLoanInterestDeductionThresholdPerPerson: 100_000,
+    });
+    const twoOwners = calculatePrivateLoans({
+      loans: {
+        mortgageAmount: 3_000_000,
+        mortgageInterestRate: 0.05,
+        mortgageSetupFee: 0,
+        mortgageAmortizationAnnual: 0,
+        unsecuredLoanAmount: 0,
+        unsecuredInterestRate: 0,
+        unsecuredSetupFee: 0,
+        unsecuredAmortizationAnnual: 0,
+        securedLoanInterestDeductionRate: 0.3,
+        unsecuredLoanInterestDeductionRate: 0,
+        companyLoanAmount: 0,
+        companyLoanInterestRate: 0,
+      },
+      holdingPeriodMonths: 12,
+      numberOfOwners: 2,
+      securedLoanInterestDeductionRateTier2: 0.21,
+      securedLoanInterestDeductionThresholdPerPerson: 100_000,
+    });
+    // Two owners keep more of the 150,000 kr interest in the 30% tier
+    // (200,000 kr threshold instead of 100,000), so the deduction is larger.
+    expect(twoOwners.mortgageTaxReduction).toBeGreaterThan(oneOwner.mortgageTaxReduction);
+    expect(twoOwners.mortgageTaxReduction).toBeCloseTo(150_000 * 0.3, 6);
   });
 });

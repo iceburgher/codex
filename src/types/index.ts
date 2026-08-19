@@ -104,6 +104,10 @@ export interface TaxConfig {
   propertyFeeAnnualCap: number;
   unsecuredLoanInterestDeductionRate: number;
   securedLoanInterestDeductionRateDefault: number;
+  /** Skattereduktionen trappar ner till den här satsen på underskott över tröskeln (per person). */
+  securedLoanInterestDeductionRateTier2: number;
+  /** Kronor per person innan den lägre satsen slår in på ränteavdraget. */
+  securedLoanInterestDeductionThresholdPerPerson: number;
 }
 
 export interface TaxConfigSnapshot {

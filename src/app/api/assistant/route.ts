@@ -479,7 +479,9 @@ function buildContext(project: PropertyProject, results: ScenarioResult[]): stri
     `Fastighetsavgift: ${formatPercent(config.propertyFeeRate)} av taxeringsvärdet, tak ${formatMoney(config.propertyFeeAnnualCap)} per år`,
   );
   lines.push(`Ränteavdrag, lån utan säkerhet (blancolån och lån från eget bolag): ${formatPercent(config.unsecuredLoanInterestDeductionRate)}`);
-  lines.push(`Ränteavdrag, lån med säkerhet i huset (antagande): ${formatPercent(config.securedLoanInterestDeductionRateDefault)}`);
+  lines.push(
+    `Ränteavdrag, lån med säkerhet i huset: ${formatPercent(config.securedLoanInterestDeductionRateDefault)} upp till ${formatMoney(config.securedLoanInterestDeductionThresholdPerPerson)} per person, ${formatPercent(config.securedLoanInterestDeductionRateTier2)} däröver`,
+  );
   lines.push(
     "Dessa satser kommer från projektets egna skatteinställningar (Skatteuppgifter). Använd dem rakt av i svar om vad kalkylen räknar med — hitta aldrig på andra satser.",
   );

@@ -160,6 +160,30 @@ describe("scenario engine", () => {
     expect(r.warnings.map((w) => w.id)).not.toContain("company_loss_deferred_tax_asset");
   });
 
+  it("steps the mortgage interest deduction down to 21% above the per-person threshold", () => {
+    const p = baseProject();
+    p.inputs.ownershipSharePerson2 = 0; // a single owner, so the threshold is not doubled
+    p.scenarios.PRIVATE_DEBT.privateLoans.mortgageAmount = 3_000_000;
+    p.scenarios.PRIVATE_DEBT.privateLoans.mortgageInterestRate = 0.05; // gross = 150,000/year
+    const r = calculateScenario(p, "PRIVATE_DEBT");
+    // 100,000 @ 30% + 50,000 @ 21%, not a flat 30% on the whole amount.
+    expect(r.loans.mortgageTaxReduction).toBeCloseTo(100_000 * 0.3 + 50_000 * 0.21, 6);
+    expect(r.loans.mortgageTaxReduction).toBeLessThan(150_000 * 0.3);
+  });
+
+  it("gives two owners a larger interest deduction than one, via a doubled threshold", () => {
+    const p = baseProject();
+    p.scenarios.PRIVATE_DEBT.privateLoans.mortgageAmount = 3_000_000;
+    p.scenarios.PRIVATE_DEBT.privateLoans.mortgageInterestRate = 0.05;
+    p.inputs.ownershipSharePerson2 = 0;
+    const oneOwner = calculateScenario(p, "PRIVATE_DEBT");
+    p.inputs.ownershipSharePerson2 = 0.5;
+    const twoOwners = calculateScenario(p, "PRIVATE_DEBT");
+    expect(twoOwners.loans.mortgageTaxReduction).toBeGreaterThan(
+      oneOwner.loans.mortgageTaxReduction,
+    );
+  });
+
   it("flags private use of a company-owned property", () => {
     const p = baseProject();
     p.scenarios.EXISTING_COMPANY.privateUseLevel = "full_disposition";

@@ -35,6 +35,8 @@ export const DEFAULT_TAX_CONFIG_2026: TaxConfig = {
   propertyFeeAnnualCap: 10425, // VERIFIED
   unsecuredLoanInterestDeductionRate: 0, // VERIFIED (from income year 2026)
   securedLoanInterestDeductionRateDefault: 0.3, // USER INPUT — standard mortgage interest deduction assumption, verify
+  securedLoanInterestDeductionRateTier2: 0.21, // VERIFIED — skattereduktion på underskott av kapital över tröskeln
+  securedLoanInterestDeductionThresholdPerPerson: 100_000, // VERIFIED
 };
 
 export function mergeTaxConfig(

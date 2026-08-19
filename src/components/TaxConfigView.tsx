@@ -120,9 +120,22 @@ const FIELDS: Field[] = [
   },
   {
     key: "securedLoanInterestDeductionRateDefault",
-    label: "Ränteavdrag bolån (standard)",
+    label: "Ränteavdrag bolån, upp till tröskeln",
     kind: "percent",
     source: "TAX_ADVISOR_INPUT",
+  },
+  {
+    key: "securedLoanInterestDeductionRateTier2",
+    label: "Ränteavdrag bolån, över tröskeln",
+    kind: "percent",
+    source: "VERIFIED",
+    hint: "Skattereduktionen trappar ner till den här satsen på underskott över tröskeln.",
+  },
+  {
+    key: "securedLoanInterestDeductionThresholdPerPerson",
+    label: "Tröskel för ränteavdraget, per person",
+    kind: "money",
+    source: "VERIFIED",
   },
 ];
 
