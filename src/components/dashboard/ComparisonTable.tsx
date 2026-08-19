@@ -20,18 +20,18 @@ const afterExtraction = (render: (r: ScenarioResult) => string) => (r: ScenarioR
   whenAssessable(
     r.salePriceMissing || r.extractionRateUnknown,
     () => render(r),
-    r.extractionRateUnknown ? "Kräver skattesats" : undefined,
+    r.extractionRateUnknown ? "Fyll i skatten" : undefined,
   );
 
 const ROWS: Row[] = [
   {
-    label: "Totalt kapitalbehov",
+    label: "Pengar som behövs totalt",
     value: (r) => formatMoney(r.totalCapitalRequirement),
   },
-  { label: "Eget kapital", value: (r) => formatMoney(r.equityCommitted) },
+  { label: "Egna pengar", value: (r) => formatMoney(r.equityCommitted) },
   { label: "Lån", value: (r) => formatMoney(r.externalDebt) },
   {
-    label: "Skatt och avgifter vid köp",
+    label: "Lagfart och pantbrev",
     value: (r) => formatMoney(r.purchaseTaxesFees),
     audit: (r) => r.purchase.audit,
   },
@@ -41,7 +41,7 @@ const ROWS: Row[] = [
     audit: (r) => [...r.renovation.audit, ...r.vat.audit, ...r.rot.audit],
   },
   {
-    label: "Räntor och avgifter",
+    label: "Ränta och låneavgifter",
     value: (r) => formatMoney(r.financingCost),
     audit: (r) => r.loans.audit,
   },
@@ -55,8 +55,8 @@ const ROWS: Row[] = [
     value: (r) => formatMoney(r.saleCosts.saleCostsTotal),
     audit: (r) => r.saleCosts.audit,
   },
-  { label: "Total projektkostnad", value: (r) => formatMoney(r.totalProjectCost), emphasis: true },
-  { label: "Försäljningspris efter prutmån", value: exit((r) => formatMoney(r.salePrice)) },
+  { label: "Vad allt kostar", value: (r) => formatMoney(r.totalProjectCost), emphasis: true },
+  { label: "Pris efter prutmån", value: exit((r) => formatMoney(r.salePrice)) },
   { label: "Vinst före skatt", value: exit((r) => formatMoney(r.profitBeforeTax)) },
   {
     label: "Skatt",
@@ -67,43 +67,43 @@ const ROWS: Row[] = [
       ...(r.benefit?.audit ?? []),
     ],
   },
-  { label: "Vinst efter skatt", value: exit((r) => formatMoney(r.profitAfterTax)), emphasis: true },
+  { label: "Vinst på affären efter skatt", value: exit((r) => formatMoney(r.profitAfterTax)), emphasis: true },
   {
-    label: "Kvar i bolaget",
+    label: "Blir kvar i bolaget",
     value: exit((r) => formatMoney(r.netRetainedInCompany)),
   },
   {
-    label: "Kvar till er privat",
+    label: "Kvar till er själva",
     value: afterExtraction((r) => formatMoney(r.netAvailablePrivately)),
     emphasis: true,
   },
   {
-    label: "Avkastning på insatt kapital",
+    label: "Avkastning på egna pengar",
     value: afterExtraction((r) => formatPercent(r.roi.equityROI)),
   },
   {
-    label: "Motsvarande per år",
+    label: "Motsvarar per år",
     value: afterExtraction((r) =>
       r.roi.annualizedEquityROI === null ? "—" : formatPercent(r.roi.annualizedEquityROI),
     ),
   },
   {
-    label: "Nollpris vid försäljning",
+    label: "Lägsta pris utan förlust",
     value: (r) => formatMoney(r.breakEven.breakEvenSalePrice),
   },
   {
-    label: "Vinst efter alternativkostnad",
+    label: "Vinst när man räknar bort vad pengarna kunnat ge annars",
     value: exit((r) => formatMoney(r.profitAfterTax - r.opportunityCost.opportunityCost)),
     audit: (r) => r.opportunityCost.audit,
   },
   {
-    label: "Förmögenhetsförändring, allt uttaget",
+    label: "Kvar till er när allt tagits ut",
     value: afterExtraction((r) => formatMoney(r.familyNetWorth.familyNetWorthDeltaModeB)),
     emphasis: true,
     audit: (r) => r.familyNetWorth.audit,
   },
   {
-    label: "Förmögenhetsförändring, kvar i bolaget",
+    label: "Kvar till er om pengarna stannar i bolaget",
     value: exit((r) => formatMoney(r.familyNetWorth.familyNetWorthDeltaModeA)),
   },
 ];
@@ -112,7 +112,7 @@ export function ComparisonTable({ results }: { results: ScenarioResult[] }) {
   return (
     <Card
       title="Alla siffror sida vid sida"
-      subtitle="Samma objekt, olika ägande och finansiering. Klicka på Visa uträkning för att se hur ett tal är räknat."
+      subtitle="Klicka på Visa uträkning under en rad för att se exakt hur talet räknats fram."
     >
       <div className="overflow-x-auto">
         <table className="w-full min-w-[720px] text-sm">

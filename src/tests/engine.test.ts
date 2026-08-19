@@ -30,14 +30,21 @@ function baseProject(): PropertyProject {
 
 describe("scenario engine", () => {
   it("produces a result for every compared scenario", () => {
-    const results = calculateAllScenarios(baseProject());
-    expect(results).toHaveLength(4);
-    expect(results.map((r) => r.scenario)).toEqual([
-      "PRIVATE_EQUITY",
-      "PRIVATE_DEBT",
-      "EXISTING_COMPANY",
-      "PROJECT_COMPANY",
-    ]);
+    const p = baseProject();
+    const results = calculateAllScenarios(p);
+    expect(results.map((r) => r.scenario)).toEqual(p.compareScenarios);
+  });
+
+  it("compares private with a loan against company ownership by default", () => {
+    // Ett projekt av den här storleken kräver lån oavsett ägare, så de två
+    // realistiska alternativen är förvalda. Övriga går att slå på.
+    expect(baseProject().compareScenarios).toEqual(["PRIVATE_DEBT", "EXISTING_COMPANY"]);
+  });
+
+  it("can still calculate every ownership form that is switched on", () => {
+    const p = baseProject();
+    p.compareScenarios = ["PRIVATE_EQUITY", "PRIVATE_DEBT", "EXISTING_COMPANY", "PROJECT_COMPANY"];
+    expect(calculateAllScenarios(p)).toHaveLength(4);
   });
 
   it("charges a company buyer more stamp duty than a private buyer on the same facts", () => {

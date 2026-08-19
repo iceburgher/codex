@@ -24,35 +24,35 @@ export function buildRiskFlags(ctx: RiskContext): RiskFlag[] {
     flags.push({
       id: "sale_price_missing",
       severity: "high",
-      text: "Förväntat försäljningspris saknas. Vinst och avkastning går inte att bedöma.",
+      text: "Ni har inte fyllt i vad ni tror att huset kan säljas för. Utan det går vinsten inte att räkna ut.",
     });
   }
   if (project.inputs.priorYearTaxAssessmentValue === null) {
     flags.push({
       id: "tax_assessment_missing",
       severity: "medium",
-      text: "Taxeringsvärde saknas. Underlaget för lagfartskostnaden kan inte fastställas exakt.",
+      text: "Taxeringsvärdet saknas. Lagfartskostnaden räknas på det högsta av pris och taxeringsvärde, så den kan bli något annorlunda.",
     });
   }
   if (project.inputs.existingMortgageDeeds === null) {
     flags.push({
       id: "mortgage_deeds_missing",
       severity: "medium",
-      text: "Befintliga pantbrev saknas. Kostnaden för nya pantbrev kan inte fastställas exakt.",
+      text: "Vi vet inte hur mycket pantbrev som redan finns. Behövs nya kostar de 2 % av beloppet.",
     });
   }
   if (project.inputs.holdingPeriodMonths < 12) {
     flags.push({
       id: "short_holding_period",
       severity: "medium",
-      text: "Innehavstiden är under 12 månader, vilket stärker argumentet för att detta är näringsverksamhet.",
+      text: "Ni äger huset kortare än ett år. Då är risken större att Skatteverket ser det som näringsverksamhet i stället för en privat bostadsaffär.",
     });
   }
   if (scenario.flipIntent) {
     flags.push({
       id: "explicit_flip_intent",
       severity: "high",
-      text: "Syftet är uttalat renovera-och-sälj. Då kan man inte utgå från att huset räknas som privatbostad.",
+      text: "Ni har angett att syftet är att renovera och sälja. Då kan man inte räkna med den låga skatten som gäller för en privatbostad.",
     });
   }
   if (
@@ -63,49 +63,49 @@ export function buildRiskFlags(ctx: RiskContext): RiskFlag[] {
     flags.push({
       id: "private_residence_classification_unconfirmed",
       severity: "high",
-      text: "Att huset räknas som privatbostad — och därmed 22 % kapitalvinstskatt — är inte bekräftat av rådgivare.",
+      text: "Ingen rådgivare har bekräftat att huset räknas som privatbostad. Det avgör om skatten på vinsten blir 22 % eller betydligt mer.",
     });
   }
   if (!ctx.isCompanyOwned && scenario.privateUseLevel === "none") {
     flags.push({
       id: "no_private_use",
       severity: "medium",
-      text: "Ingen privat användning är planerad trots privat ägande, vilket försvagar klassificeringen som privatbostad.",
+      text: "Ni äger huset privat men ska inte använda det själva. Det talar emot att det räknas som en privatbostad.",
     });
   }
   if (ctx.isCompanyOwned && scenario.privateUseLevel !== "none") {
     flags.push({
       id: "company_private_use_risk",
       severity: "high",
-      text: "Bolaget äger huset och ägarna kan använda det privat. Förmånsbeskattning måste utredas.",
+      text: "Bolaget äger huset och ni kan använda det själva. Då kan ni behöva skatta för det som en förmån — även dagar ni inte är där.",
     });
   }
   if (ctx.vatDeductibleVat > 0) {
     flags.push({
       id: "vat_deduction_claimed_on_residence",
       severity: "high",
-      text: "Momsavdrag görs på renovering av bostad. Det kräver särskilt stöd i skattereglerna.",
+      text: "Ni drar av moms på renovering av en bostad. Det är sällan tillåtet och behöver stämmas av.",
     });
   }
   if (ctx.intercompanyLoan > 0 && ctx.companyEquity > 0 && ctx.intercompanyLoan > ctx.companyEquity * 3) {
     flags.push({
       id: "high_intercompany_debt",
       severity: "medium",
-      text: "Koncernlånet är stort i förhållande till eget kapital. Reglerna om ränteavdragsbegränsning kan slå till.",
+      text: "Lånet mellan bolagen är stort jämfört med det egna kapitalet. Då får räntan kanske inte dras av fullt ut.",
     });
   }
   if (ctx.dividendAllowanceExceeded) {
     flags.push({
       id: "dividend_allowance_exceeded",
       severity: "medium",
-      text: "Gränsbeloppet för lågbeskattad utdelning överskrids. Skattesatsen däröver måste komma från rådgivare.",
+      text: "Vinsten är större än det ni får ta ut till låg skatt. Vad resten kostar i skatt måste ni fylla i.",
     });
   }
   if (scenario.vat.vatDeductiblePercent === 0 && ctx.isCompanyOwned) {
     flags.push({
       id: "vat_default_zero",
       severity: "low",
-      text: "Momsavdrag på bostadsrenovering är satt till 0 % som försiktig utgångspunkt. Ändra först efter kontroll.",
+      text: "Vi räknar med noll momsavdrag på renoveringen, vilket är det försiktiga antagandet. Ändra bara om en rådgivare säger något annat.",
     });
   }
 
@@ -130,7 +130,7 @@ export function buildWarnings(params: {
   if (ctx.isCompanyOwned && ctx.scenario.privateUseLevel !== "none") {
     warnings.push({
       id: "benefit",
-      text: "Förmånsbeskattning kan utgå från dispositionsrätten, inte bara de dagar huset används. Ta in skatteråd innan du litar på det här alternativet.",
+      text: "Skatten för att ni kan använda huset kan räknas på att ni har rätt att vara där — inte bara på de dagar ni faktiskt är det. Fråga en rådgivare.",
     });
   }
   if (
@@ -140,43 +140,43 @@ export function buildWarnings(params: {
   ) {
     warnings.push({
       id: "flip_intent",
-      text: "Privatbostad i kombination med uttalat renovera-och-sälj-syfte går inte ihop. Ta in skatteråd.",
+      text: "Ni har både angett att huset är en privatbostad och att syftet är att renovera och sälja. Det går inte ihop — fråga en rådgivare.",
     });
   }
   if (ctx.project.inputs.holdingPeriodMonths < 12) {
     warnings.push({
       id: "short_holding",
-      text: "Innehavstiden är kortare än 12 månader.",
+      text: "Ni äger huset kortare än ett år.",
     });
   }
   if (params.salePriceMissing) {
     warnings.push({
       id: "sale_price",
-      text: "Försäljningspris saknas — siffrorna är bara riktmärken.",
+      text: "Utan ett pris ni tror på är siffrorna bara ungefärliga.",
     });
   }
   if (params.renovationContingencyPercent < 0.05) {
     warnings.push({
       id: "contingency",
-      text: "Posten för oförutsett i renoveringen är under 5 %.",
+      text: "Ni har lagt undan mindre än 5 % för oförutsett i renoveringen. Det brukar bli mer.",
     });
   }
   if (params.unsecuredLoanAmount > 0) {
     warnings.push({
       id: "unsecured_loan",
-      text: "Ett privatlån utan säkerhet används. Räntan på sådana lån är inte avdragsgill från inkomstår 2026.",
+      text: "Ni använder ett lån utan säkerhet i huset. Räntan på sådana lån får inte dras av från och med 2026.",
     });
   }
   if (ctx.dividendAllowanceExceeded) {
     warnings.push({
       id: "dividend_allowance",
-      text: "Gränsbeloppet överskrids — skattesatsen över gränsbeloppet måste fyllas i.",
+      text: "Ni tar ut mer än vad som ryms i den låga skatten. Fyll i vad resten kostar.",
     });
   }
   if (params.taxDependsOnClassification) {
     warnings.push({
       id: "classification_material",
-      text: "Resultatet hänger i hög grad på en skattemässig klassificering som ingen bekräftat.",
+      text: "Hela utfallet hänger på hur huset räknas skattemässigt, och det har ingen bekräftat.",
     });
   }
 

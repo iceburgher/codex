@@ -35,10 +35,10 @@ export type ScenarioType =
   | "PROJECT_COMPANY";
 
 export const SCENARIO_LABELS: Record<ScenarioType, string> = {
-  PRIVATE_EQUITY: "Privat, egna pengar",
-  PRIVATE_DEBT: "Privat, med bolån",
+  PRIVATE_EQUITY: "Privat, utan lån",
+  PRIVATE_DEBT: "Privat, med lån",
   EXISTING_COMPANY: "Bolaget äger",
-  PROJECT_COMPANY: "Nytt projektbolag",
+  PROJECT_COMPANY: "Nytt bolag för projektet",
 };
 
 export type OwnerKind = "PRIVATE" | "EXISTING_COMPANY" | "PROJECT_COMPANY";

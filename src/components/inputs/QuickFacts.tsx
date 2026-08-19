@@ -1,31 +1,43 @@
 "use client";
 
 import { formatMoney } from "@/lib/format";
-import type { PropertyProject } from "@/types";
-import { Card, NumberField } from "../ui";
+import type { PropertyProject, ScenarioType } from "@/types";
+import { Card, NumberField, PercentField } from "../ui";
 
 type Update = (updater: (draft: PropertyProject) => void) => void;
 
+const PRIVATE: ScenarioType[] = ["PRIVATE_EQUITY", "PRIVATE_DEBT"];
+const COMPANY: ScenarioType[] = ["EXISTING_COMPANY", "PROJECT_COMPANY"];
+
 /**
- * De fyra uppgifter som avgör hela kalkylen. Allt annat är finjustering och
- * bor under fliken Antaganden.
+ * De uppgifter som avgör hela kalkylen, inklusive lånet.
+ *
+ * Ett hus av den här storleken kräver lån oavsett vem som äger det, så
+ * lånebelopp och ränta hör hemma här och gäller båda sidorna: privat som
+ * bolån, i bolaget som företagslån. Allt annat är finjustering.
  */
 export function QuickFacts({
   project,
   update,
   onGoToRenovation,
+  capitalNeeded,
 }: {
   project: PropertyProject;
   update: Update;
   onGoToRenovation?: () => void;
+  /** Vad projektet kräver totalt, för att kunna visa vad lånet inte täcker. */
+  capitalNeeded?: number;
 }) {
   const itemised = itemisedRenovation(project);
+  const loan = sharedLoan(project);
+  const rate = sharedRate(project);
+  const ownMoney = capitalNeeded === undefined ? null : capitalNeeded - (loan ?? 0);
 
   return (
-    <Card title="Grunduppgifter" subtitle="Ändra här så räknas alla ägarformer om direkt.">
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+    <Card title="Grunduppgifter" subtitle="Ändra här så räknas båda alternativen om direkt.">
+      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
         <NumberField
-          label="Köpeskilling"
+          label="Vad huset kostar"
           suffix="kr"
           size="lg"
           allowNull
@@ -33,21 +45,12 @@ export function QuickFacts({
           onChange={(v) => update((d) => void (d.inputs.purchasePrice = v))}
         />
 
-        {/*
-          Snabbfältet styr posten "Övrigt". Finns det redan poster ifyllda
-          visas de separat under fältet, så att summan alltid går ihop med
-          det som står under Antaganden.
-        */}
         <div>
           <NumberField
-            label="Renoveringsbudget"
+            label="Vad renoveringen kostar"
             suffix="kr"
             size="lg"
-            hint={
-              itemised === 0
-                ? "Fördela på poster under Antaganden när offerter finns."
-                : undefined
-            }
+            hint={itemised === 0 ? "Dela upp på poster under Antaganden när offerter finns." : undefined}
             value={project.renovation.other}
             onChange={(v) => update((d) => void (d.renovation.other = v ?? 0))}
           />
@@ -55,7 +58,7 @@ export function QuickFacts({
             <button
               type="button"
               onClick={onGoToRenovation}
-              className="mt-1 text-left text-xs text-muted hover:text-accent"
+              className="mt-1 text-left text-xs text-muted hover:text-accent-strong"
             >
               + {formatMoney(itemised)} på enskilda poster ={" "}
               <span className="font-medium">{formatMoney(itemised + project.renovation.other)}</span>
@@ -64,15 +67,31 @@ export function QuickFacts({
         </div>
 
         <NumberField
-          label="Förväntat försäljningspris"
+          label="Vad ni tror att ni kan sälja för"
           suffix="kr"
           size="lg"
           allowNull
           value={project.inputs.expectedSalePrice}
           onChange={(v) => update((d) => void (d.inputs.expectedSalePrice = v))}
         />
+
         <NumberField
-          label="Ägandetid"
+          label="Hur mycket ni lånar"
+          suffix="kr"
+          size="lg"
+          value={loan}
+          hint="Gäller båda alternativen: bolån privat, företagslån i bolaget."
+          onChange={(v) => update((d) => setSharedLoan(d, v ?? 0))}
+        />
+
+        <PercentField
+          label="Ränta på lånet"
+          value={rate}
+          onChange={(v) => update((d) => setSharedRate(d, v ?? 0))}
+        />
+
+        <NumberField
+          label="Hur länge ni äger huset"
           suffix="mån"
           size="lg"
           value={project.inputs.holdingPeriodMonths}
@@ -80,12 +99,44 @@ export function QuickFacts({
         />
       </div>
 
-      <p className="mt-4 text-xs text-muted">
-        Till renoveringen läggs {(project.renovation.contingencyPercent * 100).toFixed(0)} % för
-        oförutsett. Ändra påslaget under Antaganden.
-      </p>
+      <div className="mt-5 space-y-1 text-xs leading-relaxed text-muted">
+        {ownMoney !== null && (
+          <p>
+            Med det lånet behöver ni lägga in{" "}
+            <span className="numeric font-medium text-foreground">
+              {formatMoney(Math.max(0, ownMoney))}
+            </span>{" "}
+            egna pengar — privat ur egen ficka, i bolaget ur kassan.
+          </p>
+        )}
+        <p>
+          Till renoveringen läggs {(project.renovation.contingencyPercent * 100).toFixed(0)} % för
+          oförutsett. Ändra det under Antaganden.
+        </p>
+      </div>
     </Card>
   );
+}
+
+/** Lånet visas som ett tal så länge alternativen är överens om beloppet. */
+function sharedLoan(project: PropertyProject): number {
+  return project.scenarios.PRIVATE_DEBT.privateLoans.mortgageAmount;
+}
+
+function sharedRate(project: PropertyProject): number {
+  return project.scenarios.PRIVATE_DEBT.privateLoans.mortgageInterestRate;
+}
+
+function setSharedLoan(draft: PropertyProject, amount: number): void {
+  for (const type of PRIVATE) draft.scenarios[type].privateLoans.mortgageAmount = amount;
+  for (const type of COMPANY) draft.scenarios[type].companyFunding.externalBusinessLoan = amount;
+  draft.scenarios.PROJECT_COMPANY.projectCompanyFunding.externalLoan = amount;
+}
+
+function setSharedRate(draft: PropertyProject, rate: number): void {
+  for (const type of PRIVATE) draft.scenarios[type].privateLoans.mortgageInterestRate = rate;
+  for (const type of COMPANY) draft.scenarios[type].companyFunding.businessInterestRate = rate;
+  draft.scenarios.PROJECT_COMPANY.projectCompanyFunding.externalInterestRate = rate;
 }
 
 /** Summan av alla renoveringsposter utom "Övrigt", som snabbfältet styr. */

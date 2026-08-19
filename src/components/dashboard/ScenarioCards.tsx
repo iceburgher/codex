@@ -69,8 +69,8 @@ export function ScenarioCards({
         const isCompany = r.corporateTax !== null;
         const blocked = r.salePriceMissing || r.extractionRateUnknown;
         const placeholder = r.extractionRateUnknown
-          ? "Kräver skattesats"
-          : "Kräver försäljningspris";
+          ? "Fyll i skatten"
+          : "Fyll i pris";
         const redFlags = r.riskFlags.filter((f) => f.severity === "high").length;
 
         return (
@@ -90,7 +90,7 @@ export function ScenarioCards({
             </header>
 
             <div className="mb-5">
-              <p className="text-sm text-muted">Kvar till er efter skatt</p>
+              <p className="text-sm text-muted">Kvar till er</p>
               <p
                 className={`numeric mt-1 text-[26px] font-semibold leading-tight tracking-tight ${
                   !blocked && r.netAvailablePrivately < 0
@@ -107,29 +107,29 @@ export function ScenarioCards({
             <dl className="space-y-2.5 text-sm">
               {isCompany && (
                 <Line
-                  label="Kvar i bolaget"
+                  label="Blir kvar i bolaget"
                   value={whenAssessable(r.salePriceMissing, () =>
                     formatMoney(r.netRetainedInCompany),
                   )}
                 />
               )}
               <Line
-                label="Avkastning"
+                label="Avkastning på egna pengar"
                 value={whenAssessable(blocked, () => formatPercent(r.roi.equityROI), placeholder)}
               />
               <Line
-                label="Kapital som binds"
+                label="Pengar ni måste ha"
                 value={formatMoney(r.cashFlow.peakCashRequirement)}
               />
               <Line
-                label="Nollpris vid försäljning"
+                label="Lägsta pris utan förlust"
                 value={formatMoney(r.breakEven.breakEvenSalePrice)}
               />
             </dl>
 
             {redFlags > 0 && (
               <p className="mt-5 rounded-full bg-negative-soft px-3.5 py-2 text-xs font-medium text-negative">
-                {redFlags} {redFlags === 1 ? "fråga" : "frågor"} för skatterådgivare
+                {redFlags} {redFlags === 1 ? "fråga" : "frågor"} till skatterådgivaren
               </p>
             )}
           </article>

@@ -270,8 +270,10 @@ export function createBlankProject(id: string, name = "Nytt projekt"): PropertyP
     sale: defaultSale(),
     hiddenCosts: defaultHiddenCosts(),
     scenarios: defaultScenarios(),
-    compareScenarios: [...ALL_SCENARIOS],
-    selectedScenario: "PRIVATE_EQUITY",
+    // Lån behövs i praktiken oavsett ägarform, så jämförelsen börjar med de
+    // två realistiska alternativen. Övriga går att slå på under Antaganden.
+    compareScenarios: ["PRIVATE_DEBT", "EXISTING_COMPANY"],
+    selectedScenario: "PRIVATE_DEBT",
     optimizationTarget: "max_family_net_worth",
     taxOverrides: {},
     taxConfigSnapshot: null,

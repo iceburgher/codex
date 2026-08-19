@@ -40,12 +40,12 @@ export function splitSides(results: ScenarioResult[]): [Side, Side] {
 
     let blockedReason: string | null = null;
     let needsExtractionRate = false;
-    if (members.length === 0) blockedReason = "Ingen variant vald";
+    if (members.length === 0) blockedReason = "Inget alternativ valt";
     else if (best === null) {
       if (members.some((r) => r.salePriceMissing)) {
-        blockedReason = "Fyll i ett förväntat försäljningspris ovan.";
+        blockedReason = "Fyll i vad ni tror att ni kan sälja för, högst upp.";
       } else {
-        blockedReason = "Skatten på att ta ut vinsten ur bolaget är inte ifylld.";
+        blockedReason = "Fyll i vad det kostar i skatt att ta ut vinsten ur bolaget.";
         needsExtractionRate = true;
       }
     }
@@ -57,13 +57,13 @@ export function splitSides(results: ScenarioResult[]): [Side, Side] {
     build(
       "private",
       "Privat ägande",
-      "Egna pengar — ytterst lön eller utdelning ur bolaget — plus bolån",
+      "Ni lånar och lägger in egna pengar. De egna pengarna måste först tas ut ur bolaget som lön eller utdelning, och det kostar skatt.",
       results.filter((r) => PRIVATE_SCENARIOS.includes(r.scenario)),
     ),
     build(
       "company",
       "Bolaget äger",
-      "Bolagets kassa plus företagslån",
+      "Bolaget lånar och använder pengar som redan finns i kassan. Ingen skatt förrän ni vill ta ut vinsten.",
       results.filter((r) => !PRIVATE_SCENARIOS.includes(r.scenario)),
     ),
   ];
@@ -97,8 +97,8 @@ export function HeadToHead({
         <div>
           <h2 className="text-lg font-semibold tracking-tight">Privat eller via bolaget?</h2>
           <p className="mt-1 text-sm text-muted">
-            Samma hus, samma renovering, samma försäljningspris — skillnaden är vem som äger och
-            hur köpet finansieras.
+            Samma hus, samma renovering, samma pris vid försäljning. Det enda som skiljer är vem
+            som står som ägare — och vad det kostar i skatt att få ut pengarna till er själva.
           </p>
         </div>
       </div>
@@ -131,7 +131,7 @@ export function HeadToHead({
                 <p className="text-xs text-muted">Skillnad</p>
                 <p className="numeric mt-1 text-xl font-semibold">≈ 0 kr</p>
                 <p className="mt-1 text-xs leading-snug text-muted">
-                  Jämnt — låt risk och kapitalbehov avgöra
+                  Så gott som lika. Låt annat avgöra.
                 </p>
               </>
             ) : (
@@ -142,7 +142,7 @@ export function HeadToHead({
                 <p className="numeric mt-1 text-2xl font-semibold tracking-tight text-accent-strong">
                   {formatMoney(Math.abs(diff))}
                 </p>
-                <p className="mt-1 text-xs leading-snug text-muted">kvar till er efter skatt</p>
+                <p className="mt-1 text-xs leading-snug text-muted">mer kvar till er</p>
               </>
             )}
           </div>
@@ -193,7 +193,7 @@ function SideCard({
       ) : (
         <>
           <div className="mb-5">
-            <p className="text-sm text-muted">Kvar till er efter skatt</p>
+            <p className="text-sm text-muted">Kvar till er när allt är sålt och skattat</p>
             <p
               className={`numeric mt-1 text-[34px] font-semibold leading-none tracking-tight ${
                 r.familyNetWorth.familyNetWorthDeltaModeB < 0
@@ -205,15 +205,15 @@ function SideCard({
             >
               {formatMoney(r.familyNetWorth.familyNetWorthDeltaModeB)}
             </p>
-            <p className="mt-2 text-xs text-muted">Bästa varianten: {r.label}</p>
+            <p className="mt-2 text-xs text-muted">Räknat på: {r.label}</p>
           </div>
 
           <dl className="space-y-2.5 text-sm">
-            <Row label="Vinst efter skatt i projektet" value={formatMoney(r.profitAfterTax)} />
-            <Row label="Total skatt och avgifter" value={formatMoney(r.totalTax)} />
-            <Row label="Kapital som binds" value={formatMoney(r.cashFlow.peakCashRequirement)} />
-            <Row label="Avkastning" value={formatPercent(r.roi.equityROI)} />
-            <Row label="Nollpris vid försäljning" value={formatMoney(r.breakEven.breakEvenSalePrice)} />
+            <Row label="Vinst på affären efter skatt" value={formatMoney(r.profitAfterTax)} />
+            <Row label="Skatt och avgifter" value={formatMoney(r.totalTax)} />
+            <Row label="Pengar ni måste ha tillgängliga" value={formatMoney(r.cashFlow.peakCashRequirement)} />
+            <Row label="Avkastning på egna pengar" value={formatPercent(r.roi.equityROI)} />
+            <Row label="Lägsta pris utan förlust" value={formatMoney(r.breakEven.breakEvenSalePrice)} />
           </dl>
         </>
       )}
@@ -231,7 +231,7 @@ function ExtractionRatePrompt({ onSet }: { onSet: (rate: number) => void }) {
 
   return (
     <div className="mt-4">
-      <label className="block text-xs font-medium">Skatt över gränsbeloppet</label>
+      <label className="block text-xs font-medium">Skatt när ni tar ut vinsten</label>
       <div className="mt-2 flex gap-2">
         <span className="relative flex-1">
           <input
@@ -259,7 +259,8 @@ function ExtractionRatePrompt({ onSet }: { onSet: (rate: number) => void }) {
         </button>
       </div>
       <p className="mt-2 text-xs leading-snug text-muted">
-        Vilken sats som gäller beror på era 3:12-förhållanden. Stäm av med rådgivare.
+        Den del som ryms i gränsbeloppet beskattas lägre. Hur mycket det blir beror på era
+        förhållanden — fråga er rådgivare.
       </p>
     </div>
   );

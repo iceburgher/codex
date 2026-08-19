@@ -8,8 +8,8 @@ import { Card, SelectField } from "../ui";
 
 const METRIC_OPTIONS: { value: SensitivityMetric; label: string }[] = [
   { value: "after_tax_profit", label: "Vinst efter skatt" },
-  { value: "equity_roi", label: "Avkastning" },
-  { value: "family_net_worth", label: "Förmögenhetsförändring" },
+  { value: "equity_roi", label: "Avkastning på egna pengar" },
+  { value: "family_net_worth", label: "Kvar till er" },
 ];
 
 type SweepVariable = "purchasePrice" | "renovation" | "salePrice" | "interestRate" | "holdingPeriod";
@@ -52,7 +52,7 @@ export function SensitivityPanel({
     <div className="grid gap-3 lg:grid-cols-2 print-stack">
       <Card
         title="Om det går sämre — eller bättre"
-        subtitle="Renoveringskostnad mot försäljningspris"
+        subtitle="Vad händer om renoveringen blir dyrare eller priset lägre?"
         actions={
           <div className="w-44">
             <SelectField<SensitivityMetric>

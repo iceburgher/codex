@@ -169,7 +169,7 @@ export function ProjectDashboard({ projectId }: { projectId: string }) {
       {results.length === 0 ? (
         <Card title="Inget alternativ valt">
           <p className="text-sm text-muted">
-            Välj minst en ägarform under Antaganden för att se en jämförelse.
+            Slå på minst ett sätt att äga huset under Antaganden.
           </p>
         </Card>
       ) : tab === "oversikt" ? (
@@ -185,6 +185,7 @@ export function ProjectDashboard({ projectId }: { projectId: string }) {
             project={project}
             update={update}
             onGoToRenovation={() => setTab("antaganden")}
+            capitalNeeded={selectedResult?.totalCapitalRequirement}
           />
 
           <HeadToHead
@@ -200,10 +201,10 @@ export function ProjectDashboard({ projectId }: { projectId: string }) {
           />
 
           <div>
-            <h2 className="text-lg font-semibold tracking-tight">Finansieringsvarianterna</h2>
+            <h2 className="text-lg font-semibold tracking-tight">Alternativen i detalj</h2>
             <p className="mt-1 text-sm text-muted">
-              Inom varje ägarform går köpet att finansiera på två sätt. Det här är varianterna
-              bakom siffrorna ovan.
+              Här är varje alternativ för sig. Vill ni jämföra fler sätt att äga huset slår ni
+              på dem under Antaganden.
             </p>
           </div>
 
@@ -219,21 +220,21 @@ export function ProjectDashboard({ projectId }: { projectId: string }) {
       ) : tab === "antaganden" ? (
         <div className="grid gap-5 lg:grid-cols-2">
           <div className="space-y-3">
-            <h2 className="text-lg font-semibold tracking-tight">Om objektet</h2>
+            <h2 className="text-lg font-semibold tracking-tight">Om huset</h2>
             <p className="text-sm text-muted">
-              Gäller alla ägarformer. Ändrar du något här räknas alla alternativ om.
+              Gäller alla alternativ. Ändrar du något här räknas allt om.
             </p>
             <ProspectImport update={update} />
             <ObjectInputs project={project} update={update} />
           </div>
 
           <div className="space-y-3">
-            <h2 className="text-lg font-semibold tracking-tight">Om ägande och finansiering</h2>
+            <h2 className="text-lg font-semibold tracking-tight">Ägande och lån</h2>
             <p className="text-sm text-muted">
-              Skiljer sig mellan ägarformerna. Välj vilken du vill justera.
+              Det här skiljer sig mellan alternativen. Välj vilket du vill ändra.
             </p>
 
-            <Card title="Ägarformer att jämföra">
+            <Card title="Sätt att äga huset">
               <div className="space-y-2.5">
                 {ALL_SCENARIOS.map((s) => (
                   <ToggleField
@@ -258,7 +259,7 @@ export function ProjectDashboard({ projectId }: { projectId: string }) {
             </Card>
 
             <SelectField<ScenarioType>
-              label="Ägarform att justera"
+              label="Vilket alternativ vill du ändra?"
               value={selectedScenario}
               options={project.compareScenarios.map((s) => ({
                 value: s,
@@ -297,7 +298,7 @@ export function ProjectDashboard({ projectId }: { projectId: string }) {
             </div>
           </div>
           {selectedResult && (
-            <Collapsible title="Kassaflöde månad för månad">
+            <Collapsible title="Pengarna månad för månad">
               <CashFlowTable result={selectedResult} />
             </Collapsible>
           )}
@@ -323,27 +324,27 @@ function ThreeQuestions({ results }: { results: ScenarioResult[] }) {
 
   return (
     <Card
-      title="Tre frågor som inte har samma svar"
-      subtitle="Störst vinst i projektet, mest kvar i bolaget och störst förmögenhet för er är olika saker."
+      title="Tre olika frågor — tre olika svar"
+      subtitle="Att affären går bra är inte samma sak som att ni får pengarna i handen."
     >
       <div className="grid gap-4 sm:grid-cols-3">
         <Answer
-          question="Vilket ger störst vinst i projektet?"
+          question="Var tjänar själva affären mest?"
           answer={bestProfit.label}
           value={formatMoney(bestProfit.profitAfterTax)}
         />
         <Answer
-          question="Vilket lämnar mest kapital i bolaget?"
+          question="Var blir det mest kvar i bolaget?"
           answer={bestCompany.netRetainedInCompany > 0 ? bestCompany.label : "Inget alternativ"}
           value={formatMoney(bestCompany.netRetainedInCompany)}
         />
         <Answer
-          question="Vilket ger störst förmögenhet för er?"
-          answer={bestFamily ? bestFamily.label : "Går inte att avgöra"}
+          question="Var får ni mest pengar själva?"
+          answer={bestFamily ? bestFamily.label : "Går inte att svara på"}
           value={
             bestFamily
               ? formatMoney(bestFamily.familyNetWorth.familyNetWorthDeltaModeB)
-              : "Fyll i skatt över gränsbeloppet"
+              : "Fyll i skatten på uttaget"
           }
           headline
         />
@@ -369,7 +370,7 @@ function Answer({
       <p className="mt-2 text-[15px] font-semibold leading-tight">{answer}</p>
       <p className="numeric mt-1 text-sm text-muted">{value}</p>
       {headline && (
-        <p className="mt-2 text-xs font-medium text-accent">Den vi rekommenderar att utgå från</p>
+        <p className="mt-2 text-xs font-medium text-accent-strong">Det är den här som räknas</p>
       )}
     </div>
   );
@@ -383,8 +384,8 @@ function pick(results: ScenarioResult[], score: (r: ScenarioResult) => number): 
 function BreakEvenCard({ results }: { results: ScenarioResult[] }) {
   return (
     <Card
-      title="Vad måste huset säljas för?"
-      subtitle="Nollpriset är där projektet varken går plus eller minus efter skatt och alla kostnader."
+      title="Vad måste ni få för huset?"
+      subtitle="Under det här priset förlorar ni pengar, när allt är betalt och skattat."
     >
       <div className="space-y-3">
         {results.map((r) => (
@@ -395,7 +396,7 @@ function BreakEvenCard({ results }: { results: ScenarioResult[] }) {
                 {formatMoney(r.breakEven.breakEvenSalePrice)}
               </span>
               <span className="numeric hidden text-xs text-muted sm:inline">
-                {formatMoney(r.breakEven.salePriceFor20PctROI)} för 20 %
+                {formatMoney(r.breakEven.salePriceFor20PctROI)} för 20 % avkastning
               </span>
             </span>
           </div>
@@ -409,19 +410,19 @@ function TaxBreakdown({ result }: { result: ScenarioResult }) {
   const rows: [string, number][] = result.corporateTax
     ? [
         ["Bolagsskatt", result.corporateTax.companyTax],
-        ["Skatt när pengarna tas ut", result.extraction?.ownerExtractionTax ?? 0],
-        ["Förmånsskatt för ägarna", result.benefit?.ownerBenefitTax ?? 0],
+        ["Skatt när ni tar ut pengarna", result.extraction?.ownerExtractionTax ?? 0],
+        ["Skatt för att ni kan använda huset", result.benefit?.ownerBenefitTax ?? 0],
         [
-          "Arbetsgivaravgift på förmån",
+          "Bolagets avgift för samma sak",
           result.benefit?.companyEmployerContributionOnBenefit ?? 0,
         ],
       ]
     : [
-        ["Kapitalvinstskatt", result.capitalGain.capitalGainTax],
-        ["Skatt på hyresintäkter", result.rental.privateRentalTax],
-        ["Utdelningsskatt för att finansiera köpet", result.dividend?.dividendTax ?? 0],
+        ["Skatt på vinsten vid försäljning", result.capitalGain.capitalGainTax],
+        ["Skatt på hyran", result.rental.privateRentalTax],
+        ["Skatt för att få ut pengar till köpet", result.dividend?.dividendTax ?? 0],
         [
-          "Skatt och avgifter på lön",
+          "Skatt och avgifter om ni tar ut lön",
           result.salary ? result.salary.companyCashCost - result.salary.grossSalary : 0,
         ],
       ];
@@ -429,7 +430,7 @@ function TaxBreakdown({ result }: { result: ScenarioResult }) {
   const total = rows.reduce((s, [, v]) => s + v, 0);
 
   return (
-    <Card title="Skatter och avgifter" subtitle={result.label}>
+    <Card title="Vad ni betalar i skatt" subtitle={result.label}>
       <table className="w-full text-sm">
         <tbody>
           {rows.map(([label, value]) => (
@@ -446,7 +447,7 @@ function TaxBreakdown({ result }: { result: ScenarioResult }) {
       </table>
       <div className="mt-4 grid grid-cols-2 gap-4">
         <Stat
-          label="Andel av vinsten före skatt"
+          label="Så stor del av vinsten går till skatt"
           value={whenAssessable(
             result.salePriceMissing || result.profitBeforeTax <= 0,
             () => formatPercent(result.totalTax / result.profitBeforeTax),
@@ -454,9 +455,9 @@ function TaxBreakdown({ result }: { result: ScenarioResult }) {
           )}
         />
         <Stat
-          label="Mest lån samtidigt"
+          label="Största skulden under tiden"
           value={formatMoney(result.cashFlow.peakDebt)}
-          hint={`Störst kapitalbehov månad ${result.cashFlow.monthOfMaxFundingNeed}`}
+          hint={`Tuffast månad: ${result.cashFlow.monthOfMaxFundingNeed}`}
         />
       </div>
     </Card>
@@ -467,7 +468,7 @@ function CashFlowTable({ result }: { result: ScenarioResult }) {
   return (
     <div>
       <p className="mb-3 text-sm text-muted">
-        {result.label}. Amortering minskar skulden men är ingen kostnad för projektet.
+        {result.label}. Amortering är inte en kostnad — pengarna går till att minska skulden.
       </p>
       <div className="overflow-x-auto">
         <table className="w-full min-w-[900px] text-xs">
@@ -516,10 +517,10 @@ function CashFlowTable({ result }: { result: ScenarioResult }) {
         </table>
       </div>
       <div className="mt-4 grid grid-cols-2 gap-4 sm:grid-cols-4">
-        <Stat label="Kapital som binds" value={formatMoney(result.cashFlow.peakCashRequirement)} />
-        <Stat label="Mest lån samtidigt" value={formatMoney(result.cashFlow.peakDebt)} />
-        <Stat label="Eget kapital som krävs" value={formatMoney(result.cashFlow.equityRequired)} />
-        <Stat label="Total ränta" value={formatMoney(result.cashFlow.totalInterest)} />
+        <Stat label="Pengar ni måste ha" value={formatMoney(result.cashFlow.peakCashRequirement)} />
+        <Stat label="Största skulden" value={formatMoney(result.cashFlow.peakDebt)} />
+        <Stat label="Egna pengar som krävs" value={formatMoney(result.cashFlow.equityRequired)} />
+        <Stat label="Ränta totalt" value={formatMoney(result.cashFlow.totalInterest)} />
       </div>
     </div>
   );

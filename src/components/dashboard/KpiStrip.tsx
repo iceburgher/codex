@@ -34,12 +34,12 @@ export function KpiStrip({
   return (
     <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
       <Tile
-        label="Projektet kostar"
+        label="Vad allt kostar"
         value={formatMoney(result.totalProjectCost)}
         viz={<MiniBars values={costBars} className="h-8 w-20" />}
       />
       <Tile
-        label="Kapital som binds"
+        label="Pengar ni måste ha"
         value={formatMoney(result.cashFlow.peakCashRequirement)}
         viz={<Sparkline values={cashCurve} className="h-8 w-20" fill />}
       />
@@ -48,7 +48,7 @@ export function KpiStrip({
         value={whenAssessable(
           result.salePriceMissing || result.extractionRateUnknown,
           () => formatMoney(result.netAvailablePrivately),
-          result.extractionRateUnknown ? "Kräver skattesats" : "Kräver pris",
+          result.extractionRateUnknown ? "Fyll i skatten" : "Fyll i pris",
         )}
         viz={
           <Sparkline
@@ -60,9 +60,9 @@ export function KpiStrip({
       />
       <Tile
         accent
-        label="Marginal till nollpris"
-        value={margin === null ? "Kräver pris" : formatPercent(margin)}
-        hint={breakEven === null ? undefined : `Nollpris ${formatMoney(breakEven)}`}
+        label="Marginal innan förlust"
+        value={margin === null ? "Fyll i pris" : formatPercent(margin)}
+        hint={breakEven === null ? undefined : `Går plus över ${formatMoney(breakEven)}`}
         viz={
           <Sparkline
             values={cashCurve.slice().reverse()}

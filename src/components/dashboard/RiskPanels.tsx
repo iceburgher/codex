@@ -42,7 +42,7 @@ export function TopRisks({
   return (
     <Card
       title="Att tänka på"
-      subtitle="Skattereglerna beror på syfte, användning och omständigheter. Det här är inte färdiga svar."
+      subtitle="Skatten beror på vad ni tänker göra med huset. Det här är saker att kolla upp, inte färdiga svar."
     >
       {shown.length === 0 ? (
         <p className="text-sm text-muted">Inga frågetecken hittade.</p>
@@ -77,8 +77,8 @@ export function RiskFlagsPanel({ results }: { results: ScenarioResult[] }) {
 
   return (
     <Card
-      title="Alla frågetecken"
-      subtitle="Rött betyder: ta in skatteråd innan du litar på siffran. Gult betyder: kontrollera."
+      title="Allt som behöver kollas upp"
+      subtitle="Rött: fråga en skatterådgivare innan ni litar på siffran. Gult: kolla upp."
     >
       {flags.length === 0 ? (
         <p className="text-sm text-muted">Inga frågetecken hittade.</p>
@@ -112,7 +112,7 @@ export function WarningsPanel({ results }: { results: ScenarioResult[] }) {
   if (seen.size === 0) return null;
 
   return (
-    <Card title="Varningar" subtitle="Varningar stoppar aldrig beräkningen.">
+    <Card title="Varningar" subtitle="Räkningen fungerar ändå — men läs det här.">
       <ul className="space-y-2.5">
         {[...seen.entries()].map(([id, w]) => (
           <li key={id} className="text-sm leading-relaxed">
@@ -136,8 +136,8 @@ export function AdvisorQuestionsPanel({
 
   return (
     <Card
-      title="Frågor att ta med till rådgivaren"
-      subtitle="Skapas utifrån de ägarformer och uppgifter ni faktiskt använder."
+      title="Ta med det här till rådgivaren"
+      subtitle="Frågorna kommer av vad ni fyllt i och vilka alternativ ni jämför."
     >
       <ul className="space-y-3">
         {questions.map((q) => (
