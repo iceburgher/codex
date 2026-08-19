@@ -125,4 +125,21 @@ describe("seed project", () => {
     const seed = createSeedProject();
     expect(seed.scenarios.EXISTING_COMPANY.vat.vatDeductiblePercent).toBe(0);
   });
+
+  it("fills in an illustrative improvement-basis split for the private scenarios", () => {
+    // Otherwise the demo shows a private capital gains tax bill computed as
+    // if none of the 1 MSEK renovation budget were deductible, which reads
+    // as a broken calculation rather than the flip-classification risk it's
+    // meant to illustrate.
+    for (const type of ["PRIVATE_EQUITY", "PRIVATE_DEBT"] as const) {
+      const seed = createSeedProject();
+      const split = seed.scenarios[type].improvementBasis;
+      expect(
+        split.fundamentalImprovementsPercent +
+          split.qualifyingRepairsAndMaintenancePercent +
+          split.nonDeductiblePercent,
+      ).toBeCloseTo(1, 6);
+      expect(split.nonDeductiblePercent).toBeLessThan(1);
+    }
+  });
 });

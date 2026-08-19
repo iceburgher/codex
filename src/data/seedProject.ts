@@ -60,6 +60,16 @@ export function createSeedProject(): PropertyProject {
       flipIntent: true,
       privateUseLevel: "occasional",
       privatePropertyTaxClassification: "property_trading_inventory_risk",
+      // Illustrativ uppdelning av basbudgeten (1,0 MSEK) tills en faktisk
+      // specifikation finns — annars ser demot ut som att hela renoveringen
+      // är en förlustaffär, trots att det bara är avdragsunderlaget som
+      // står på 0 kr som standard. Byt ut mot verkliga andelar när
+      // renoveringen är specificerad rad för rad.
+      improvementBasis: {
+        fundamentalImprovementsPercent: 0.5,
+        qualifyingRepairsAndMaintenancePercent: 0.3,
+        nonDeductiblePercent: 0.2,
+      },
     };
   }
   project.scenarios.EXISTING_COMPANY = {
