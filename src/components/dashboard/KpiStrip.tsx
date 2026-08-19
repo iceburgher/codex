@@ -1,5 +1,7 @@
 "use client";
 
+import { memo } from "react";
+
 import { formatMoney, formatPercent, whenAssessable } from "@/lib/format";
 import type { ScenarioResult } from "@/types";
 import { MiniBars, Sparkline } from "./MiniViz";
@@ -9,7 +11,7 @@ import { MiniBars, Sparkline } from "./MiniViz";
  * hur stor marginalen till nollpriset är. Det sista kortet är framhävt, som
  * aktivitetskortet i förlagan.
  */
-export function KpiStrip({
+function KpiStripInner({
   result,
   expectedSalePrice,
 }: {
@@ -104,3 +106,10 @@ function Tile({
     </div>
   );
 }
+
+/**
+ * Ritas bara om när siffrorna faktiskt ändrats. Under inmatning byts
+ * projektet vid varje tangenttryck, men resultaten hinner ikapp först
+ * efteråt — utan detta skulle hela vyn ritas om i onödan.
+ */
+export const KpiStrip = memo(KpiStripInner);

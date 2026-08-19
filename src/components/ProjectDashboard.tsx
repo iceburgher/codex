@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useCallback, useDeferredValue, useMemo, useState } from "react";
 import { calculateScenario } from "@/calculations/engine";
 import { downloadFile, slugify, toCsv } from "@/lib/download";
 import { formatMoney, formatPercent, whenAssessable } from "@/lib/format";
@@ -52,10 +52,36 @@ export function ProjectDashboard({ projectId }: { projectId: string }) {
   const [tab, setTab] = useState<TabKey>("oversikt");
   const [activeScenario, setActiveScenario] = useState<ScenarioType | null>(null);
 
+  /*
+   * Varje beräkning kör lösaren för nollpris och avkastningsmål, vilket
+   * betyder hundratals varv genom motorn. Görs det synkront vid varje
+   * tangenttryck hackar inmatningen. Med ett uppskjutet värde ritas fälten
+   * direkt och siffrorna hinner ikapp strax efter.
+   */
+  const deferredProject = useDeferredValue(project);
   const results = useMemo<ScenarioResult[]>(() => {
-    if (!project) return [];
-    return project.compareScenarios.map((s) => calculateScenario(project, s));
-  }, [project]);
+    if (!deferredProject) return [];
+    return deferredProject.compareScenarios.map((s) => calculateScenario(deferredProject, s));
+  }, [deferredProject]);
+
+  const recalculating = project !== deferredProject;
+
+  // Memoiserade barn ritas bara om när deras egna värden ändras — men bara
+  // om funktionerna de får behåller sin identitet mellan omritningarna.
+  // Hookarna måste ligga före de tidiga returerna nedan.
+  const goToAssumptions = useCallback(() => setTab("antaganden"), []);
+  const goToDetails = useCallback(() => setTab("detaljer"), []);
+  const setExtractionRate = useCallback(
+    (rate: number) => {
+      if (!project) return;
+      const draft: PropertyProject = JSON.parse(JSON.stringify(project));
+      for (const key of ["EXISTING_COMPANY", "PROJECT_COMPANY"] as const) {
+        draft.scenarios[key].dividend.dividendTaxAboveAllowance = rate;
+      }
+      store.updateProject(draft);
+    },
+    [project, store],
+  );
 
   if (store.loading) {
     return <p className="p-8 text-sm text-muted">Laddar…</p>;
@@ -139,16 +165,20 @@ export function ProjectDashboard({ projectId }: { projectId: string }) {
         <div className="no-print flex flex-wrap items-center gap-2">
           <span
             className={`rounded-full px-3.5 py-2 text-xs font-medium ${
-              store.saveState === "saved"
-                ? "bg-positive-soft text-positive"
-                : "bg-warn-soft text-warn"
+              recalculating
+                ? "bg-surface-muted text-muted"
+                : store.saveState === "saved"
+                  ? "bg-positive-soft text-positive"
+                  : "bg-warn-soft text-warn"
             }`}
           >
-            {store.saveState === "saved"
-              ? "Sparat"
-              : store.saveState === "saving"
-                ? "Sparar…"
-                : "Osparade ändringar"}
+            {recalculating
+              ? "Räknar…"
+              : store.saveState === "saved"
+                ? "Sparat"
+                : store.saveState === "saving"
+                  ? "Sparar…"
+                  : "Osparade ändringar"}
           </span>
           <Button size="sm" onClick={exportJson}>
             JSON
@@ -184,20 +214,14 @@ export function ProjectDashboard({ projectId }: { projectId: string }) {
           <QuickFacts
             project={project}
             update={update}
-            onGoToRenovation={() => setTab("antaganden")}
+            onGoToRenovation={goToAssumptions}
             capitalNeeded={selectedResult?.totalCapitalRequirement}
           />
 
           <HeadToHead
             results={results}
-            onGoToInput={() => setTab("antaganden")}
-            onSetExtractionRate={(rate) =>
-              update((d) => {
-                for (const key of ["EXISTING_COMPANY", "PROJECT_COMPANY"] as const) {
-                  d.scenarios[key].dividend.dividendTaxAboveAllowance = rate;
-                }
-              })
-            }
+            onGoToInput={goToAssumptions}
+            onSetExtractionRate={setExtractionRate}
           />
 
           <div>
@@ -213,7 +237,7 @@ export function ProjectDashboard({ projectId }: { projectId: string }) {
           <ThreeQuestions results={results} />
 
           <div className="grid gap-5 lg:grid-cols-2 print-stack">
-            <TopRisks results={results} onShowAll={() => setTab("detaljer")} />
+            <TopRisks results={results} onShowAll={goToDetails} />
             <BreakEvenCard results={results} />
           </div>
         </div>

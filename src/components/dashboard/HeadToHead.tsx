@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, memo } from "react";
 import { formatMoney, formatPercent } from "@/lib/format";
 import type { ScenarioResult, ScenarioType } from "@/types";
 
@@ -70,7 +70,7 @@ export function splitSides(results: ScenarioResult[]): [Side, Side] {
 }
 
 /** Huvudnumret för ett objekt: privat mot bolag, och skillnaden i kronor. */
-export function HeadToHead({
+function HeadToHeadInner({
   results,
   onGoToInput,
   onSetExtractionRate,
@@ -279,3 +279,10 @@ function Row({ label, value }: { label: string; value: string }) {
     </div>
   );
 }
+
+/**
+ * Ritas bara om när siffrorna faktiskt ändrats. Under inmatning byts
+ * projektet vid varje tangenttryck, men resultaten hinner ikapp först
+ * efteråt — utan detta skulle hela vyn ritas om i onödan.
+ */
+export const HeadToHead = memo(HeadToHeadInner);

@@ -1,5 +1,7 @@
 "use client";
 
+import { memo } from "react";
+
 import { formatMoney, formatPercent, whenAssessable } from "@/lib/format";
 import type { OptimizationTarget, ScenarioResult } from "@/types";
 
@@ -54,7 +56,7 @@ export function bestScenarioIndex(
   return best.i;
 }
 
-export function ScenarioCards({
+function ScenarioCardsInner({
   results,
   target,
 }: {
@@ -147,3 +149,10 @@ function Line({ label, value }: { label: string; value: string }) {
     </div>
   );
 }
+
+/**
+ * Ritas bara om när siffrorna faktiskt ändrats. Under inmatning byts
+ * projektet vid varje tangenttryck, men resultaten hinner ikapp först
+ * efteråt — utan detta skulle hela vyn ritas om i onödan.
+ */
+export const ScenarioCards = memo(ScenarioCardsInner);

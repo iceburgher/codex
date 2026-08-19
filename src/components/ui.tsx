@@ -1,6 +1,6 @@
 "use client";
 
-import { useId, useState, type ReactNode } from "react";
+import { useId, useRef, useState, type ReactNode } from "react";
 import type { AssumptionSource, AuditTrail, RiskSeverity } from "@/types";
 import { formatMoney, formatPercent } from "@/lib/format";
 
@@ -150,7 +150,42 @@ export function NumberField({
   size?: "md" | "lg";
 }) {
   const id = useId();
+  const inputRef = useRef<HTMLInputElement>(null);
   const isMissing = value === null || value === undefined;
+
+  // Belopp skrivs med tusenavskiljare. Övriga tal — år, månader, procent —
+  // ska inte grupperas, så formateringen följer enheten.
+  const grouped = suffix === "kr";
+
+  function handleChange(event: React.ChangeEvent<HTMLInputElement>) {
+    const raw = event.target.value;
+
+    if (raw.trim() === "") {
+      onChange(allowNull ? null : 0);
+      return;
+    }
+
+    if (!grouped) {
+      const parsed = Number(raw);
+      onChange(Number.isFinite(parsed) ? parsed : allowNull ? null : 0);
+      return;
+    }
+
+    // Antalet siffror före markören är det som ska bevaras — själva
+    // positionen flyttar sig när avskiljare läggs till eller tas bort.
+    const caret = event.target.selectionStart ?? raw.length;
+    const digitsBeforeCaret = countDigits(raw.slice(0, caret));
+
+    const parsed = Number(raw.replace(/[^\d-]/g, ""));
+    if (!Number.isFinite(parsed)) return;
+    onChange(parsed);
+
+    requestAnimationFrame(() => {
+      const el = inputRef.current;
+      if (!el) return;
+      el.setSelectionRange(...caretForDigits(el.value, digitsBeforeCaret));
+    });
+  }
 
   return (
     <label htmlFor={id} className="block">
@@ -161,23 +196,16 @@ export function NumberField({
       <span className="relative block">
         <input
           id={id}
-          type="number"
-          step={step}
+          ref={inputRef}
+          type={grouped ? "text" : "number"}
+          step={grouped ? undefined : step}
           inputMode="decimal"
           className={`numeric ${FIELD_CLASS} ${suffix ? "pr-12" : ""} ${
             size === "lg" ? "py-3.5 text-xl font-semibold" : ""
           } ${isMissing && allowNull ? "ring-2 ring-warn/40" : ""}`}
-          value={isMissing ? "" : value}
+          value={isMissing ? "" : grouped ? groupDigits(value) : value}
           placeholder={placeholder}
-          onChange={(e) => {
-            const raw = e.target.value;
-            if (raw === "") {
-              onChange(allowNull ? null : 0);
-              return;
-            }
-            const parsed = Number(raw);
-            onChange(Number.isFinite(parsed) ? parsed : allowNull ? null : 0);
-          }}
+          onChange={handleChange}
         />
         {suffix && (
           <span className="pointer-events-none absolute right-4 top-1/2 -translate-y-1/2 text-sm text-muted">
@@ -191,6 +219,32 @@ export function NumberField({
       {hint && <span className="mt-1.5 block text-xs leading-snug text-muted">{hint}</span>}
     </label>
   );
+}
+
+/** "4000000" → "4 000 000". Tomt fält lämnas tomt. */
+function groupDigits(value: number): string {
+  const negative = value < 0;
+  const digits = Math.abs(value).toString();
+  const [whole, fraction] = digits.split(".");
+  const grouped = whole.replace(/\B(?=(\d{3})+(?!\d))/g, " ");
+  return `${negative ? "-" : ""}${grouped}${fraction ? `,${fraction}` : ""}`;
+}
+
+function countDigits(text: string): number {
+  return (text.match(/\d/g) ?? []).length;
+}
+
+/** Var markören ska stå för att ha lika många siffror till vänster som förut. */
+function caretForDigits(formatted: string, digits: number): [number, number] {
+  if (digits === 0) return [0, 0];
+  let seen = 0;
+  for (let i = 0; i < formatted.length; i++) {
+    if (/\d/.test(formatted[i])) {
+      seen++;
+      if (seen === digits) return [i + 1, i + 1];
+    }
+  }
+  return [formatted.length, formatted.length];
 }
 
 export function PercentField({
