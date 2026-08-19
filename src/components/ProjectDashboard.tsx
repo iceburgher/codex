@@ -493,9 +493,10 @@ function CashFlowTable({ result }: { result: ScenarioResult }) {
     <div>
       <p className="mb-3 text-sm text-muted">
         {result.label}. Amortering är inte en kostnad — pengarna går till att minska skulden.
+        Kvarvarande lån löses ur försäljningslikviden den sista månaden.
       </p>
       <div className="overflow-x-auto">
-        <table className="w-full min-w-[900px] text-xs">
+        <table className="w-full min-w-[980px] text-xs">
           <thead>
             <tr className="border-b border-border text-left text-muted">
               <th className="py-2 pr-2">Månad</th>
@@ -509,6 +510,7 @@ function CashFlowTable({ result }: { result: ScenarioResult }) {
               <th className="py-2 pr-2 text-right">Försäljning</th>
               <th className="py-2 pr-2 text-right">Skatt</th>
               <th className="py-2 pr-2 text-right">Amortering</th>
+              <th className="py-2 pr-2 text-right">Lån löst</th>
               <th className="py-2 text-right">Utgående</th>
             </tr>
           </thead>
@@ -528,6 +530,7 @@ function CashFlowTable({ result }: { result: ScenarioResult }) {
                 <td className="numeric py-1.5 pr-2 text-right">{formatMoney(m.saleIncome)}</td>
                 <td className="numeric py-1.5 pr-2 text-right">{formatMoney(-m.taxes)}</td>
                 <td className="numeric py-1.5 pr-2 text-right">{formatMoney(-m.amortization)}</td>
+                <td className="numeric py-1.5 pr-2 text-right">{formatMoney(-m.loanRepayment)}</td>
                 <td
                   className={`numeric py-1.5 text-right font-medium ${
                     m.closingCash < 0 ? "text-negative" : ""

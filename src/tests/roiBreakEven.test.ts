@@ -163,6 +163,40 @@ describe("cash flow", () => {
     expect(withLoan.peakDebt).toBe(2_000_000);
   });
 
+  it("repays the full outstanding loan from the sale proceeds at exit", () => {
+    // A buyer's bank does not let debt ride past settlement — whatever the
+    // project still owes must come out of the sale price, not vanish.
+    const cf = buildCashFlow(params);
+    const exit = cf.months[cf.months.length - 1];
+    expect(exit.loanRepayment).toBe(2_000_000);
+
+    // No month before exit repays it, and no month after exit exists to.
+    for (const m of cf.months.slice(0, -1)) {
+      expect(m.loanRepayment).toBe(0);
+    }
+  });
+
+  it("repays only what is left after scheduled amortization, not the original loan again", () => {
+    const amortizing = buildCashFlow({ ...params, amortizationAnnual: 120_000 });
+    const exit = amortizing.months[amortizing.months.length - 1];
+    // 2,000,000 drawn, 120,000 amortized on schedule over the year.
+    expect(exit.loanRepayment).toBeCloseTo(2_000_000 - 120_000, 6);
+  });
+
+  it("does not let the exit-month repayment inflate the peak debt reading", () => {
+    const cf = buildCashFlow(params);
+    expect(cf.peakDebt).toBe(2_000_000);
+  });
+
+  it("closes the project cash-neutral on debt: nothing owed is left unpaid", () => {
+    // The claim the headline profit figures rely on — that the loan is fully
+    // settled — must actually hold in the cash flow that backs them.
+    const cf = buildCashFlow(params);
+    const totalDrawn = cf.months.reduce((s, m) => s + m.loanDrawdown, 0);
+    const totalRepaid = cf.months.reduce((s, m) => s + m.amortization + m.loanRepayment, 0);
+    expect(totalRepaid).toBeCloseTo(totalDrawn, 6);
+  });
+
   it("keeps amortization out of the project result but in the cash flow", () => {
     const amortizing = buildCashFlow({ ...params, amortizationAnnual: 120_000 });
     expect(amortizing.totalInterest).toBe(params.interestTotal);

@@ -24,6 +24,12 @@ export interface CashFlowParams {
  * balance is exactly the capital the owners must provide — that is the peak
  * cash requirement. Equity is then shown as an injection covering it.
  * Amortization moves cash and reduces debt but is not a project expense.
+ *
+ * Whatever debt remains at exit is repaid out of the sale proceeds — a real
+ * buyer's bank does not let a loan ride past settlement, and the headline
+ * profit figures (engine.ts) are only correct if the loan is assumed repaid
+ * in full. Without this, the final month's balance would be inflated by the
+ * outstanding loan, which the project never actually gets to keep.
  */
 export function buildCashFlow(params: CashFlowParams): CashFlowResult {
   const months: MonthlyCashFlow[] = [];
@@ -54,10 +60,15 @@ export function buildCashFlow(params: CashFlowParams): CashFlowResult {
     const rentalIncome = isMonthZero ? 0 : rentalPerMonth;
     const saleIncome = isExit ? params.salePrice - params.saleCosts : 0;
     const taxes = isExit ? params.taxAtExit : 0;
-    const amortization = isMonthZero ? 0 : Math.min(amortPerMonth, Math.max(0, debt));
+    const scheduledAmortization = isMonthZero ? 0 : Math.min(amortPerMonth, Math.max(0, debt));
 
-    debt += loanDrawdown - amortization;
+    debt += loanDrawdown - scheduledAmortization;
     peakDebt = Math.max(peakDebt, debt);
+
+    // Settle the remaining balance at exit — after tracking the peak, so a
+    // same-month payoff never masks how much debt the project actually ran.
+    const loanRepayment = isExit ? Math.max(0, debt) : 0;
+    debt -= loanRepayment;
 
     const closing =
       opening +
@@ -69,7 +80,8 @@ export function buildCashFlow(params: CashFlowParams): CashFlowResult {
       runningCost -
       interest -
       taxes -
-      amortization;
+      scheduledAmortization -
+      loanRepayment;
 
     if (closing < deepestDeficit) {
       deepestDeficit = closing;
@@ -88,7 +100,8 @@ export function buildCashFlow(params: CashFlowParams): CashFlowResult {
       rentalIncome,
       saleIncome,
       taxes,
-      amortization,
+      amortization: scheduledAmortization,
+      loanRepayment,
       closingCash: closing,
     });
 

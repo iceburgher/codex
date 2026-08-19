@@ -611,6 +611,8 @@ export interface MonthlyCashFlow {
   saleIncome: number;
   taxes: number;
   amortization: number;
+  /** Kvarvarande lån löst ur försäljningslikviden — bara i utflyttsmånaden. */
+  loanRepayment: number;
   closingCash: number;
 }
 
