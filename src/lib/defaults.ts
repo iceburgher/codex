@@ -196,6 +196,7 @@ export function defaultScenario(type: ScenarioType): ScenarioInputs {
     buyerLatentTaxDiscountPercent: 0,
     buildingValueSharePercent: 0,
     annualDepreciationRatePercent: 0,
+    purchasedFromRelatedParty: false,
     improvementBasis: {
       fundamentalImprovementsPercent: 0,
       qualifyingRepairsAndMaintenancePercent: 0,

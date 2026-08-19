@@ -440,6 +440,23 @@ export function ScenarioInputsPanel({
             />
           )}
           {isCompany && (
+            <>
+              <ToggleField
+                label="Bolaget köper av ägaren själv eller någon närstående"
+                value={scenario.purchasedFromRelatedParty}
+                onChange={(v) => set((s) => void (s.purchasedFromRelatedParty = v))}
+              />
+              {scenario.purchasedFromRelatedParty && (
+                <p className="rounded-md bg-danger-soft p-2 text-[11px] text-negative">
+                  Affären måste ske till marknadsvärde. Underprissätts köpet kan mellanskillnaden
+                  uttagsbeskattas hos säljaren, och säljer en privatperson till sitt eget bolag
+                  under marknadsvärdet kan priset räknas om enligt korrigeringsregeln i IL 53 kap.
+                  Ta in en oberoende värdering och stäm av med en rådgivare.
+                </p>
+              )}
+            </>
+          )}
+          {isCompany && (
             <SelectField
               label="Hur säljs bolaget vid utgången?"
               source="TAX_ADVISOR_INPUT"

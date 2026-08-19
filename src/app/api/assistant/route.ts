@@ -213,6 +213,11 @@ function scenarioPatchSchema(): Anthropic.Tool.InputSchema {
         description:
           "Bara bolagsägande: värdeminskningsavdrag per år på byggnaden. Återförs vid en vanlig tillgångsförsäljning (nettoeffekt noll), men blir en permanent skattevinst vid paketering (share_sale).",
       },
+      purchasedFromRelatedParty: {
+        type: "boolean",
+        description:
+          "Bara bolagsägande: om bolaget köper fastigheten av ägaren själv eller någon närstående i stället för av en oberoende säljare. Måste ske till marknadsvärde — annars risk för uttagsbeskattning hos säljaren eller omräkning enligt korrigeringsregeln i IL 53 kap. Föreslå eller kommentera det här fältet utan att gissa att ett lågt pris är okej.",
+      },
       improvementBasis: {
         type: "object",
         description:
@@ -327,6 +332,7 @@ const SCENARIO_SUBFIELD_LABELS: Record<string, string> = {
   buyerLatentTaxDiscountPercent: "köparens rabatt för latent skatt vid paketering",
   buildingValueSharePercent: "andel av anskaffningsvärdet som är byggnad",
   annualDepreciationRatePercent: "värdeminskningsavdrag per år",
+  purchasedFromRelatedParty: "bolaget köper av ägaren själv eller närstående",
 };
 
 /** Översätter en punktad fältväg (t.ex. "rental.rentPerWeek") till vanlig svenska. */

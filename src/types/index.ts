@@ -400,6 +400,19 @@ export interface ScenarioInputs {
   buildingValueSharePercent: number;
   annualDepreciationRatePercent: number;
 
+  /**
+   * Bara bolagsägande: om bolaget köper fastigheten av ägaren själv eller
+   * någon närstående — t.ex. en fastighet ägaren redan äger privat, eller
+   * ett annat bolag i samma intressegemenskap — i stället för av en
+   * oberoende säljare. Sådana affärer måste ske till marknadsvärde.
+   * Underprissätts köpet kan mellanskillnaden uttagsbeskattas hos säljaren
+   * (IL 22 kap.), och säljer en fysisk person till sitt eget bolag för
+   * mindre än marknadsvärdet kan priset räknas om till lägst
+   * omkostnadsbeloppet enligt korrigeringsregeln i IL 53 kap. Ingetdera kan
+   * appen verifiera — bara flagga att risken finns.
+   */
+  purchasedFromRelatedParty: boolean;
+
   opportunityCost: OpportunityCostInputs;
 
   flipIntent: boolean;

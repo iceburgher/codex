@@ -196,6 +196,27 @@ describe("scenario engine", () => {
     expect(r.riskFlags.map((f) => f.id)).not.toContain("packaging_structure_risk");
   });
 
+  it("flags a related-party purchase as an uttagsbeskattning / correction-rule risk", () => {
+    const p = baseProject();
+    p.scenarios.EXISTING_COMPANY.purchasedFromRelatedParty = true;
+    const r = calculateScenario(p, "EXISTING_COMPANY");
+    const flag = r.riskFlags.find((f) => f.id === "related_party_purchase_price_risk");
+    expect(flag?.severity).toBe("high");
+  });
+
+  it("does not flag a related-party purchase when the company buys from an independent seller", () => {
+    const p = baseProject();
+    const r = calculateScenario(p, "EXISTING_COMPANY");
+    expect(r.riskFlags.map((f) => f.id)).not.toContain("related_party_purchase_price_risk");
+  });
+
+  it("never flags a related-party purchase for private ownership, where the field is unused", () => {
+    const p = baseProject();
+    p.scenarios.PRIVATE_EQUITY.purchasedFromRelatedParty = true;
+    const r = calculateScenario(p, "PRIVATE_EQUITY");
+    expect(r.riskFlags.map((f) => f.id)).not.toContain("related_party_purchase_price_risk");
+  });
+
   it("nets a building depreciation deduction to zero over the holding period under a direct asset sale", () => {
     // Deducted now, recaptured (lower tax basis) at sale — same total tax
     // either way, since both the deduction and the recapture land in the

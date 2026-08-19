@@ -91,6 +91,13 @@ export function buildRiskFlags(ctx: RiskContext): RiskFlag[] {
       text: "Kalkylen räknar med att sälja bolaget (aktierna) i stället för fastigheten, så att värdeökningen blir skattefri i bolaget. Det kräver att strukturen finns på plats innan värdeökningen sker, inte i efterhand, och köparens rabatt för den övertagna latenta skatten är bara en uppskattning. Det här är inget appen kan verifiera — ta in juridisk och skatterådgivning innan ni planerar för en paketerad försäljning.",
     });
   }
+  if (ctx.isCompanyOwned && scenario.purchasedFromRelatedParty) {
+    flags.push({
+      id: "related_party_purchase_price_risk",
+      severity: "high",
+      text: "Bolaget köper fastigheten av ägaren själv eller någon närstående i stället för av en oberoende säljare. Affären måste ske till marknadsvärde — sätts priset för lågt kan mellanskillnaden uttagsbeskattas hos säljaren, och säljer en privatperson till sitt eget bolag under marknadsvärdet kan priset räknas om enligt korrigeringsregeln i IL 53 kap. Ta in en oberoende värdering och stäm av med en rådgivare innan affären görs.",
+    });
+  }
   if (ctx.isCompanyOwned && scenario.privateUseLevel !== "none") {
     flags.push({
       id: "company_private_use_risk",
