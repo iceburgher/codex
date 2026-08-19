@@ -15,8 +15,6 @@ export interface RiskContext {
   isCompanyOwned: boolean;
   vatDeductibleVat: number;
   dividendAllowanceExceeded: boolean;
-  intercompanyLoan: number;
-  companyEquity: number;
 }
 
 export function buildRiskFlags(ctx: RiskContext): RiskFlag[] {
@@ -88,13 +86,6 @@ export function buildRiskFlags(ctx: RiskContext): RiskFlag[] {
       id: "vat_deduction_claimed_on_residence",
       severity: "high",
       text: "Ni drar av moms på renovering av en bostad. Det är sällan tillåtet och behöver stämmas av.",
-    });
-  }
-  if (ctx.intercompanyLoan > 0 && ctx.companyEquity > 0 && ctx.intercompanyLoan > ctx.companyEquity * 3) {
-    flags.push({
-      id: "high_intercompany_debt",
-      severity: "medium",
-      text: "Lånet mellan bolagen är stort jämfört med det egna kapitalet. Då får räntan kanske inte dras av fullt ut.",
     });
   }
   if (ctx.dividendAllowanceExceeded) {

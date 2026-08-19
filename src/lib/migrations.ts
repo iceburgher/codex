@@ -70,10 +70,6 @@ export function migrateProject(raw: Record<string, unknown>): PropertyProject {
           dividend: { ...base.dividend, ...(incoming.dividend as object) },
           salary: { ...base.salary, ...(incoming.salary as object) },
           companyFunding: { ...base.companyFunding, ...(incoming.companyFunding as object) },
-          projectCompanyFunding: {
-            ...base.projectCompanyFunding,
-            ...(incoming.projectCompanyFunding as object),
-          },
           vat: { ...base.vat, ...(incoming.vat as object) },
           rot: { ...base.rot, ...(incoming.rot as object) },
           benefit: { ...base.benefit, ...(incoming.benefit as object) },
@@ -83,8 +79,19 @@ export function migrateProject(raw: Record<string, unknown>): PropertyProject {
       : base;
   }
 
+  // A file exported before a scenario type was retired (e.g. the separate
+  // project company) can still name it here. Drop what no longer exists
+  // rather than let the UI try to render a scenario with no data behind it.
+  if (Array.isArray(merged.compareScenarios)) {
+    merged.compareScenarios = merged.compareScenarios.filter((s) =>
+      (ALL_SCENARIOS as string[]).includes(s),
+    );
+  }
   if (!Array.isArray(merged.compareScenarios) || merged.compareScenarios.length === 0) {
     merged.compareScenarios = [...ALL_SCENARIOS];
+  }
+  if (!(ALL_SCENARIOS as string[]).includes(merged.selectedScenario)) {
+    merged.selectedScenario = merged.compareScenarios[0];
   }
 
   return merged;

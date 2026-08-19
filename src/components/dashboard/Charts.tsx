@@ -217,8 +217,7 @@ export function CostWaterfall({ result }: { result: ScenarioResult }) {
 
 function shortLabel(label: string): string {
   return label
-    .replace("Privat — eget kapital", "Privat, kontant")
-    .replace("Privat — med lån", "Privat, lån")
-    .replace("Separat projektbolag", "Projektbolag")
-    .replace("Befintligt bolag", "Bolaget");
+    .replace("Privat, utan lån", "Privat, kontant")
+    .replace("Privat, med lån", "Privat, lån")
+    .replace("Bolaget äger", "Bolaget");
 }

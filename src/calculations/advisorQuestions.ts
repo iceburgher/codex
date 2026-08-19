@@ -69,11 +69,6 @@ export function buildAdvisorQuestions(
         scope: "Bolagsköp",
         question: "Är räntekostnaderna fullt avdragsgilla, även på eventuellt koncernlån?",
       },
-      {
-        id: "project_company",
-        scope: "Bolagsköp",
-        question: "Är ett separat projektbolag att föredra för det här projektet?",
-      },
     );
   }
 

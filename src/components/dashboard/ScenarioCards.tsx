@@ -56,36 +56,13 @@ export function bestScenarioIndex(
   return best.i;
 }
 
-/**
- * Två bolagsalternativ kan råka ge exakt samma resultat om det ena — typiskt
- * ett nytt projektbolag — ännu inte fått några egna kostnader ifyllda. Utan
- * en förklaring på kortet ser det ut som ett fel; med en behöver ingen fråga
- * varför siffrorna är lika.
- */
-function duplicateOf(results: ScenarioResult[], i: number): ScenarioResult | null {
-  const r = results[i];
-  if (r.corporateTax === null) return null;
-  for (let j = 0; j < i; j++) {
-    const other = results[j];
-    if (
-      other.corporateTax !== null &&
-      Math.round(r.netAvailablePrivately) === Math.round(other.netAvailablePrivately) &&
-      Math.round(r.netRetainedInCompany) === Math.round(other.netRetainedInCompany)
-    ) {
-      return other;
-    }
-  }
-  return null;
-}
 
 function ScenarioCardsInner({
   results,
   target,
-  onGoToInput,
 }: {
   results: ScenarioResult[];
   target: OptimizationTarget;
-  onGoToInput?: () => void;
 }) {
   const best = bestScenarioIndex(results, target);
 
@@ -98,7 +75,6 @@ function ScenarioCardsInner({
           ? "Fyll i skatten"
           : "Fyll i pris";
         const redFlags = r.riskFlags.filter((f) => f.severity === "high").length;
-        const dup = blocked ? null : duplicateOf(results, i);
 
         return (
           <article
@@ -153,21 +129,6 @@ function ScenarioCardsInner({
                 value={formatMoney(r.breakEven.breakEvenSalePrice)}
               />
             </dl>
-
-            {dup && (
-              <p className="mt-5 rounded-2xl bg-surface-muted px-3.5 py-2.5 text-xs leading-relaxed text-muted">
-                Ger samma resultat som {dup.label} — inga egna kostnader ifyllda än.{" "}
-                {onGoToInput && (
-                  <button
-                    type="button"
-                    onClick={onGoToInput}
-                    className="font-medium text-accent-strong hover:underline"
-                  >
-                    Fyll i under Antaganden
-                  </button>
-                )}
-              </p>
-            )}
 
             {redFlags > 0 && (
               <p className="mt-3 rounded-full bg-negative-soft px-3.5 py-2 text-xs font-medium text-negative">

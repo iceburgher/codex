@@ -13,12 +13,7 @@ import type {
 
 export const SCHEMA_VERSION = 1;
 
-export const ALL_SCENARIOS: ScenarioType[] = [
-  "PRIVATE_EQUITY",
-  "PRIVATE_DEBT",
-  "EXISTING_COMPANY",
-  "PROJECT_COMPANY",
-];
+export const ALL_SCENARIOS: ScenarioType[] = ["PRIVATE_EQUITY", "PRIVATE_DEBT", "EXISTING_COMPANY"];
 
 export const HIDDEN_COST_TEMPLATE: Omit<HiddenCostItem, "amount" | "included">[] = [
   { id: "pre_purchase_inspection", label: "Besiktning före köp" },
@@ -120,18 +115,11 @@ export function defaultSale(): SaleInputs {
 }
 
 function ownerKindFor(type: ScenarioType): OwnerKind {
-  switch (type) {
-    case "EXISTING_COMPANY":
-      return "EXISTING_COMPANY";
-    case "PROJECT_COMPANY":
-      return "PROJECT_COMPANY";
-    default:
-      return "PRIVATE";
-  }
+  return type === "EXISTING_COMPANY" ? "EXISTING_COMPANY" : "PRIVATE";
 }
 
 export function defaultScenario(type: ScenarioType): ScenarioInputs {
-  const isCompany = type === "EXISTING_COMPANY" || type === "PROJECT_COMPANY";
+  const isCompany = type === "EXISTING_COMPANY";
   const isDebtFunded = type === "PRIVATE_DEBT";
 
   return {
@@ -177,18 +165,6 @@ export function defaultScenario(type: ScenarioType): ScenarioInputs {
       deductibleInterestPercent: 1,
       personalGuarantee: false,
     },
-    projectCompanyFunding: {
-      shareCapital: type === "PROJECT_COMPANY" ? 25000 : 0,
-      shareholderContribution: 0,
-      intercompanyLoan: 0,
-      intercompanyInterestRate: 0,
-      externalLoan: 0,
-      externalInterestRate: type === "PROJECT_COMPANY" ? 0.055 : 0,
-      annualAccountingCost: type === "PROJECT_COMPANY" ? 0 : 0,
-      annualBankingCost: 0,
-      annualAdminCost: 0,
-    },
-
     vat: {
       vatTreatment: "none",
       vatDeductiblePercent: 0,
@@ -234,7 +210,6 @@ export function defaultScenarios(): Record<ScenarioType, ScenarioInputs> {
     PRIVATE_EQUITY: defaultScenario("PRIVATE_EQUITY"),
     PRIVATE_DEBT: defaultScenario("PRIVATE_DEBT"),
     EXISTING_COMPANY: defaultScenario("EXISTING_COMPANY"),
-    PROJECT_COMPANY: defaultScenario("PROJECT_COMPANY"),
   };
 }
 

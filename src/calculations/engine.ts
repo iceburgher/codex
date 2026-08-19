@@ -8,7 +8,7 @@ import { calculatePrivateCapitalGain } from "./capitalGain";
 import { calculateCorporateTax } from "./corporateTax";
 import { calculateDividendGrossUp } from "./dividend";
 import { calculateExtraction } from "./extraction";
-import { calculateCompanyFunding, calculateProjectCompanyFunding } from "./fundingCompany";
+import { calculateCompanyFunding } from "./fundingCompany";
 import { calculateImprovementBasis } from "./improvementBasis";
 import { calculatePrivateLoans } from "./loans";
 import { calculateFamilyNetWorth } from "./netWorth";
@@ -27,7 +27,7 @@ import { calculateVat } from "./vat";
 const DEFAULT_VAT_RATE = 0.25;
 
 export function isCompanyScenario(type: ScenarioType): boolean {
-  return type === "EXISTING_COMPANY" || type === "PROJECT_COMPANY";
+  return type === "EXISTING_COMPANY";
 }
 
 export interface ScenarioOverrides {
@@ -101,34 +101,12 @@ function computeCore(
   };
   const loans = calculatePrivateLoans({ loans: privateLoansInput, holdingPeriodMonths });
 
-  const projectCompanyAdminAnnual =
-    scenarioType === "PROJECT_COMPANY"
-      ? (scenario.projectCompanyFunding.annualAccountingCost || 0) +
-        (scenario.projectCompanyFunding.annualBankingCost || 0) +
-        (scenario.projectCompanyFunding.annualAdminCost || 0)
-      : 0;
-
   let companyFunding = null;
   if (scenarioType === "EXISTING_COMPANY") {
     companyFunding = calculateCompanyFunding({
       funding: {
         ...scenario.companyFunding,
         businessInterestRate: Math.max(0, scenario.companyFunding.businessInterestRate + rateDelta),
-      },
-      holdingPeriodMonths,
-    });
-  } else if (scenarioType === "PROJECT_COMPANY") {
-    companyFunding = calculateProjectCompanyFunding({
-      funding: {
-        ...scenario.projectCompanyFunding,
-        intercompanyInterestRate: Math.max(
-          0,
-          scenario.projectCompanyFunding.intercompanyInterestRate + rateDelta,
-        ),
-        externalInterestRate: Math.max(
-          0,
-          scenario.projectCompanyFunding.externalInterestRate + rateDelta,
-        ),
       },
       holdingPeriodMonths,
     });
@@ -162,7 +140,6 @@ function computeCore(
     taxAssessmentValue,
     propertyFeeRate: config.propertyFeeRate,
     propertyFeeAnnualCap: config.propertyFeeAnnualCap,
-    extraAnnualCosts: projectCompanyAdminAnnual,
   });
 
   const rental = calculateRental({
@@ -192,13 +169,10 @@ function computeCore(
     split: scenario.improvementBasis,
   });
 
-  // Project-company admin cost is already inside running costs; subtract it
-  // from the funding fees so it is not charged twice.
-  const projectCompanyAdminProrated = projectCompanyAdminAnnual * (holdingPeriodMonths / 12);
   const privateFinancingCost =
     loans.netMortgageInterest + loans.netUnsecuredInterest + loans.totalSetupFees;
   const companyFinancingCost = companyFunding
-    ? companyFunding.businessInterest + companyFunding.fees - projectCompanyAdminProrated
+    ? companyFunding.businessInterest + companyFunding.fees
     : 0;
   const financingCost = isCompanyOwned ? companyFinancingCost : privateFinancingCost;
 
@@ -219,7 +193,7 @@ function computeCore(
   const companyOtherResult =
     -(runningCosts.projectRunningCost + hiddenCostsTotal) -
     (companyFunding?.deductibleInterest ?? 0) -
-    (companyFunding ? companyFunding.fees - projectCompanyAdminProrated : 0) +
+    (companyFunding ? companyFunding.fees : 0) +
     (project.rental.enabled ? rental.companyRentalProfit : 0) -
     (benefit?.companyEmployerContributionOnBenefit ?? 0);
 
@@ -378,10 +352,6 @@ function computeCore(
     dividendAllowanceExceeded:
       (dividend?.allowanceExceeded ?? false) ||
       (extraction ? extraction.aboveDividendAllowance > 0 : false),
-    intercompanyLoan: scenario.projectCompanyFunding.intercompanyLoan || 0,
-    companyEquity:
-      (scenario.projectCompanyFunding.shareCapital || 0) +
-      (scenario.projectCompanyFunding.shareholderContribution || 0),
   };
 
   return {

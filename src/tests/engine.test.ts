@@ -23,8 +23,6 @@ function baseProject(): PropertyProject {
   p.scenarios.PRIVATE_EQUITY.privateFunding.existingPrivateCash = 4_800_000;
   p.scenarios.EXISTING_COMPANY.companyFunding.companyCashInvested = 1_800_000;
   p.scenarios.EXISTING_COMPANY.companyFunding.externalBusinessLoan = 3_000_000;
-  p.scenarios.PROJECT_COMPANY.projectCompanyFunding.shareholderContribution = 1_800_000;
-  p.scenarios.PROJECT_COMPANY.projectCompanyFunding.externalLoan = 3_000_000;
   return p;
 }
 
@@ -43,8 +41,8 @@ describe("scenario engine", () => {
 
   it("can still calculate every ownership form that is switched on", () => {
     const p = baseProject();
-    p.compareScenarios = ["PRIVATE_EQUITY", "PRIVATE_DEBT", "EXISTING_COMPANY", "PROJECT_COMPANY"];
-    expect(calculateAllScenarios(p)).toHaveLength(4);
+    p.compareScenarios = ["PRIVATE_EQUITY", "PRIVATE_DEBT", "EXISTING_COMPANY"];
+    expect(calculateAllScenarios(p)).toHaveLength(3);
   });
 
   it("charges a company buyer more stamp duty than a private buyer on the same facts", () => {
@@ -273,7 +271,6 @@ describe("unknown owner-level extraction tax", () => {
   it("does not crown a structure whose private outcome is unknown", () => {
     const p = baseProject();
     p.scenarios.EXISTING_COMPANY.dividend.availableLowTaxAllowance = 0;
-    p.scenarios.PROJECT_COMPANY.dividend.availableLowTaxAllowance = 0;
     const results = calculateAllScenarios(p);
     const best = bestScenarioIndex(results, "max_family_net_worth");
     expect(best).toBeGreaterThanOrEqual(0);

@@ -75,9 +75,7 @@ export function ProjectDashboard({ projectId }: { projectId: string }) {
     (rate: number) => {
       if (!project) return;
       const draft: PropertyProject = JSON.parse(JSON.stringify(project));
-      for (const key of ["EXISTING_COMPANY", "PROJECT_COMPANY"] as const) {
-        draft.scenarios[key].dividend.dividendTaxAboveAllowance = rate;
-      }
+      draft.scenarios.EXISTING_COMPANY.dividend.dividendTaxAboveAllowance = rate;
       store.updateProject(draft);
     },
     [project, store],
@@ -232,7 +230,7 @@ export function ProjectDashboard({ projectId }: { projectId: string }) {
             </p>
           </div>
 
-          <ScenarioCards results={results} target={HEADLINE_TARGET} onGoToInput={goToAssumptions} />
+          <ScenarioCards results={results} target={HEADLINE_TARGET} />
 
           <ThreeQuestions results={results} />
 

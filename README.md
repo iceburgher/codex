@@ -2,12 +2,11 @@
 
 En kalkylator för svenska fastighetsprojekt. Den jämför hela ekonomin efter
 skatt för att köpa, renovera, eventuellt hyra ut, äga och sälja ett objekt
-under fyra ägarformer:
+under tre ägarformer:
 
 - **Privat, egna pengar**
 - **Privat, med bolån**
 - **Bolaget äger**
-- **Nytt projektbolag**
 
 Poängen är inte att jämföra nominella skattesatser. Modellen räknar hela
 kapitalflödet: lagfart och pantbrev, renovering, moms, ROT, räntor, vad det
@@ -72,7 +71,7 @@ skickas upp. Projektlistan visar vilket läge som gäller.
 ```
 src/
   calculations/   rena beräkningar — ingen React, ingen I/O
-    engine.ts     samma pipeline för alla fyra ägarformer
+    engine.ts     samma pipeline för alla tre ägarformer
   config/         gemensamma skattesatser, versionerade per skatteår
   components/     endast gränssnitt; inga formler bor här
   lib/            lagring, validering, migreringar, formatering

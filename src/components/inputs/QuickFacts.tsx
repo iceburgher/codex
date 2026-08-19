@@ -1,12 +1,10 @@
 "use client";
 
 import { formatMoney } from "@/lib/format";
-import type { PropertyProject, ScenarioType } from "@/types";
+import type { PropertyProject } from "@/types";
 import { Card, NumberField, PercentField } from "../ui";
 
 type Update = (updater: (draft: PropertyProject) => void) => void;
-
-const COMPANY: ScenarioType[] = ["EXISTING_COMPANY", "PROJECT_COMPANY"];
 
 /**
  * De uppgifter som avgör hela kalkylen, inklusive lånet.
@@ -144,14 +142,12 @@ function setPrivateRate(draft: PropertyProject, rate: number): void {
 }
 
 function setCompanyRate(draft: PropertyProject, rate: number): void {
-  for (const type of COMPANY) draft.scenarios[type].companyFunding.businessInterestRate = rate;
-  draft.scenarios.PROJECT_COMPANY.projectCompanyFunding.externalInterestRate = rate;
+  draft.scenarios.EXISTING_COMPANY.companyFunding.businessInterestRate = rate;
 }
 
 function setSharedLoan(draft: PropertyProject, amount: number): void {
   draft.scenarios.PRIVATE_DEBT.privateLoans.mortgageAmount = amount;
-  for (const type of COMPANY) draft.scenarios[type].companyFunding.externalBusinessLoan = amount;
-  draft.scenarios.PROJECT_COMPANY.projectCompanyFunding.externalLoan = amount;
+  draft.scenarios.EXISTING_COMPANY.companyFunding.externalBusinessLoan = amount;
 }
 
 /** Summan av alla renoveringsposter utom "Övrigt", som snabbfältet styr. */

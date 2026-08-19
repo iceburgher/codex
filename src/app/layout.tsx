@@ -14,7 +14,7 @@ const poppins = Poppins({
 export const metadata: Metadata = {
   title: "Fastighetskalkylen",
   description:
-    "Jämför privat ägande, bolag och projektbolag för svenska fastighetsprojekt — hela ekonomin efter skatt.",
+    "Jämför privat ägande och bolag för svenska fastighetsprojekt — hela ekonomin efter skatt.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

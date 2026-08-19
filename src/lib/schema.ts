@@ -39,9 +39,9 @@ const inputsSchema = z.object({
 });
 
 const scenarioSchema = z.object({
-  type: z.enum(["PRIVATE_EQUITY", "PRIVATE_DEBT", "EXISTING_COMPANY", "PROJECT_COMPANY"]),
+  type: z.enum(["PRIVATE_EQUITY", "PRIVATE_DEBT", "EXISTING_COMPANY"]),
   enabled: z.boolean(),
-  ownerKind: z.enum(["PRIVATE", "EXISTING_COMPANY", "PROJECT_COMPANY"]),
+  ownerKind: z.enum(["PRIVATE", "EXISTING_COMPANY"]),
   privateFunding: z.object({
     existingPrivateCash: z.number(),
     targetNetDividend: z.number(),
@@ -77,17 +77,6 @@ const scenarioSchema = z.object({
     amortizationAnnual: z.number(),
     deductibleInterestPercent: z.number(),
     personalGuarantee: z.boolean(),
-  }),
-  projectCompanyFunding: z.object({
-    shareCapital: z.number(),
-    shareholderContribution: z.number(),
-    intercompanyLoan: z.number(),
-    intercompanyInterestRate: z.number(),
-    externalLoan: z.number(),
-    externalInterestRate: z.number(),
-    annualAccountingCost: z.number(),
-    annualBankingCost: z.number(),
-    annualAdminCost: z.number(),
   }),
   vat: z.object({
     vatTreatment: z.enum(["none", "partial", "full"]),
@@ -169,17 +158,9 @@ export const projectSchema = z.object({
     PRIVATE_EQUITY: scenarioSchema,
     PRIVATE_DEBT: scenarioSchema,
     EXISTING_COMPANY: scenarioSchema,
-    PROJECT_COMPANY: scenarioSchema,
   }),
-  compareScenarios: z.array(
-    z.enum(["PRIVATE_EQUITY", "PRIVATE_DEBT", "EXISTING_COMPANY", "PROJECT_COMPANY"]),
-  ),
-  selectedScenario: z.enum([
-    "PRIVATE_EQUITY",
-    "PRIVATE_DEBT",
-    "EXISTING_COMPANY",
-    "PROJECT_COMPANY",
-  ]),
+  compareScenarios: z.array(z.enum(["PRIVATE_EQUITY", "PRIVATE_DEBT", "EXISTING_COMPANY"])),
+  selectedScenario: z.enum(["PRIVATE_EQUITY", "PRIVATE_DEBT", "EXISTING_COMPANY"]),
   optimizationTarget: z.enum([
     "max_private_cash",
     "max_company_cash",

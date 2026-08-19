@@ -28,20 +28,15 @@ export type AssumptionSource =
   | "ESTIMATE"
   | "TAX_ADVISOR_INPUT";
 
-export type ScenarioType =
-  | "PRIVATE_EQUITY"
-  | "PRIVATE_DEBT"
-  | "EXISTING_COMPANY"
-  | "PROJECT_COMPANY";
+export type ScenarioType = "PRIVATE_EQUITY" | "PRIVATE_DEBT" | "EXISTING_COMPANY";
 
 export const SCENARIO_LABELS: Record<ScenarioType, string> = {
   PRIVATE_EQUITY: "Privat, utan lån",
   PRIVATE_DEBT: "Privat, med lån",
   EXISTING_COMPANY: "Bolaget äger",
-  PROJECT_COMPANY: "Nytt bolag för projektet",
 };
 
-export type OwnerKind = "PRIVATE" | "EXISTING_COMPANY" | "PROJECT_COMPANY";
+export type OwnerKind = "PRIVATE" | "EXISTING_COMPANY";
 
 export type PrivateUseLevel = "none" | "occasional" | "frequent" | "full_disposition";
 
@@ -187,6 +182,7 @@ export type IntendedPropertyUse =
   | "unknown"
   | "sell_residential"
   | "rent_residential"
+  | "rent_short_term_hotel_like"
   | "rent_commercial"
   | "mixed";
 export type YesNoUnknown = "unknown" | "yes" | "no";
@@ -319,18 +315,6 @@ export interface CompanyFundingInputs {
   personalGuarantee: boolean;
 }
 
-export interface ProjectCompanyFundingInputs {
-  shareCapital: number;
-  shareholderContribution: number;
-  intercompanyLoan: number;
-  intercompanyInterestRate: number;
-  externalLoan: number;
-  externalInterestRate: number;
-  annualAccountingCost: number;
-  annualBankingCost: number;
-  annualAdminCost: number;
-}
-
 export interface BenefitInputs {
   estimatedAnnualMarketBenefitValue: number;
   ownerIncomeTaxRateOnBenefit: number;
@@ -353,7 +337,6 @@ export interface ScenarioInputs {
   salary: SalaryInputs;
 
   companyFunding: CompanyFundingInputs;
-  projectCompanyFunding: ProjectCompanyFundingInputs;
 
   vat: VatInputs;
   rot: RotInputs;

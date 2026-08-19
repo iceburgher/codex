@@ -52,7 +52,6 @@ export function calculateRunningCosts(params: {
   taxAssessmentValue: number;
   propertyFeeRate: number;
   propertyFeeAnnualCap: number;
-  extraAnnualCosts?: number;
 }): RunningCostResult {
   const holdingFactor = params.holdingPeriodMonths / 12;
 
@@ -67,7 +66,7 @@ export function calculateRunningCosts(params: {
       : params.costs.propertyFeeAnnual;
 
   const lineTotal = RUNNING_COST_KEYS.reduce((sum, key) => sum + (params.costs[key] || 0), 0);
-  const totalAnnual = lineTotal + propertyFeeAnnual + (params.extraAnnualCosts || 0);
+  const totalAnnual = lineTotal + propertyFeeAnnual;
   const projectRunningCost = totalAnnual * holdingFactor;
 
   return {

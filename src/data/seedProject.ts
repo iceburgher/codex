@@ -49,7 +49,7 @@ export function createSeedProject(): PropertyProject {
     },
     selectedScenario: "PRIVATE_DEBT",
     notes:
-      "Objektet analyseras primärt som ett potentiellt renoverings- och försäljningsprojekt. Känd bas: köpeskilling cirka 3,6 MSEK och renoveringsbudget cirka 1,0 MSEK. Möjliga ägaralternativ: privat, befintligt bolag eller separat projektbolag. Syftet med kalkylatorn är att jämföra total efter-skatt-ekonomi och kapitalbehov, inte bara nominella skattesatser.",
+      "Objektet analyseras primärt som ett potentiellt renoverings- och försäljningsprojekt. Känd bas: köpeskilling cirka 3,6 MSEK och renoveringsbudget cirka 1,0 MSEK. Möjliga ägaralternativ: privat eller befintligt bolag. Syftet med kalkylatorn är att jämföra total efter-skatt-ekonomi och kapitalbehov, inte bara nominella skattesatser.",
   };
 
   // Intended use is renovate-and-sell with possible private use — recorded so
@@ -62,13 +62,11 @@ export function createSeedProject(): PropertyProject {
       privatePropertyTaxClassification: "property_trading_inventory_risk",
     };
   }
-  for (const type of ["EXISTING_COMPANY", "PROJECT_COMPANY"] as const) {
-    project.scenarios[type] = {
-      ...project.scenarios[type],
-      flipIntent: true,
-      privateUseLevel: "full_disposition",
-    };
-  }
+  project.scenarios.EXISTING_COMPANY = {
+    ...project.scenarios.EXISTING_COMPANY,
+    flipIntent: true,
+    privateUseLevel: "full_disposition",
+  };
 
   project.scenarios.EXISTING_COMPANY = {
     ...project.scenarios.EXISTING_COMPANY,

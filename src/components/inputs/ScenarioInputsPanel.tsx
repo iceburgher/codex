@@ -219,79 +219,6 @@ export function ScenarioInputsPanel({
         </Collapsible>
       )}
 
-      {scenarioType === "PROJECT_COMPANY" && (
-        <Collapsible title="Projektbolagets finansiering" defaultOpen>
-          <div className="space-y-3">
-            <NumberField
-              label="Aktiekapital"
-              suffix="kr"
-              value={scenario.projectCompanyFunding.shareCapital}
-              onChange={(v) => set((s) => void (s.projectCompanyFunding.shareCapital = v ?? 0))}
-            />
-            <NumberField
-              label="Aktieägartillskott"
-              suffix="kr"
-              value={scenario.projectCompanyFunding.shareholderContribution}
-              onChange={(v) =>
-                set((s) => void (s.projectCompanyFunding.shareholderContribution = v ?? 0))
-              }
-            />
-            <NumberField
-              label="Lån från moderbolaget"
-              suffix="kr"
-              value={scenario.projectCompanyFunding.intercompanyLoan}
-              onChange={(v) =>
-                set((s) => void (s.projectCompanyFunding.intercompanyLoan = v ?? 0))
-              }
-            />
-            <PercentField
-              label="Ränta på koncernlån"
-              value={scenario.projectCompanyFunding.intercompanyInterestRate}
-              onChange={(v) =>
-                set((s) => void (s.projectCompanyFunding.intercompanyInterestRate = v ?? 0))
-              }
-            />
-            <NumberField
-              label="Externt lån"
-              suffix="kr"
-              value={scenario.projectCompanyFunding.externalLoan}
-              onChange={(v) => set((s) => void (s.projectCompanyFunding.externalLoan = v ?? 0))}
-            />
-            <PercentField
-              label="Ränta på externt lån"
-              value={scenario.projectCompanyFunding.externalInterestRate}
-              onChange={(v) =>
-                set((s) => void (s.projectCompanyFunding.externalInterestRate = v ?? 0))
-              }
-            />
-            <NumberField
-              label="Redovisning per år"
-              suffix="kr"
-              value={scenario.projectCompanyFunding.annualAccountingCost}
-              onChange={(v) =>
-                set((s) => void (s.projectCompanyFunding.annualAccountingCost = v ?? 0))
-              }
-            />
-            <NumberField
-              label="Bankkostnader per år"
-              suffix="kr"
-              value={scenario.projectCompanyFunding.annualBankingCost}
-              onChange={(v) =>
-                set((s) => void (s.projectCompanyFunding.annualBankingCost = v ?? 0))
-              }
-            />
-            <NumberField
-              label="Övrig administration per år"
-              suffix="kr"
-              value={scenario.projectCompanyFunding.annualAdminCost}
-              onChange={(v) =>
-                set((s) => void (s.projectCompanyFunding.annualAdminCost = v ?? 0))
-              }
-            />
-          </div>
-        </Collapsible>
-      )}
-
       <Collapsible title="Utdelning">
         <div className="space-y-3">
           <NumberField
@@ -361,6 +288,10 @@ export function ScenarioInputsPanel({
               { value: "unknown", label: "Vet inte" },
               { value: "sell_residential", label: "Säljas som bostad" },
               { value: "rent_residential", label: "Hyras ut som bostad" },
+              {
+                value: "rent_short_term_hotel_like",
+                label: "Hyras ut kortvarigt, likt hotellverksamhet",
+              },
               { value: "rent_commercial", label: "Hyras ut som lokal" },
               { value: "mixed", label: "Både bostad och lokal" },
             ]}
