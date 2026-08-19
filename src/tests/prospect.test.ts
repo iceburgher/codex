@@ -92,6 +92,93 @@ describe("parseProspectText", () => {
   });
 });
 
+/**
+ * Utdrag ur en skarp mäklarsida, med etiketterna i den ordning och form de
+ * faktiskt står. Poängen är att fånga just de fall som tidigare missades:
+ * pantbrev, fastighetsavgift och driftposter under en egen rubrik.
+ */
+const MAKLARSIDA = `
+Kort fakta
+Typ Friliggande villa
+Upplåtelseform Friköpt
+Fast.beteckning Cyklonen 1
+Adress Klockaregatan 4
+Postadress 269 78 Torekov
+Område Torekov
+Kommun Båstad
+Bo & biarea 154 + 32 m² (taxeringsinformation)
+Tomtarea 897 m²
+Pris 4 495 000 kr
+Byggnadsinformation
+Byggnadsår 1984
+Uppvärmning Elpanna
+Vatten/avlopp Kommunalt vatten året om. Kommunalt avlopp
+Driftskostnader per år
+Uppvärmning 8 486 kr
+Vatten/avlopp 11 910 kr
+Renhållning 2 380 kr
+Antal personer i hushållet 1 st
+Summa 22 776 kr
+Fastighetsavgift på 10 425 kr/år tillkommer
+Taxeringsinformation
+Taxeringsvärde 3 948 000 kr
+Taxeringsår 2024
+Byggnadsvärde 2 533 000 kr
+Markvärde 1 415 000 kr
+Pantbrev
+Totalt 5 st pantbrev om 897 200 kr.
+`;
+
+describe("mäklarsida", () => {
+  const r = parseProspectText(MAKLARSIDA);
+
+  it("läser ut pantbrevens belopp, inte antalet", () => {
+    expect(r.existingMortgageDeeds?.value).toBe(897_200);
+  });
+
+  it("läser ut fastighetsavgiften", () => {
+    expect(r.propertyFeeAnnual?.value).toBe(10_425);
+  });
+
+  it("läser driftposterna var för sig", () => {
+    expect(r.heatingAnnual?.value).toBe(8_486);
+    expect(r.waterSewerAnnual?.value).toBe(11_910);
+    expect(r.wasteAnnual?.value).toBe(2_380);
+  });
+
+  it("tar inte byggnadsinformationens uppvärmning för en kostnad", () => {
+    // "Uppvärmning Elpanna" står före driftavsnittet och är ingen siffra.
+    expect(r.heatingAnnual?.evidence).toContain("8 486");
+  });
+
+  it("utelämnar summan när posterna finns, så driften inte dubbelräknas", () => {
+    expect(r.operatingCostAnnual).toBeUndefined();
+  });
+
+  it("tar summan när posterna saknas", () => {
+    const only = parseProspectText("Driftskostnad 22 776 kr/år");
+    expect(only.operatingCostAnnual?.value).toBe(22_776);
+  });
+
+  it("läser fastighetsbeteckningen utan att svälja nästa etikett", () => {
+    expect(r.propertyDesignation?.value).toBe("Cyklonen 1");
+  });
+
+  it("delar upp Bo & biarea", () => {
+    const combined = parseProspectText("Bo & biarea 154 + 32 m² (taxeringsinformation)");
+    expect(combined.livingAreaSqm?.value).toBe(154);
+    expect(combined.ancillaryAreaSqm?.value).toBe(32);
+  });
+
+  it("läser pris, tomtarea, byggår, taxeringsvärde och kommun", () => {
+    expect(r.purchasePrice?.value).toBe(4_495_000);
+    expect(r.plotAreaSqm?.value).toBe(897);
+    expect(r.constructionYear?.value).toBe(1984);
+    expect(r.taxAssessmentValue?.value).toBe(3_948_000);
+    expect(r.municipality?.value).toBe("Båstad");
+  });
+});
+
 describe("htmlToText", () => {
   it("plockar bort taggar och avkodar entiteter", () => {
     const text = htmlToText("<p>Utgångspris 3&nbsp;600&nbsp;000 kr</p><script>var x=1;</script>");
@@ -104,6 +191,16 @@ describe("htmlToText", () => {
       <script type="application/ld+json">{"name":"Boarea 142 m²"}</script>
       </body></html>`;
     expect(htmlToText(html)).toContain("Boarea 142 m²");
+  });
+
+  it("avkodar namngivna entiteter som m&sup2;", () => {
+    const r = parseProspectText(htmlToText("<p>Tomtarea 897 m&sup2;</p>"));
+    expect(r.plotAreaSqm?.value).toBe(897);
+  });
+
+  it("hittar priset i JSON-LD när sidan renderas i webbläsaren", () => {
+    const html = `<script type="application/ld+json">{"offers":{"price":4495000}}</script>`;
+    expect(parseProspectText(htmlToText(html)).purchasePrice?.value).toBe(4_495_000);
   });
 
   it("gör att fakta i JSON-LD går att läsa ut", () => {

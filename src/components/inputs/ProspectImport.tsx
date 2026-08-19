@@ -28,17 +28,22 @@ const FIELD_ORDER: ProspectFieldKey[] = [
   "ancillaryAreaSqm",
   "plotAreaSqm",
   "constructionYear",
-  "operatingCostAnnual",
   "taxAssessmentValue",
+  "existingMortgageDeeds",
+  "heatingAnnual",
+  "electricityAnnual",
+  "waterSewerAnnual",
+  "wasteAnnual",
+  "operatingCostAnnual",
+  "propertyFeeAnnual",
 ];
 
-const MONEY_FIELDS: ProspectFieldKey[] = [
-  "purchasePrice",
-  "operatingCostAnnual",
-  "taxAssessmentValue",
-];
-const AREA_FIELDS: ProspectFieldKey[] = ["livingAreaSqm", "ancillaryAreaSqm", "plotAreaSqm"];
-
+const AREA_FIELD_SET = new Set<ProspectFieldKey>([
+  "livingAreaSqm",
+  "ancillaryAreaSqm",
+  "plotAreaSqm",
+]);
+const PLAIN_FIELD_SET = new Set<ProspectFieldKey>(["constructionYear"]);
 /**
  * Läser in objektuppgifter från ett prospekt eller en annonslänk. Allt som
  * hittas visas för granskning med textutdraget det kom ifrån, och användaren
@@ -117,9 +122,28 @@ export function ProspectImport({ update }: { update: Update }) {
       if (chosen.has("taxAssessmentValue") && e.taxAssessmentValue) {
         d.inputs.priorYearTaxAssessmentValue = e.taxAssessmentValue.value;
       }
+      if (chosen.has("existingMortgageDeeds") && e.existingMortgageDeeds) {
+        d.inputs.existingMortgageDeeds = e.existingMortgageDeeds.value;
+      }
+
+      if (chosen.has("heatingAnnual") && e.heatingAnnual) {
+        d.operatingCosts.heatingAnnual = e.heatingAnnual.value;
+      }
+      if (chosen.has("electricityAnnual") && e.electricityAnnual) {
+        d.operatingCosts.electricityAnnual = e.electricityAnnual.value;
+      }
+      if (chosen.has("waterSewerAnnual") && e.waterSewerAnnual) {
+        d.operatingCosts.waterSewerAnnual = e.waterSewerAnnual.value;
+      }
+      if (chosen.has("wasteAnnual") && e.wasteAnnual) {
+        d.operatingCosts.wasteAnnual = e.wasteAnnual.value;
+      }
+      if (chosen.has("propertyFeeAnnual") && e.propertyFeeAnnual) {
+        d.operatingCosts.propertyFeeAnnual = e.propertyFeeAnnual.value;
+      }
       if (chosen.has("operatingCostAnnual") && e.operatingCostAnnual) {
-        // Prospektets driftkostnad är en klumpsumma. Den läggs på "Övrigt"
-        // så att den inte låtsas vara uppdelad på poster ingen angett.
+        // Summan kommer bara med när prospektet saknar enskilda poster, så
+        // den kan läggas på "Övrigt" utan att något dubbelräknas.
         d.operatingCosts.otherAnnual = e.operatingCostAnnual.value;
       }
 
@@ -253,7 +277,7 @@ export function ProspectImport({ update }: { update: Update }) {
 
 function formatFieldValue(key: ProspectFieldKey, value: string | number): string {
   if (typeof value === "string") return value;
-  if (MONEY_FIELDS.includes(key)) return formatMoney(value);
-  if (AREA_FIELDS.includes(key)) return `${value} m²`;
-  return String(value);
+  if (AREA_FIELD_SET.has(key)) return `${value} m²`;
+  if (PLAIN_FIELD_SET.has(key)) return String(value);
+  return formatMoney(value);
 }
