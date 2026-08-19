@@ -616,18 +616,28 @@ describe("break-even for company ownership", () => {
 
 describe("unknown owner-level extraction tax", () => {
   it("flags a company scenario whose profit exceeds the allowance with no rate supplied", () => {
+    // dividendPolicy defaults to "retain_all" (task: real utdelningsval,
+    // finding 6), so the ACTUAL extraction is a no-op — but the flag must
+    // still fire, because it's driven by the always-hypothetical full
+    // extraction (the one familyNetWorth mode B / HeadToHead compare
+    // against), independent of what the owners actually plan to do.
     const p = baseProject();
     p.scenarios.EXISTING_COMPANY.dividend.availableLowTaxAllowance = 100_000;
     p.scenarios.EXISTING_COMPANY.dividend.dividendTaxAboveAllowance = null;
     const r = calculateScenario(p, "EXISTING_COMPANY");
-    expect(r.extraction?.aboveDividendAllowance).toBeGreaterThan(0);
     expect(r.extractionRateUnknown).toBe(true);
+
+    p.scenarios.EXISTING_COMPANY.dividendPolicy = { mode: "distribute_all", amount: 0 };
+    const distributed = calculateScenario(p, "EXISTING_COMPANY");
+    expect(distributed.extraction?.aboveDividendAllowance).toBeGreaterThan(0);
+    expect(distributed.extractionRateUnknown).toBe(true);
   });
 
   it("clears the flag once a rate above the allowance is supplied", () => {
     const p = baseProject();
     p.scenarios.EXISTING_COMPANY.dividend.availableLowTaxAllowance = 100_000;
     p.scenarios.EXISTING_COMPANY.dividend.dividendTaxAboveAllowance = 0.5;
+    p.scenarios.EXISTING_COMPANY.dividendPolicy = { mode: "distribute_all", amount: 0 };
     const r = calculateScenario(p, "EXISTING_COMPANY");
     expect(r.extractionRateUnknown).toBe(false);
     expect(r.netAvailablePrivately).toBeLessThan(r.netRetainedInCompany);
@@ -651,5 +661,199 @@ describe("unknown owner-level extraction tax", () => {
     const blank = createBlankProject("blank2", "Blank");
     const results = calculateAllScenarios(blank);
     expect(bestScenarioIndex(results, "max_family_net_worth")).toBe(-1);
+  });
+});
+
+describe("regression: findings already correct before this feature", () => {
+  // Punkt 1: moms på bolagsägd renovering är 0 % avdragsgillt som standard.
+  it("defaults company VAT deduction to 0%", () => {
+    const p = baseProject();
+    expect(p.scenarios.EXISTING_COMPANY.vat.vatDeductiblePercent).toBe(0);
+    const r = calculateScenario(p, "EXISTING_COMPANY");
+    expect(r.vat.deductibleVat).toBe(0);
+  });
+
+  // Punkt 2: ett lån är inte en projektkostnad — bara räntan/avgifterna är.
+  it("never lets loan principal or amortization change profitBeforeTax", () => {
+    const p = baseProject();
+    const withoutAmortization = calculateScenario(p, "PRIVATE_DEBT");
+    p.scenarios.PRIVATE_DEBT.privateLoans.mortgageAmortizationAnnual = 500_000;
+    const withAmortization = calculateScenario(p, "PRIVATE_DEBT");
+    expect(withAmortization.profitBeforeTax).toBeCloseTo(withoutAmortization.profitBeforeTax, 6);
+    expect(withAmortization.totalProjectCost).toBeCloseTo(withoutAmortization.totalProjectCost, 6);
+  });
+
+  // Punkt 7: redan beskattat privat sparkapital belastas ingen uttagsskatt.
+  it("treats existing private cash as free capital, with no extraction cost", () => {
+    const p = baseProject();
+    const without = calculateScenario(p, "PRIVATE_EQUITY");
+    p.scenarios.PRIVATE_EQUITY.privateFunding.existingPrivateCash += 1_000_000;
+    const withMore = calculateScenario(p, "PRIVATE_EQUITY");
+    expect(withMore.totalProjectCost).toBeCloseTo(without.totalProjectCost, 6);
+    expect(withMore.equityCommitted).toBeGreaterThan(without.equityCommitted);
+  });
+
+  // Punkt 10: mäklararvodet (% av pris) räknas om dynamiskt vid varje
+  // kandidatpris i break-even-lösaren, inte utifrån en statisk baslinje.
+  it("recomputes the percentage broker fee dynamically at break-even, not from a static baseline", () => {
+    const p = baseProject();
+    p.sale.brokerFeePercent = 0.04;
+    p.sale.priceNegotiationBufferRate = 0;
+    const r = calculateScenario(p, "PRIVATE_DEBT");
+    const breakEvenPrice = r.breakEven.breakEvenSalePrice;
+    expect(breakEvenPrice).not.toBeNull();
+    // Vid nollpriset ska mäklararvodet (4 % av just DET priset) redan vara
+    // indraget — annars skulle nettovinsten vid det priset inte vara ~0.
+    const atBreakEven = calculateScenario(p, "PRIVATE_DEBT", { salePrice: breakEvenPrice! });
+    expect(Math.abs(atBreakEven.profitAfterTax)).toBeLessThan(2000);
+  });
+});
+
+describe("owner loan (ägarlån)", () => {
+  it("counts owner-loan interest as a financing cost, using its own rate and deductible field", () => {
+    const p = baseProject();
+    const without = calculateScenario(p, "EXISTING_COMPANY");
+    p.scenarios.EXISTING_COMPANY.companyFunding.ownerLoanAmount = 2_000_000;
+    p.scenarios.EXISTING_COMPANY.companyFunding.ownerLoanInterestRate = 0.04;
+    p.scenarios.EXISTING_COMPANY.companyFunding.ownerLoanDeductibleInterestPercent = 1;
+    const withLoan = calculateScenario(p, "EXISTING_COMPANY");
+    expect(withLoan.financingCost).toBeCloseTo(without.financingCost + 2_000_000 * 0.04, 6);
+  });
+
+  it("never lets owner-loan amortization change profitBeforeTax, same as any other loan capital", () => {
+    const p = baseProject();
+    p.scenarios.EXISTING_COMPANY.companyFunding.ownerLoanAmount = 2_000_000;
+    p.scenarios.EXISTING_COMPANY.companyFunding.ownerLoanInterestRate = 0.04;
+    const withoutAmortization = calculateScenario(p, "EXISTING_COMPANY");
+    p.scenarios.EXISTING_COMPANY.companyFunding.ownerLoanAnnualRepayment = 500_000;
+    const withAmortization = calculateScenario(p, "EXISTING_COMPANY");
+    expect(withAmortization.profitBeforeTax).toBeCloseTo(withoutAmortization.profitBeforeTax, 6);
+  });
+
+  it("includes the owner loan in max capital requirement and itemizes it separately from external debt", () => {
+    const p = baseProject();
+    p.scenarios.EXISTING_COMPANY.companyFunding.ownerLoanAmount = 2_000_000;
+    const r = calculateScenario(p, "EXISTING_COMPANY");
+    expect(r.capitalRequirementBreakdown.ownerLoan).toBe(2_000_000);
+    expect(r.capitalRequirementBreakdown.externalLoan).toBe(3_000_000);
+    expect(r.externalDebt).toBe(3_000_000);
+  });
+});
+
+describe("shareholder contribution (aktieägartillskott)", () => {
+  it("counts as equity, distinct from owner loan, with no automatic repayment", () => {
+    const p = baseProject();
+    p.scenarios.EXISTING_COMPANY.companyFunding.shareholderContribution = 200_000;
+    const r = calculateScenario(p, "EXISTING_COMPANY");
+    expect(r.capitalRequirementBreakdown.shareholderContribution).toBe(200_000);
+    // Aktieägartillskott återgår inte automatiskt — bara ägarlånet gör det.
+    expect(r.postProjectCapital?.capitalReturnedToOwners).toBe(
+      p.scenarios.EXISTING_COMPANY.companyFunding.ownerLoanAmount,
+    );
+  });
+});
+
+describe("dividend policy — a real choice instead of hardcoded full extraction", () => {
+  it("retains all profit in the company by default, distributing nothing", () => {
+    const p = baseProject();
+    const r = calculateScenario(p, "EXISTING_COMPANY");
+    expect(p.scenarios.EXISTING_COMPANY.dividendPolicy.mode).toBe("retain_all");
+    expect(r.extraction?.retainedInCompany).toBeCloseTo(
+      r.corporateTax?.companyProfitAfterTax ?? 0,
+      6,
+    );
+    expect(r.postProjectCapital?.dividendPaid).toBe(0);
+  });
+
+  it("distributes the full profit when the policy says distribute_all", () => {
+    const p = baseProject();
+    p.scenarios.EXISTING_COMPANY.dividendPolicy = { mode: "distribute_all", amount: 0 };
+    const r = calculateScenario(p, "EXISTING_COMPANY");
+    expect(r.postProjectCapital?.profitRetainedInCompany).toBeCloseTo(0, 4);
+    expect(r.postProjectCapital?.dividendPaid).toBeGreaterThan(0);
+  });
+
+  it("distributes only the requested amount under distribute_partial", () => {
+    const p = baseProject();
+    const full = calculateScenario(p, "EXISTING_COMPANY");
+    const companyProfit = full.corporateTax?.companyProfitAfterTax ?? 0;
+    const partialAmount = companyProfit * 0.3;
+    p.scenarios.EXISTING_COMPANY.dividendPolicy = {
+      mode: "distribute_partial",
+      amount: partialAmount,
+    };
+    const r = calculateScenario(p, "EXISTING_COMPANY");
+    expect(r.postProjectCapital?.dividendPaid).toBeCloseTo(partialAmount, 4);
+    expect(r.postProjectCapital?.profitRetainedInCompany).toBeCloseTo(
+      companyProfit - partialAmount,
+      4,
+    );
+  });
+
+  it("keeps the two HeadToHead/familyNetWorth bookends independent of the actual dividend policy", () => {
+    // netRetainedInCompany (0 % uttaget) och familyNetWorth läge B (100 %
+    // uttaget) ska vara samma oavsett vad dividendPolicy faktiskt säger —
+    // annars bryts jämförelseväxeln i HeadToHead.
+    const p = baseProject();
+    const retainAll = calculateScenario(p, "EXISTING_COMPANY");
+    p.scenarios.EXISTING_COMPANY.dividendPolicy = { mode: "distribute_all", amount: 0 };
+    const distributeAll = calculateScenario(p, "EXISTING_COMPANY");
+    expect(distributeAll.netRetainedInCompany).toBeCloseTo(retainAll.netRetainedInCompany, 4);
+    expect(distributeAll.familyNetWorth.familyNetWorthDeltaModeB).toBeCloseTo(
+      retainAll.familyNetWorth.familyNetWorthDeltaModeB,
+      4,
+    );
+  });
+
+  it("changes the actual headline 'kvar till er' by policy, unlike the old hardcoded 100% extraction", () => {
+    const p = baseProject();
+    const retainAll = calculateScenario(p, "EXISTING_COMPANY");
+    p.scenarios.EXISTING_COMPANY.dividendPolicy = { mode: "distribute_all", amount: 0 };
+    const distributeAll = calculateScenario(p, "EXISTING_COMPANY");
+    expect(retainAll.netAvailablePrivately).toBeLessThan(distributeAll.netAvailablePrivately);
+  });
+
+  it("keeps hypotheticalFullExtractionTax constant across policies, so HeadToHead's bookend stays correct", () => {
+    const p = baseProject();
+    p.scenarios.EXISTING_COMPANY.dividend.availableLowTaxAllowance = 100_000;
+    p.scenarios.EXISTING_COMPANY.dividend.dividendTaxAboveAllowance = 0.5;
+    const retainAll = calculateScenario(p, "EXISTING_COMPANY");
+    expect(retainAll.hypotheticalFullExtractionTax).toBeGreaterThan(0);
+    p.scenarios.EXISTING_COMPANY.dividendPolicy = { mode: "distribute_all", amount: 0 };
+    const distributeAll = calculateScenario(p, "EXISTING_COMPANY");
+    expect(distributeAll.hypotheticalFullExtractionTax).toBeCloseTo(
+      retainAll.hypotheticalFullExtractionTax,
+      4,
+    );
+    // Under distribute_all the actual and hypothetical extraction tax coincide.
+    expect(distributeAll.extraction?.ownerExtractionTax).toBeCloseTo(
+      distributeAll.hypotheticalFullExtractionTax,
+      4,
+    );
+  });
+});
+
+describe("not_yet_determined is the default private classification", () => {
+  it("never assumes renovate-and-sell means yrkesmässig handel by default", () => {
+    const p = baseProject();
+    expect(p.scenarios.PRIVATE_DEBT.privatePropertyTaxClassification).toBe("not_yet_determined");
+  });
+
+  it("flags the classification as unresolved, high severity", () => {
+    const r = calculateScenario(baseProject(), "PRIVATE_DEBT");
+    const flag = r.riskFlags.find((f) => f.id === "classification_not_yet_determined");
+    expect(flag?.severity).toBe("high");
+  });
+
+  it("does not flag classification once one is explicitly chosen", () => {
+    const p = baseProject();
+    p.scenarios.PRIVATE_DEBT.privatePropertyTaxClassification = "private_residential_property";
+    const r = calculateScenario(p, "PRIVATE_DEBT");
+    expect(r.riskFlags.map((f) => f.id)).not.toContain("classification_not_yet_determined");
+  });
+
+  it("shows all three classification outcomes in the capital gain result", () => {
+    const r = calculateScenario(baseProject(), "PRIVATE_DEBT");
+    expect(r.capitalGain.alternativeClassifications).toHaveLength(3);
   });
 });

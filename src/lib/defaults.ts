@@ -133,6 +133,7 @@ export function defaultScenario(type: ScenarioType): ScenarioInputs {
       existingPrivateCash: 0,
       targetNetDividend: 0,
       targetNetSalary: 0,
+      otherFunding: 0,
     },
     privateLoans: {
       mortgageAmount: 0,
@@ -154,6 +155,9 @@ export function defaultScenario(type: ScenarioType): ScenarioInputs {
       dividendTaxWithinAllowance: DEFAULT_TAX_CONFIG_2026.dividendTaxWithinAllowance,
       dividendTaxAboveAllowance: null,
     },
+    // Behåll allt i bolaget är det säkra standardvalet — ingen utdelning
+    // antas förrän ägarna uttryckligen väljer att ta ut något.
+    dividendPolicy: { mode: "retain_all", amount: 0 },
     salary: {
       effectiveMarginalIncomeTaxRate: 0,
       employerContributionRate: DEFAULT_TAX_CONFIG_2026.employerContributionRate,
@@ -168,6 +172,11 @@ export function defaultScenario(type: ScenarioType): ScenarioInputs {
       amortizationAnnual: 0,
       deductibleInterestPercent: 1,
       personalGuarantee: false,
+      ownerLoanAmount: 0,
+      ownerLoanInterestRate: 0,
+      ownerLoanAnnualRepayment: 0,
+      ownerLoanDeductibleInterestPercent: 1,
+      shareholderContribution: 0,
     },
     vat: {
       vatTreatment: "none",
@@ -192,7 +201,9 @@ export function defaultScenario(type: ScenarioType): ScenarioInputs {
       employerContributionRate: DEFAULT_TAX_CONFIG_2026.employerContributionRate,
     },
 
-    privatePropertyTaxClassification: "property_trading_inventory_risk",
+    // Anta aldrig i förväg att renovera+sälja är yrkesmässig handel —
+    // "Ej fastställd" tvingar fram ett uttryckligt val i stället.
+    privatePropertyTaxClassification: "not_yet_determined",
     companyAssetClassification: "capital_asset",
     companySaleStructure: "asset_sale",
     buyerLatentTaxDiscountPercent: 0,

@@ -46,6 +46,7 @@ const scenarioSchema = z.object({
     existingPrivateCash: z.number(),
     targetNetDividend: z.number(),
     targetNetSalary: z.number(),
+    otherFunding: z.number().optional(),
   }),
   privateLoans: z.object({
     mortgageAmount: z.number(),
@@ -66,6 +67,12 @@ const scenarioSchema = z.object({
     dividendTaxWithinAllowance: z.number(),
     dividendTaxAboveAllowance: nullableNumber,
   }),
+  dividendPolicy: z
+    .object({
+      mode: z.enum(["retain_all", "distribute_partial", "distribute_all"]),
+      amount: z.number(),
+    })
+    .optional(),
   salary: z.object({
     effectiveMarginalIncomeTaxRate: z.number(),
     employerContributionRate: z.number(),
@@ -79,6 +86,11 @@ const scenarioSchema = z.object({
     amortizationAnnual: z.number(),
     deductibleInterestPercent: z.number(),
     personalGuarantee: z.boolean(),
+    ownerLoanAmount: z.number().optional(),
+    ownerLoanInterestRate: z.number().optional(),
+    ownerLoanAnnualRepayment: z.number().optional(),
+    ownerLoanDeductibleInterestPercent: z.number().optional(),
+    shareholderContribution: z.number().optional(),
   }),
   vat: z.object({
     vatTreatment: z.enum(["none", "partial", "full"]),
@@ -110,6 +122,7 @@ const scenarioSchema = z.object({
     "private_residential_property",
     "business_property",
     "property_trading_inventory_risk",
+    "not_yet_determined",
   ]),
   companyAssetClassification: z.enum(["capital_asset", "inventory_property"]),
   companySaleStructure: z.enum(["asset_sale", "share_sale"]).optional(),

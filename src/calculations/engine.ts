@@ -1,5 +1,11 @@
 import { mergeTaxConfig } from "@/config/taxConfig";
-import type { PropertyProject, ScenarioResult, ScenarioType } from "@/types";
+import type {
+  CapitalRequirementBreakdown,
+  PostProjectCapitalResult,
+  PropertyProject,
+  ScenarioResult,
+  ScenarioType,
+} from "@/types";
 import { SCENARIO_LABELS } from "@/types";
 import { calculateBenefitTax } from "./benefitTax";
 import { calculateBreakEven } from "./breakEven";
@@ -187,7 +193,7 @@ function computeCore(
     loans.netCompanyLoanInterest +
     loans.totalSetupFees;
   const companyFinancingCost = companyFunding
-    ? companyFunding.businessInterest + companyFunding.fees
+    ? companyFunding.businessInterest + companyFunding.ownerLoanInterest + companyFunding.fees
     : 0;
   const financingCost = isCompanyOwned ? companyFinancingCost : privateFinancingCost;
 
@@ -224,6 +230,7 @@ function computeCore(
   const companyOtherResult =
     -(runningCosts.projectRunningCost + hiddenCostsTotal) -
     (companyFunding?.deductibleInterest ?? 0) -
+    (companyFunding?.ownerLoanDeductibleInterest ?? 0) -
     (companyFunding ? companyFunding.fees : 0) -
     accumulatedDepreciation +
     (project.rental.enabled ? rental.companyRentalProfit : 0) -
@@ -274,7 +281,32 @@ function computeCore(
     (salary ? salary.companyCashCost - scenario.privateFunding.targetNetSalary : 0);
 
   // --- Second tax layer: project profit leaving the company ----------------
+  // Utdelning är ett uttryckligt val (dividendPolicy), inte ett antagande
+  // att allt alltid tas ut. "Blir kvar i bolaget" (netRetainedInCompany)
+  // och familjens förmögenhet i läge B (fullt uttag) förblir egna,
+  // alltid-hypotetiska jämförelsepunkter — se fullExtraction nedan — helt
+  // oberoende av vad ägarna faktiskt planerar.
+  const distributableProfitBase = corporateTax?.companyProfitAfterTax ?? 0;
+  const extractionShare =
+    scenario.dividendPolicy.mode === "retain_all"
+      ? 0
+      : scenario.dividendPolicy.mode === "distribute_all"
+        ? 1
+        : distributableProfitBase > 0
+          ? Math.min(1, Math.max(0, scenario.dividendPolicy.amount) / distributableProfitBase)
+          : 0;
+
   const extraction = corporateTax
+    ? calculateExtraction({
+        companyProfitAfterTax: corporateTax.companyProfitAfterTax,
+        dividend: scenario.dividend,
+        extractionShare,
+      })
+    : null;
+
+  // Hypotetiskt "allt uttaget" — bara till familjens förmögenhet i läge B
+  // och jämförelseläget i HeadToHead, oberoende av vald utdelningspolicy.
+  const fullExtraction = corporateTax
     ? calculateExtraction({
         companyProfitAfterTax: corporateTax.companyProfitAfterTax,
         dividend: scenario.dividend,
@@ -335,10 +367,13 @@ function computeCore(
     ? (companyFunding?.totalEquityCommitted ?? 0)
     : scenario.privateFunding.existingPrivateCash +
       scenario.privateFunding.targetNetDividend +
-      scenario.privateFunding.targetNetSalary;
+      scenario.privateFunding.targetNetSalary +
+      scenario.privateFunding.otherFunding;
+
+  const ownerLoanAmount = scenario.companyFunding.ownerLoanAmount || 0;
 
   const interestTotal = isCompanyOwned
-    ? (companyFunding?.businessInterest ?? 0)
+    ? (companyFunding?.businessInterest ?? 0) + (companyFunding?.ownerLoanInterest ?? 0)
     : loans.netMortgageInterest + loans.netUnsecuredInterest + loans.netCompanyLoanInterest;
 
   // Uthyrning kan börja tidigast när renoveringen är klar, så det avgör
@@ -357,17 +392,45 @@ function computeCore(
     rentalIncomeTotal: project.rental.enabled ? rental.grossRentalIncome : 0,
     interestTotal,
     amortizationAnnual: isCompanyOwned
-      ? (scenario.companyFunding.amortizationAnnual || 0)
+      ? (scenario.companyFunding.amortizationAnnual || 0) +
+        (scenario.companyFunding.ownerLoanAnnualRepayment || 0)
       : (privateLoansInput.mortgageAmortizationAnnual || 0) +
         (privateLoansInput.unsecuredAmortizationAnnual || 0),
-    loanDrawdown: externalDebt,
+    // Ägarlånet delar samma kassaflödesmekanik som övrig skuld (ränta,
+    // amortering under innehavstiden, kvarvarande belopp löst vid
+    // försäljningen) — ingen separat modell behövs, bara samma pool.
+    loanDrawdown: isCompanyOwned ? externalDebt + ownerLoanAmount : externalDebt,
     salePrice,
     saleCosts: saleCosts.saleCostsTotal,
     taxAtExit: isCompanyOwned ? companyTaxTotal : capitalGain.capitalGainTax,
   });
 
   const investedEquity = Math.max(cashFlow.equityRequired, equityCommitted, 1);
-  const totalCapitalRequirement = cashFlow.peakCashRequirement + externalDebt;
+  const totalCapitalRequirement =
+    cashFlow.peakCashRequirement + externalDebt + (isCompanyOwned ? ownerLoanAmount : 0);
+
+  const capitalRequirementBreakdown: CapitalRequirementBreakdown = isCompanyOwned
+    ? {
+        companyCash: scenario.companyFunding.companyCashInvested || 0,
+        ownerLoan: ownerLoanAmount,
+        shareholderContribution: scenario.companyFunding.shareholderContribution || 0,
+        externalLoan: companyFunding?.debt ?? 0,
+        privateCash: 0,
+        privateLoan: 0,
+        otherFunding: 0,
+      }
+    : {
+        companyCash: 0,
+        ownerLoan: 0,
+        shareholderContribution: 0,
+        externalLoan: 0,
+        privateCash: scenario.privateFunding.existingPrivateCash || 0,
+        privateLoan:
+          privateLoansInput.mortgageAmount +
+          privateLoansInput.unsecuredLoanAmount +
+          privateLoansInput.companyLoanAmount,
+        otherFunding: scenario.privateFunding.otherFunding || 0,
+      };
 
   const opportunityCost = calculateOpportunityCost({
     cashFlow,
@@ -377,13 +440,32 @@ function computeCore(
 
   const netProfit = isCompanyOwned ? netAvailablePrivately : profitAfterTax;
 
+  const shareholderContribution = scenario.companyFunding.shareholderContribution || 0;
+  const privateCapitalPutIn = isCompanyOwned
+    ? ownerLoanAmount + shareholderContribution
+    : equityCommitted;
+
   const roi = calculateRoi({
     totalProjectCost,
     projectProfit: profitAfterTax,
     investedEquity,
     netProfit,
     holdingPeriodMonths,
+    companyProfitAfterTax: isCompanyOwned ? (corporateTax?.companyProfitAfterTax ?? 0) : undefined,
+    companyBoundCapital: isCompanyOwned
+      ? (scenario.companyFunding.companyCashInvested || 0) +
+        shareholderContribution +
+        ownerLoanAmount
+      : undefined,
+    ownerLoanAmount: isCompanyOwned ? ownerLoanAmount : undefined,
+    privateNetProfit: netAvailablePrivately,
+    privateCapitalPutIn,
   });
+
+  // Familjens förmögenhet i läge B (fullt uttag) och den skatt det skulle
+  // kosta ska alltid spegla det hypotetiska "allt uttaget"-läget, oavsett
+  // vald utdelningspolicy — annars skulle HeadToHeads jämförelseväxel bryta.
+  const hypotheticalFullExtractionTax = fullExtraction ? fullExtraction.ownerExtractionTax : 0;
 
   const familyNetWorth = calculateFamilyNetWorth({
     privateCashAfterProject: isCompanyOwned
@@ -392,12 +474,55 @@ function computeCore(
     companyValueAfterProject: isCompanyOwned
       ? (companyFunding?.totalEquityCommitted ?? 0) + netRetainedInCompany
       : 0,
-    deferredOwnerTaxToExtract: isCompanyOwned ? ownerExtractionTax : 0,
+    deferredOwnerTaxToExtract: isCompanyOwned ? hypotheticalFullExtractionTax : 0,
     privateCapitalConsumed: isCompanyOwned ? 0 : cashFlow.equityRequired,
     companyCapitalConsumed: isCompanyOwned ? (companyFunding?.totalEquityCommitted ?? 0) : 0,
     remainingPrivateDebt: 0,
     remainingCompanyDebt: 0,
   });
+
+  const postProjectCapital: PostProjectCapitalResult | null =
+    isCompanyOwned && corporateTax && extraction
+      ? (() => {
+          const releasedWorkingCapital =
+            (scenario.companyFunding.companyCashInvested || 0) + shareholderContribution;
+          const dividendPaid = extraction.withinDividendAllowance + extraction.aboveDividendAllowance;
+          return {
+            projectProfitAfterCorporateTax: corporateTax.companyProfitAfterTax,
+            releasedWorkingCapital,
+            externalLoanRepaid: companyFunding?.debt ?? 0,
+            ownerLoanRepaid: ownerLoanAmount,
+            ownerLoanInterestPaid: companyFunding?.ownerLoanInterest ?? 0,
+            // Aktieägartillskott återgår inte automatiskt — bara ägarlånet
+            // är en skuld som per definition betalas tillbaka som kapital.
+            capitalReturnedToOwners: ownerLoanAmount,
+            profitRetainedInCompany: extraction.retainedInCompany,
+            dividendPaid,
+            dividendTax: extraction.ownerExtractionTax,
+            netPrivateAfterDividend: extraction.netPrivateFromCompanyProfit,
+            audit: [
+              {
+                title: "Efter projektet",
+                source: "USER_INPUT",
+                lines: [
+                  {
+                    label: "Projektvinst efter bolagsskatt",
+                    value: corporateTax.companyProfitAfterTax,
+                  },
+                  { label: "Frigjort rörelsekapital (kassa + tillskott)", value: releasedWorkingCapital },
+                  { label: "Återbetalt externt lån", value: -(companyFunding?.debt ?? 0) },
+                  { label: "Återbetalt ägarlån", value: -ownerLoanAmount },
+                  { label: "Kapital tillbaka till ägarna (ägarlån)", value: ownerLoanAmount },
+                  { label: "Vinst kvar i bolaget", value: extraction.retainedInCompany },
+                  { label: "Utdelning", value: dividendPaid },
+                  { label: "Skatt på utdelning", value: extraction.ownerExtractionTax },
+                  { label: "Netto privat efter utdelning", value: extraction.netPrivateFromCompanyProfit },
+                ],
+              },
+            ],
+          };
+        })()
+      : null;
 
   const riskContext: RiskContext = {
     project,
@@ -435,7 +560,12 @@ function computeCore(
     familyNetWorth,
     purchasePrice,
     salePriceMissing: overrides.salePrice === undefined && project.inputs.expectedSalePrice === null,
-    extractionRateUnknown: extraction?.aboveAllowanceRateMissing ?? false,
+    // Både den faktiska policyns och det hypotetiska full-uttag-lägets
+    // skattesats måste vara känd — det senare driver familyNetWorth läge B
+    // och HeadToHeads jämförelseväxel oavsett vald policy.
+    extractionRateUnknown:
+      (extraction?.aboveAllowanceRateMissing ?? false) ||
+      (fullExtraction?.aboveAllowanceRateMissing ?? false),
     totalCapitalRequirement,
     equityCommitted: investedEquity,
     externalDebt,
@@ -450,6 +580,9 @@ function computeCore(
     profitAfterTax,
     netRetainedInCompany,
     netAvailablePrivately,
+    postProjectCapital,
+    capitalRequirementBreakdown,
+    hypotheticalFullExtractionTax,
     riskContext,
   };
 }

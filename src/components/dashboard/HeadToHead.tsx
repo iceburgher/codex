@@ -39,7 +39,7 @@ function taxFor(r: ScenarioResult, mode: MoneyMode): number {
 
   const corporate = r.corporateTax?.companyTax ?? 0;
   const benefit = r.benefit?.combinedEconomicCost ?? 0;
-  const extraction = mode === "extracted" ? (r.extraction?.ownerExtractionTax ?? 0) : 0;
+  const extraction = mode === "extracted" ? r.hypotheticalFullExtractionTax : 0;
   return corporate + benefit + extraction;
 }
 
@@ -302,7 +302,7 @@ function SideCard({
                 {mode === "extracted" && (
                   <Row
                     label="Skatt när ni tar ut pengarna"
-                    value={formatMoney(r.extraction?.ownerExtractionTax ?? 0)}
+                    value={formatMoney(r.hypotheticalFullExtractionTax)}
                   />
                 )}
                 {r.rental.grossRentalIncome > 0 && (
@@ -360,7 +360,7 @@ function SideCard({
               {r.extractionRateUnknown
                 ? "Pengarna ligger kvar i bolaget. Ska de till er privat tillkommer skatt — fyll i vilken under Antaganden."
                 : `Pengarna ligger kvar i bolaget. Ska de till er privat kostar det ytterligare ${formatMoney(
-                    r.extraction?.ownerExtractionTax ?? 0,
+                    r.hypotheticalFullExtractionTax,
                   )} i skatt. Byt läge ovan för att se vad ni får i handen.`}
             </p>
           )}

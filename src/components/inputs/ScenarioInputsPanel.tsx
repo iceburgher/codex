@@ -56,6 +56,13 @@ export function ScenarioInputsPanel({
                 value={scenario.privateFunding.targetNetSalary}
                 onChange={(v) => set((s) => void (s.privateFunding.targetNetSalary = v ?? 0))}
               />
+              <NumberField
+                label="Annan finansiering"
+                suffix="kr"
+                hint="T.ex. gåva, arv eller försäljning av annan tillgång. Skattebehandlingen av källan kan appen inte veta eller anta — stäm av den själva."
+                value={scenario.privateFunding.otherFunding}
+                onChange={(v) => set((s) => void (s.privateFunding.otherFunding = v ?? 0))}
+              />
             </div>
           </Collapsible>
 
@@ -237,12 +244,73 @@ export function ScenarioInputsPanel({
               value={scenario.companyFunding.personalGuarantee}
               onChange={(v) => set((s) => void (s.companyFunding.personalGuarantee = v))}
             />
+            <NumberField
+              label="Aktieägartillskott"
+              suffix="kr"
+              hint="Eget kapital, ingen skuld. Återbetalas inte automatiskt — vill ägarna ha ut det krävs utdelning eller en formell kapitalåterbetalning utanför den här kalkylen."
+              value={scenario.companyFunding.shareholderContribution}
+              onChange={(v) => set((s) => void (s.companyFunding.shareholderContribution = v ?? 0))}
+            />
+            <NumberField
+              label="Ägarlån till bolaget"
+              suffix="kr"
+              source="TAX_ADVISOR_INPUT"
+              hint="En skuld bolaget har till ägaren. Återbetalning av lånebeloppet är varken utdelning eller lön och beskattas inte."
+              value={scenario.companyFunding.ownerLoanAmount}
+              onChange={(v) => set((s) => void (s.companyFunding.ownerLoanAmount = v ?? 0))}
+            />
+            <PercentField
+              label="Ränta på ägarlån"
+              value={scenario.companyFunding.ownerLoanInterestRate}
+              onChange={(v) => set((s) => void (s.companyFunding.ownerLoanInterestRate = v ?? 0))}
+            />
+            <NumberField
+              label="Amortering på ägarlån per år"
+              suffix="kr"
+              hint="Egen amorteringstakt under innehavstiden — det som återstår löses vid försäljningen, precis som företagslånet."
+              value={scenario.companyFunding.ownerLoanAnnualRepayment}
+              onChange={(v) =>
+                set((s) => void (s.companyFunding.ownerLoanAnnualRepayment = v ?? 0))
+              }
+            />
+            <PercentField
+              label="Andel avdragsgill ränta, ägarlån"
+              source="TAX_ADVISOR_INPUT"
+              hint="Eget avdragsfält — delas inte med det externa företagslånet."
+              value={scenario.companyFunding.ownerLoanDeductibleInterestPercent}
+              onChange={(v) =>
+                set((s) => void (s.companyFunding.ownerLoanDeductibleInterestPercent = v ?? 0))
+              }
+            />
           </div>
         </Collapsible>
       )}
 
       <Collapsible title="Utdelning">
         <div className="space-y-3">
+          {isCompany && (
+            <>
+              <SelectField
+                label="Vad vill ni göra med bolagets vinst?"
+                hint="Ett uttryckligt val — kalkylen antar aldrig att allt automatiskt delas ut."
+                value={scenario.dividendPolicy.mode}
+                options={[
+                  { value: "retain_all", label: "Behåll allt i bolaget" },
+                  { value: "distribute_partial", label: "Dela ut en del" },
+                  { value: "distribute_all", label: "Dela ut hela möjliga beloppet" },
+                ]}
+                onChange={(v) => set((s) => void (s.dividendPolicy.mode = v))}
+              />
+              {scenario.dividendPolicy.mode === "distribute_partial" && (
+                <NumberField
+                  label="Utdelning, bruttobelopp"
+                  suffix="kr"
+                  value={scenario.dividendPolicy.amount}
+                  onChange={(v) => set((s) => void (s.dividendPolicy.amount = v ?? 0))}
+                />
+              )}
+            </>
+          )}
           <NumberField
             label="Gränsbelopp enligt 3:12"
             suffix="kr"
@@ -417,6 +485,7 @@ export function ScenarioInputsPanel({
               hint="22 % kapitalvinstskatt gäller bara om fastigheten uttryckligen räknas som privatbostad."
               value={scenario.privatePropertyTaxClassification}
               options={[
+                { value: "not_yet_determined", label: "Ej fastställd" },
                 { value: "private_residential_property", label: "Privatbostad" },
                 { value: "business_property", label: "Näringsfastighet" },
                 {
@@ -426,6 +495,14 @@ export function ScenarioInputsPanel({
               ]}
               onChange={(v) => set((s) => void (s.privatePropertyTaxClassification = v))}
             />
+          )}
+          {!isCompany && scenario.privatePropertyTaxClassification === "not_yet_determined" && (
+            <p className="rounded-md bg-warn-soft p-2 text-[11px] text-warn">
+              Klassificeringen är inte vald. Skatten på vinsten kan bli allt från 22 %
+              (privatbostad) till progressiv näringsbeskattning (handel) — huvudsiffran räknar
+              konservativt med handel tills en rådgivare bekräftar rätt klassificering. Se
+              jämförelsen under vinstberäkningen (Visa uträkning).
+            </p>
           )}
           {isCompany && (
             <SelectField

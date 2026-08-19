@@ -77,6 +77,13 @@ export function buildRiskFlags(ctx: RiskContext): RiskFlag[] {
       text: "Ingen rådgivare har bekräftat att huset räknas som privatbostad. Det avgör om skatten på vinsten blir 22 % eller betydligt mer.",
     });
   }
+  if (!ctx.isCompanyOwned && scenario.privatePropertyTaxClassification === "not_yet_determined") {
+    flags.push({
+      id: "classification_not_yet_determined",
+      severity: "high",
+      text: "Ingen skattemässig klassificering är vald för fastigheten privat. Skatten på vinsten kan bli allt från 22 % (privatbostad) till progressiv näringsbeskattning (handel) beroende på vilken som gäller — se jämförelsen under vinstberäkningen. Huvudsiffran räknar konservativt med handel tills en rådgivare bekräftar rätt klassificering.",
+    });
+  }
   if (!ctx.isCompanyOwned && scenario.privatePropertyTaxClassification === "property_trading_inventory_risk") {
     flags.push({
       id: "property_trading_not_capital_gain",

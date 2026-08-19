@@ -43,7 +43,8 @@ export type PrivateUseLevel = "none" | "occasional" | "frequent" | "full_disposi
 export type PrivatePropertyTaxClassification =
   | "private_residential_property"
   | "business_property"
-  | "property_trading_inventory_risk";
+  | "property_trading_inventory_risk"
+  | "not_yet_determined";
 
 export type CompanyAssetClassification = "capital_asset" | "inventory_property";
 
@@ -301,6 +302,13 @@ export interface PrivateFundingInputs {
   existingPrivateCash: number;
   targetNetDividend: number;
   targetNetSalary: number;
+  /**
+   * Annan privat finansiering (t.ex. gåva, arv, försäljning av annan
+   * tillgång). Appen kan inte veta eller anta skattebehandlingen av
+   * källan — beloppet räknas som tillgängligt kapital utan att någon
+   * extra skattekostnad läggs på, till skillnad från utdelning/lön.
+   */
+  otherFunding: number;
 }
 
 export interface PrivateLoanInputs {
@@ -331,6 +339,18 @@ export interface DividendInputs {
   dividendTaxAboveAllowance: number | null;
 }
 
+export type DividendPolicyMode = "retain_all" | "distribute_partial" | "distribute_all";
+
+/**
+ * Vad ägarna faktiskt väljer att göra med bolagets vinst efter projektet —
+ * ett uttryckligt val i stället för att tyst anta att allt delas ut.
+ * `amount` (bruttobelopp) används bara vid distribute_partial.
+ */
+export interface DividendPolicy {
+  mode: DividendPolicyMode;
+  amount: number;
+}
+
 export interface SalaryInputs {
   effectiveMarginalIncomeTaxRate: number;
   employerContributionRate: number;
@@ -345,6 +365,28 @@ export interface CompanyFundingInputs {
   amortizationAnnual: number;
   deductibleInterestPercent: number;
   personalGuarantee: boolean;
+
+  /**
+   * Ägarlån till bolaget — en skuld bolaget har till ägaren, inte eget
+   * kapital. Återbetalas via en egen amorteringstakt under innehavstiden;
+   * det som återstår löses vid försäljningen, precis som företagslånet.
+   * Återbetalning av kapitalbeloppet är varken utdelning eller lön och ska
+   * aldrig beskattas eller minska bolagets skattemässiga projektvinst —
+   * bara räntan är en kostnad.
+   */
+  ownerLoanAmount: number;
+  ownerLoanInterestRate: number;
+  ownerLoanAnnualRepayment: number;
+  /** Eget avdragsfält — delas inte med businessLoan/deductibleInterestPercent. */
+  ownerLoanDeductibleInterestPercent: number;
+
+  /**
+   * Aktieägartillskott — eget kapital, inte en skuld. Ingen automatisk
+   * återbetalning modelleras (till skillnad från ägarlån); vill ägarna ha
+   * ut det går det bara via utdelning eller en formell kapitalåterbetalning
+   * utanför den här kalkylen.
+   */
+  shareholderContribution: number;
 }
 
 export interface BenefitInputs {
@@ -366,6 +408,8 @@ export interface ScenarioInputs {
   privateFunding: PrivateFundingInputs;
   privateLoans: PrivateLoanInputs;
   dividend: DividendInputs;
+  /** Vad ägarna faktiskt väljer att göra med bolagets vinst — bara relevant vid bolagsägande. */
+  dividendPolicy: DividendPolicy;
   salary: SalaryInputs;
 
   companyFunding: CompanyFundingInputs;
@@ -600,7 +644,40 @@ export interface CompanyFundingResult {
   deductibleInterest: number;
   fees: number;
   maxCashRequirement: number;
+  ownerLoanInterest: number;
+  ownerLoanDeductibleInterest: number;
   audit: AuditTrail[];
+}
+
+/**
+ * Efter projektet: hur kapitalet som lämnar/stannar i bolaget faktiskt
+ * fördelar sig. Håller isär kapitalrörelser (lån/tillskott som betalas
+ * tillbaka) från resultat (vinst, skatt, utdelning) — inget av det ena
+ * får blandas in i det andra. Bara satt för bolagsägande.
+ */
+export interface PostProjectCapitalResult {
+  projectProfitAfterCorporateTax: number;
+  releasedWorkingCapital: number;
+  externalLoanRepaid: number;
+  ownerLoanRepaid: number;
+  ownerLoanInterestPaid: number;
+  capitalReturnedToOwners: number;
+  profitRetainedInCompany: number;
+  dividendPaid: number;
+  dividendTax: number;
+  netPrivateAfterDividend: number;
+  audit: AuditTrail[];
+}
+
+/** Max kapitalbehov, uppdelat per finansieringskälla (punkt 9/12). */
+export interface CapitalRequirementBreakdown {
+  companyCash: number;
+  ownerLoan: number;
+  shareholderContribution: number;
+  externalLoan: number;
+  privateCash: number;
+  privateLoan: number;
+  otherFunding: number;
 }
 
 export interface RunningCostResult {
@@ -643,6 +720,18 @@ export interface CapitalGainResult {
   capitalGain: number;
   capitalGainTax: number;
   classificationApplied: PrivatePropertyTaxClassification | CompanyAssetClassification;
+  /**
+   * Bara satt när klassificeringen är "not_yet_determined": skatten under
+   * vart och ett av de tre verkliga alternativen, så kalkylen visar en
+   * jämförelse i stället för att välja en klassificering åt användaren.
+   * Huvudsiffran (capitalGainTax) använder ändå den mest konservativa
+   * satsen (handel), av samma skäl som resten av appen aldrig antar en
+   * förmånlig klassificering utan bekräftelse.
+   */
+  alternativeClassifications?: {
+    classification: PrivatePropertyTaxClassification;
+    capitalGainTax: number;
+  }[];
   audit: AuditTrail[];
 }
 
@@ -713,6 +802,12 @@ export interface RoiResult {
   netProfit: number;
   equityROI: number;
   annualizedEquityROI: number | null;
+  /** Vinst efter bolagsskatt / bolagets + ägarnas bundna kapital (kassa + tillskott + ägarlån). Bara bolagsägande. */
+  companyROI: number | null;
+  /** Vinst efter bolagsskatt / ägarlånet — inte prorata, och återbetalning av lånebeloppet räknas aldrig som avkastning. */
+  ownerLoanROI: number | null;
+  /** Privat nettovinst efter eventuell utdelningsskatt / kapital som faktiskt satsats privat. */
+  privateNetROI: number | null;
 }
 
 export interface BreakEvenResult {
@@ -759,6 +854,16 @@ export interface ScenarioResult {
   familyNetWorth: FamilyNetWorthResult;
   riskFlags: RiskFlag[];
   warnings: Warning[];
+
+  /** Bara bolagsägande: hur kapitalet fördelas efter projektet. */
+  postProjectCapital: PostProjectCapitalResult | null;
+  capitalRequirementBreakdown: CapitalRequirementBreakdown;
+  /**
+   * Skatten vid ett hypotetiskt fullt uttag av bolagets vinst — alltid
+   * oberoende av den faktiska utdelningspolicyn. Driver familyNetWorth
+   * läge B och jämförelseväxeln mellan "stannar i bolaget"/"allt uttaget".
+   */
+  hypotheticalFullExtractionTax: number;
 
   purchasePrice: number;
   /** True when no expected sale price is entered — exit-dependent KPIs are then not assessable. */

@@ -4,7 +4,61 @@ const CLASSIFICATION_LABELS: Record<PrivatePropertyTaxClassification, string> = 
   private_residential_property: "Privatbostad",
   business_property: "Näringsfastighet",
   property_trading_inventory_risk: "Risk för handel med fastigheter",
+  not_yet_determined: "Ej fastställd",
 };
+
+/** De tre verkliga klassificeringarna en obestämd fastighet faktiskt kan hamna i. */
+const REAL_CLASSIFICATIONS: Exclude<PrivatePropertyTaxClassification, "not_yet_determined">[] = [
+  "private_residential_property",
+  "business_property",
+  "property_trading_inventory_risk",
+];
+
+function rateFor(
+  classification: Exclude<PrivatePropertyTaxClassification, "not_yet_determined">,
+  rates: {
+    privateResidentialEffectiveRate: number;
+    businessPropertyEffectiveRate: number;
+    propertyTradingRateAssumption: number;
+  },
+): number {
+  return classification === "private_residential_property"
+    ? rates.privateResidentialEffectiveRate
+    : classification === "business_property"
+      ? rates.businessPropertyEffectiveRate
+      : rates.propertyTradingRateAssumption;
+}
+
+function lossReliefRateFor(
+  classification: Exclude<PrivatePropertyTaxClassification, "not_yet_determined">,
+  rates: {
+    privateResidentialLossReliefRate: number;
+    businessPropertyLossReliefRate: number;
+    propertyTradingRateAssumption: number;
+  },
+): number {
+  return classification === "private_residential_property"
+    ? rates.privateResidentialLossReliefRate
+    : classification === "business_property"
+      ? rates.businessPropertyLossReliefRate
+      : rates.propertyTradingRateAssumption;
+}
+
+function taxForClassification(
+  capitalGain: number,
+  classification: Exclude<PrivatePropertyTaxClassification, "not_yet_determined">,
+  rates: {
+    privateResidentialEffectiveRate: number;
+    businessPropertyEffectiveRate: number;
+    propertyTradingRateAssumption: number;
+    privateResidentialLossReliefRate: number;
+    businessPropertyLossReliefRate: number;
+  },
+): number {
+  const gainRate = rateFor(classification, rates);
+  const lossReliefRate = lossReliefRateFor(classification, rates);
+  return Math.max(0, capitalGain) * gainRate - Math.max(0, -capitalGain) * lossReliefRate;
+}
 
 /**
  * Private capital gain, med skattelättnad vid förlust — inte bara noll.
@@ -48,19 +102,17 @@ export function calculatePrivateCapitalGain(params: {
     params.purchasePrice + params.eligiblePurchaseCosts + params.eligibleImprovementCosts;
   const capitalGain = params.salePrice - params.saleCosts - taxBasis;
 
-  const gainRate =
-    params.classification === "private_residential_property"
-      ? params.privateResidentialEffectiveRate
-      : params.classification === "business_property"
-        ? params.businessPropertyEffectiveRate
-        : params.propertyTradingRateAssumption;
+  // Är klassificeringen inte fastställd görs ingen gissning åt användaren —
+  // huvudsiffran räknas ändå på den mest konservativa satsen (handel), av
+  // samma skäl som resten av appen aldrig antar en förmånlig klassificering
+  // utan bekräftelse, men alla tre verkliga utfall visas sida vid sida.
+  const effectiveClassification =
+    params.classification === "not_yet_determined"
+      ? "property_trading_inventory_risk"
+      : params.classification;
 
-  const lossReliefRate =
-    params.classification === "private_residential_property"
-      ? params.privateResidentialLossReliefRate
-      : params.classification === "business_property"
-        ? params.businessPropertyLossReliefRate
-        : params.propertyTradingRateAssumption;
+  const gainRate = rateFor(effectiveClassification, params);
+  const lossReliefRate = lossReliefRateFor(effectiveClassification, params);
 
   const taxOnGain = Math.max(0, capitalGain) * gainRate;
   const reliefOnLoss = Math.max(0, -capitalGain) * lossReliefRate;
@@ -68,20 +120,31 @@ export function calculatePrivateCapitalGain(params: {
   // vinst efter skatt där det används, precis som avsett.
   const capitalGainTax = taxOnGain - reliefOnLoss;
 
+  const alternativeClassifications =
+    params.classification === "not_yet_determined"
+      ? REAL_CLASSIFICATIONS.map((classification) => ({
+          classification,
+          capitalGainTax: taxForClassification(capitalGain, classification, params),
+        }))
+      : undefined;
+
   return {
     taxBasis,
     capitalGain,
     capitalGainTax,
     classificationApplied: params.classification,
+    alternativeClassifications,
     audit: [
       {
         title: "Kapitalvinst privat",
         source:
-          params.classification === "property_trading_inventory_risk"
-            ? "ESTIMATE"
-            : params.classification === "private_residential_property"
-              ? "VERIFIED"
-              : "TAX_ADVISOR_INPUT",
+          params.classification === "not_yet_determined"
+            ? "TAX_ADVISOR_INPUT"
+            : params.classification === "property_trading_inventory_risk"
+              ? "ESTIMATE"
+              : params.classification === "private_residential_property"
+                ? "VERIFIED"
+                : "TAX_ADVISOR_INPUT",
         lines: [
           { label: "Försäljningspris", value: params.salePrice },
           { label: "Försäljningskostnader", value: -params.saleCosts },
@@ -92,9 +155,11 @@ export function calculatePrivateCapitalGain(params: {
           { label: "Klassificering", value: CLASSIFICATION_LABELS[params.classification] },
           {
             label:
-              params.classification === "property_trading_inventory_risk"
-                ? "Skattesats vid vinst (grov uppskattning — näringsverksamhet, inte kapitalvinst)"
-                : "Skattesats vid vinst",
+              params.classification === "not_yet_determined"
+                ? "Skattesats vid vinst (ej fastställd — visar den mest konservativa, se jämförelsen nedan)"
+                : params.classification === "property_trading_inventory_risk"
+                  ? "Skattesats vid vinst (grov uppskattning — näringsverksamhet, inte kapitalvinst)"
+                  : "Skattesats vid vinst",
             value: `${(gainRate * 100).toFixed(1).replace(".", ",")} %`,
           },
           {
@@ -102,6 +167,12 @@ export function calculatePrivateCapitalGain(params: {
             value: `${(lossReliefRate * 100).toFixed(1).replace(".", ",")} %`,
           },
           { label: "Skatt (negativ = lättnad)", value: capitalGainTax },
+          ...(alternativeClassifications
+            ? alternativeClassifications.map((alt) => ({
+                label: `Om ${CLASSIFICATION_LABELS[alt.classification].toLowerCase()}`,
+                value: alt.capitalGainTax,
+              }))
+            : []),
         ],
       },
     ],

@@ -5,10 +5,26 @@ import type { ScenarioResult } from "@/types";
 import { AuditPanel, Card } from "../ui";
 
 interface Row {
+  kind: "row";
   label: string;
   value: (r: ScenarioResult) => string;
   emphasis?: boolean;
   audit?: (r: ScenarioResult) => ScenarioResult["purchase"]["audit"];
+}
+
+interface SectionHeader {
+  kind: "section";
+  label: string;
+}
+
+type Entry = Row | SectionHeader;
+
+function section(label: string): SectionHeader {
+  return { kind: "section", label };
+}
+
+function row(row: Omit<Row, "kind">): Row {
+  return { kind: "row", ...row };
 }
 
 /** Rader som beror på exit visar hellre "kräver försäljningspris" än en påhittad förlust. */
@@ -23,89 +39,160 @@ const afterExtraction = (render: (r: ScenarioResult) => string) => (r: ScenarioR
     r.extractionRateUnknown ? "Fyll i skatten" : undefined,
   );
 
-const ROWS: Row[] = [
-  {
-    label: "Pengar som behövs totalt",
-    value: (r) => formatMoney(r.totalCapitalRequirement),
-  },
-  { label: "Egna pengar", value: (r) => formatMoney(r.equityCommitted) },
-  { label: "Lån", value: (r) => formatMoney(r.externalDebt) },
-  {
+/** Efter-projektet-raderna finns bara för bolagsägande — övriga visar ett streck. */
+const postProject = (pick: (p: NonNullable<ScenarioResult["postProjectCapital"]>) => number) =>
+  (r: ScenarioResult) => (r.postProjectCapital ? formatMoney(pick(r.postProjectCapital)) : "—");
+
+const roiOrDash = (pick: (r: ScenarioResult) => number | null) => (r: ScenarioResult) => {
+  const v = pick(r);
+  return v === null ? "—" : formatPercent(v);
+};
+
+const ROWS: Entry[] = [
+  section("Projekt"),
+  row({
+    label: "Köpeskilling",
+    value: (r) => formatMoney(r.purchasePrice),
+    audit: (r) => r.purchase.audit,
+  }),
+  row({
+    label: "Renovering",
+    value: (r) => formatMoney(r.renovationCashCost),
+    audit: (r) => [...r.renovation.audit, ...r.vat.audit, ...r.rot.audit],
+  }),
+  row({
     label: "Lagfart och pantbrev",
     value: (r) => formatMoney(r.purchaseTaxesFees),
     audit: (r) => r.purchase.audit,
-  },
-  {
-    label: "Renovering, verklig kostnad",
-    value: (r) => formatMoney(r.renovationCashCost),
-    audit: (r) => [...r.renovation.audit, ...r.vat.audit, ...r.rot.audit],
-  },
-  {
-    label: "Ränta och låneavgifter",
+  }),
+  row({
+    label: "Finansieringskostnader",
     value: (r) => formatMoney(r.financingCost),
     audit: (r) => r.loans.audit,
-  },
-  {
-    label: "Driftkostnader",
+  }),
+  row({
+    label: "Drift",
     value: (r) => formatMoney(r.runningCostsTotal),
     audit: (r) => r.runningCosts.audit,
-  },
-  {
+  }),
+  row({
     label: "Försäljningskostnader",
     value: (r) => formatMoney(r.saleCosts.saleCostsTotal),
     audit: (r) => r.saleCosts.audit,
-  },
-  { label: "Vad allt kostar", value: (r) => formatMoney(r.totalProjectCost), emphasis: true },
-  { label: "Pris efter prutmån", value: exit((r) => formatMoney(r.salePrice)) },
-  { label: "Vinst före skatt", value: exit((r) => formatMoney(r.profitBeforeTax)) },
-  {
-    label: "Skatt",
+  }),
+  row({ label: "Projektkostnad totalt", value: (r) => formatMoney(r.totalProjectCost), emphasis: true }),
+  row({ label: "Försäljningspris", value: exit((r) => formatMoney(r.salePrice)) }),
+  row({ label: "Vinst före skatt", value: exit((r) => formatMoney(r.profitBeforeTax)) }),
+  row({
+    label: "Skatt på projektvinsten",
     value: afterExtraction((r) => formatMoney(r.totalTax)),
     audit: (r) => [
       ...(r.corporateTax?.audit ?? r.capitalGain.audit),
       ...(r.extraction?.audit ?? []),
       ...(r.benefit?.audit ?? []),
     ],
-  },
-  { label: "Vinst på affären efter skatt", value: exit((r) => formatMoney(r.profitAfterTax)), emphasis: true },
-  {
-    label: "Blir kvar i bolaget",
-    value: exit((r) => formatMoney(r.netRetainedInCompany)),
-  },
-  {
-    label: "Kvar till er själva",
-    value: afterExtraction((r) => formatMoney(r.netAvailablePrivately)),
+  }),
+  row({
+    label: "Vinst efter skatt",
+    value: exit((r) => formatMoney(r.profitAfterTax)),
     emphasis: true,
-  },
-  {
-    label: "Avkastning på egna pengar",
+  }),
+
+  section("Finansiering"),
+  row({
+    label: "Bolagets/privat befintliga kapital",
+    value: (r) =>
+      formatMoney(
+        r.corporateTax !== null
+          ? r.capitalRequirementBreakdown.companyCash
+          : r.capitalRequirementBreakdown.privateCash,
+      ),
+  }),
+  row({
+    label: "Ägarlån",
+    value: (r) => formatMoney(r.capitalRequirementBreakdown.ownerLoan),
+  }),
+  row({
+    label: "Aktieägartillskott",
+    value: (r) => formatMoney(r.capitalRequirementBreakdown.shareholderContribution),
+  }),
+  row({
+    label: "Externa lån",
+    value: (r) =>
+      formatMoney(
+        r.corporateTax !== null
+          ? r.capitalRequirementBreakdown.externalLoan
+          : r.capitalRequirementBreakdown.privateLoan,
+      ),
+  }),
+  row({
+    label: "Annan finansiering",
+    value: (r) => formatMoney(r.capitalRequirementBreakdown.otherFunding),
+  }),
+  row({
+    label: "Max kapitalbehov",
+    value: (r) => formatMoney(r.totalCapitalRequirement),
+    emphasis: true,
+  }),
+  row({ label: "Max extern skuld", value: (r) => formatMoney(r.externalDebt) }),
+
+  section("Efter projektet"),
+  row({
+    label: "Återbetalt externt lån",
+    value: postProject((p) => p.externalLoanRepaid),
+  }),
+  row({ label: "Återbetalt ägarlån", value: postProject((p) => p.ownerLoanRepaid) }),
+  row({
+    label: "Kapital tillbaka till ägarna",
+    value: postProject((p) => p.capitalReturnedToOwners),
+  }),
+  row({
+    label: "Vinst kvar i bolaget",
+    value: postProject((p) => p.profitRetainedInCompany),
+    emphasis: true,
+  }),
+  row({ label: "Eventuell utdelning", value: postProject((p) => p.dividendPaid) }),
+  row({ label: "Skatt på utdelning", value: postProject((p) => p.dividendTax) }),
+  row({
+    label: "Netto privat",
+    value: postProject((p) => p.netPrivateAfterDividend),
+    emphasis: true,
+  }),
+
+  section("Avkastning"),
+  row({ label: "Projekt-ROI", value: exit((r) => formatPercent(r.roi.projectROI)) }),
+  row({
+    label: "ROI på eget kapital",
     value: afterExtraction((r) => formatPercent(r.roi.equityROI)),
-  },
-  {
+  }),
+  row({ label: "Bolags-ROI", value: roiOrDash((r) => r.roi.companyROI) }),
+  row({ label: "ROI på ägarlån", value: roiOrDash((r) => r.roi.ownerLoanROI) }),
+  row({ label: "Privat netto-ROI", value: roiOrDash((r) => r.roi.privateNetROI) }),
+  row({
     label: "Motsvarar per år",
     value: afterExtraction((r) =>
       r.roi.annualizedEquityROI === null ? "—" : formatPercent(r.roi.annualizedEquityROI),
     ),
-  },
-  {
-    label: "Lägsta pris utan förlust",
+  }),
+  row({
+    label: "Break-even försäljningspris",
     value: (r) => formatMoney(r.breakEven.breakEvenSalePrice),
-  },
-  {
+  }),
+  row({
     label: "Vinst när man räknar bort vad pengarna kunnat ge annars",
     value: exit((r) => formatMoney(r.profitAfterTax - r.opportunityCost.opportunityCost)),
     audit: (r) => r.opportunityCost.audit,
-  },
-  {
+  }),
+  row({
     label: "Kvar till er när allt tagits ut",
     value: afterExtraction((r) => formatMoney(r.familyNetWorth.familyNetWorthDeltaModeB)),
     emphasis: true,
     audit: (r) => r.familyNetWorth.audit,
-  },
-  {
+  }),
+  row({
     label: "Kvar till er om pengarna stannar i bolaget",
     value: exit((r) => formatMoney(r.familyNetWorth.familyNetWorthDeltaModeA)),
-  },
+  }),
 ];
 
 export function ComparisonTable({ results }: { results: ScenarioResult[] }) {
@@ -127,26 +214,37 @@ export function ComparisonTable({ results }: { results: ScenarioResult[] }) {
             </tr>
           </thead>
           <tbody>
-            {ROWS.map((row) => (
-              <tr key={row.label} className="border-b border-border/60 last:border-0">
-                <td
-                  className={`py-1.5 pr-3 align-top ${row.emphasis ? "font-semibold" : "text-muted"}`}
-                >
-                  {row.label}
-                  {row.audit && results[0] && <AuditPanel trails={row.audit(results[0])} />}
-                </td>
-                {results.map((r) => (
+            {ROWS.map((entry, i) =>
+              entry.kind === "section" ? (
+                <tr key={`section-${entry.label}-${i}`}>
                   <td
-                    key={r.scenario}
-                    className={`numeric py-2 pl-3 text-right align-top ${
-                      row.emphasis ? "font-semibold" : ""
-                    }`}
+                    colSpan={results.length + 1}
+                    className="pb-1.5 pt-4 text-xs font-semibold uppercase tracking-wide text-muted first:pt-1"
                   >
-                    {row.value(r)}
+                    {entry.label}
                   </td>
-                ))}
-              </tr>
-            ))}
+                </tr>
+              ) : (
+                <tr key={entry.label} className="border-b border-border/60 last:border-0">
+                  <td
+                    className={`py-1.5 pr-3 align-top ${entry.emphasis ? "font-semibold" : "text-muted"}`}
+                  >
+                    {entry.label}
+                    {entry.audit && results[0] && <AuditPanel trails={entry.audit(results[0])} />}
+                  </td>
+                  {results.map((r) => (
+                    <td
+                      key={r.scenario}
+                      className={`numeric py-2 pl-3 text-right align-top ${
+                        entry.emphasis ? "font-semibold" : ""
+                      }`}
+                    >
+                      {entry.value(r)}
+                    </td>
+                  ))}
+                </tr>
+              ),
+            )}
           </tbody>
         </table>
       </div>

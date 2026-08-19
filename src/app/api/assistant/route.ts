@@ -136,6 +136,16 @@ function scenarioPatchSchema(): Anthropic.Tool.InputSchema {
   return {
     type: "object",
     properties: {
+      privateFunding: {
+        type: "object",
+        properties: {
+          otherFunding: {
+            type: "number",
+            description:
+              "Annan privat finansiering (t.ex. gåva, arv, försäljning av annan tillgång). Skattebehandlingen av källan kan du inte veta eller anta — säg det när du kommenterar fältet.",
+          },
+        },
+      },
       privateLoans: {
         type: "object",
         properties: {
@@ -157,6 +167,40 @@ function scenarioPatchSchema(): Anthropic.Tool.InputSchema {
           companyCashInvested: { type: "number" },
           externalBusinessLoan: { type: "number" },
           businessInterestRate: { type: "number" },
+          shareholderContribution: {
+            type: "number",
+            description:
+              "Aktieägartillskott — eget kapital, ingen skuld. Återbetalas inte automatiskt; det kräver utdelning eller en formell kapitalåterbetalning. Behandla det aldrig som samma sak som ägarlån.",
+          },
+          ownerLoanAmount: {
+            type: "number",
+            description:
+              "Ägarlån till bolaget — en skuld bolaget har till ägaren. Återbetalning av lånebeloppet är varken utdelning eller lön och beskattas inte, till skillnad från aktieägartillskott.",
+          },
+          ownerLoanInterestRate: { type: "number", description: "T.ex. 0.04 för 4 %." },
+          ownerLoanAnnualRepayment: {
+            type: "number",
+            description: "Egen amorteringstakt på ägarlånet under innehavstiden.",
+          },
+          ownerLoanDeductibleInterestPercent: {
+            type: "number",
+            description: "Eget avdragsfält för ägarlånets ränta — delas inte med företagslånet.",
+          },
+        },
+      },
+      dividendPolicy: {
+        type: "object",
+        description:
+          "Vad ägarna faktiskt väljer att göra med bolagets vinst — anta aldrig att allt automatiskt delas ut.",
+        properties: {
+          mode: {
+            type: "string",
+            enum: ["retain_all", "distribute_partial", "distribute_all"],
+          },
+          amount: {
+            type: "number",
+            description: "Bruttobelopp att dela ut — bara relevant vid distribute_partial.",
+          },
         },
       },
       vat: {
@@ -306,6 +350,7 @@ for (const [key, label] of Object.entries(RUNNING_COST_LABELS)) {
 }
 
 const SCENARIO_SUBFIELD_LABELS: Record<string, string> = {
+  "privateFunding.otherFunding": "annan privat finansiering",
   "privateLoans.mortgageAmount": "lånebelopp (bolån)",
   "privateLoans.mortgageInterestRate": "ränta (bolån)",
   "privateLoans.unsecuredLoanAmount": "lånebelopp (blancolån)",
@@ -315,6 +360,13 @@ const SCENARIO_SUBFIELD_LABELS: Record<string, string> = {
   "companyFunding.companyCashInvested": "eget kapital från bolaget",
   "companyFunding.externalBusinessLoan": "bolagets lån",
   "companyFunding.businessInterestRate": "ränta på bolagets lån",
+  "companyFunding.shareholderContribution": "aktieägartillskott",
+  "companyFunding.ownerLoanAmount": "ägarlån till bolaget",
+  "companyFunding.ownerLoanInterestRate": "ränta på ägarlån",
+  "companyFunding.ownerLoanAnnualRepayment": "amortering på ägarlån per år",
+  "companyFunding.ownerLoanDeductibleInterestPercent": "andel avdragsgill ränta, ägarlån",
+  "dividendPolicy.mode": "vad ägarna gör med bolagets vinst",
+  "dividendPolicy.amount": "utdelning, bruttobelopp",
   "vat.vatTreatment": "momshantering",
   "vat.vatDeductiblePercent": "andel avdragsgill moms",
   "vat.intendedUse": "avsedd användning (moms)",

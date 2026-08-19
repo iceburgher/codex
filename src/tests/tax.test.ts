@@ -4,7 +4,9 @@ import { calculateCorporateTax } from "@/calculations/corporateTax";
 import { calculateRental } from "@/calculations/rental";
 import { calculateBenefitTax } from "@/calculations/benefitTax";
 import { calculatePropertyFee } from "@/calculations/operatingCosts";
-import type { RentalInputs } from "@/types";
+import { calculateRoi } from "@/calculations/roi";
+import { calculateCompanyFunding } from "@/calculations/fundingCompany";
+import type { CompanyFundingInputs, RentalInputs } from "@/types";
 
 describe("private capital gain", () => {
   const base = {
@@ -70,6 +72,28 @@ describe("private capital gain", () => {
     });
     // Larger relief rate means a bigger (more negative) tax credit.
     expect(business.capitalGainTax).toBeLessThan(residential.capitalGainTax);
+  });
+
+  it("shows all three real classifications side by side when not yet determined, without picking one for the user", () => {
+    const r = calculatePrivateCapitalGain({ ...base, classification: "not_yet_determined" });
+    expect(r.alternativeClassifications).toBeDefined();
+    expect(r.alternativeClassifications).toHaveLength(3);
+    const byClassification = Object.fromEntries(
+      r.alternativeClassifications!.map((a) => [a.classification, a.capitalGainTax]),
+    );
+    expect(byClassification.private_residential_property).toBeCloseTo(273_938.5, 4);
+    expect(byClassification.business_property).toBeCloseTo(1_245_175 * 0.27, 4);
+    expect(byClassification.property_trading_inventory_risk).toBeCloseTo(1_245_175 * 0.5, 4);
+    // Huvudsiffran räknar konservativt med handel tills klassificeringen är bekräftad.
+    expect(r.capitalGainTax).toBeCloseTo(1_245_175 * 0.5, 4);
+  });
+
+  it("never sets alternativeClassifications for a resolved classification", () => {
+    const r = calculatePrivateCapitalGain({
+      ...base,
+      classification: "private_residential_property",
+    });
+    expect(r.alternativeClassifications).toBeUndefined();
   });
 });
 
@@ -331,5 +355,94 @@ describe("property fee", () => {
     expect(
       calculatePropertyFee(5_000_000, 0.0075, 10_425, { constructionYear: null, taxYear: 2026 }),
     ).toBe(10_425);
+  });
+});
+
+describe("roi metrics", () => {
+  const base = {
+    totalProjectCost: 5_000_000,
+    projectProfit: 500_000,
+    investedEquity: 1_000_000,
+    netProfit: 500_000,
+    holdingPeriodMonths: 12,
+  };
+
+  it("computes owner-loan ROI from profit after corporate tax over the loan alone, not prorated and never counting repayment as return", () => {
+    // Ägarlån = 2 000 000 kr, projektvinst efter bolagsskatt = 600 000 kr.
+    // ROI = 600 000 / 2 000 000 = 30 %, INTE (600 000 + 2 000 000) / 2 000 000.
+    const r = calculateRoi({
+      ...base,
+      companyProfitAfterTax: 600_000,
+      ownerLoanAmount: 2_000_000,
+    });
+    expect(r.ownerLoanROI).toBeCloseTo(0.3, 6);
+  });
+
+  it("is null for owner-loan ROI when there is no owner loan", () => {
+    const r = calculateRoi({ ...base, companyProfitAfterTax: 600_000, ownerLoanAmount: 0 });
+    expect(r.ownerLoanROI).toBeNull();
+  });
+
+  it("computes company ROI over the company's own bound capital (cash + tillskott + ägarlån)", () => {
+    const r = calculateRoi({
+      ...base,
+      companyProfitAfterTax: 600_000,
+      companyBoundCapital: 1_800_000 + 200_000 + 2_000_000,
+    });
+    expect(r.companyROI).toBeCloseTo(600_000 / 4_000_000, 6);
+  });
+
+  it("computes private net ROI over capital actually put in privately, separate from the company's capital", () => {
+    const r = calculateRoi({
+      ...base,
+      privateNetProfit: 150_000,
+      privateCapitalPutIn: 500_000,
+    });
+    expect(r.privateNetROI).toBeCloseTo(0.3, 6);
+  });
+
+  it("is null rather than Infinity/NaN when the relevant denominator is zero", () => {
+    const r = calculateRoi(base);
+    expect(r.companyROI).toBeNull();
+    expect(r.ownerLoanROI).toBeNull();
+    expect(r.privateNetROI).toBeNull();
+  });
+});
+
+describe("company funding: owner loan", () => {
+  const funding: CompanyFundingInputs = {
+    companyCashInvested: 1_000_000,
+    externalBusinessLoan: 3_000_000,
+    businessInterestRate: 0.05,
+    setupFee: 0,
+    guaranteeFee: 0,
+    amortizationAnnual: 0,
+    deductibleInterestPercent: 1,
+    personalGuarantee: false,
+    ownerLoanAmount: 2_000_000,
+    ownerLoanInterestRate: 0.04,
+    ownerLoanAnnualRepayment: 0,
+    ownerLoanDeductibleInterestPercent: 0.5,
+    shareholderContribution: 200_000,
+  };
+
+  it("computes owner-loan interest with its own rate, separate from the business loan", () => {
+    const r = calculateCompanyFunding({ funding, holdingPeriodMonths: 12 });
+    expect(r.ownerLoanInterest).toBeCloseTo(2_000_000 * 0.04, 6);
+    expect(r.businessInterest).toBeCloseTo(3_000_000 * 0.05, 6);
+  });
+
+  it("applies the owner loan's own deductible-interest field, not the business loan's", () => {
+    const r = calculateCompanyFunding({ funding, holdingPeriodMonths: 12 });
+    expect(r.ownerLoanDeductibleInterest).toBeCloseTo(2_000_000 * 0.04 * 0.5, 6);
+    expect(r.deductibleInterest).toBeCloseTo(3_000_000 * 0.05, 6);
+  });
+
+  it("counts shareholder contribution as equity, and includes owner loan in the max cash requirement", () => {
+    const r = calculateCompanyFunding({ funding, holdingPeriodMonths: 12 });
+    expect(r.totalEquityCommitted).toBe(1_000_000 + 200_000);
+    expect(r.maxCashRequirement).toBe(1_000_000 + 200_000 + 3_000_000 + 2_000_000);
+    // "debt" stays external-only — owner loan is itemized separately.
+    expect(r.debt).toBe(3_000_000);
   });
 });
