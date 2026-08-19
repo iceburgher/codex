@@ -452,7 +452,11 @@ export async function POST(request: Request) {
   };
 
   try {
-    const firstPass = await client.messages.create({
+    // Ibland kommer varken text eller verktygsanrop tillbaka — ett tomt,
+    // ogiltigt modellsvar snarare än ett äkta assistentsvar. Ett enda
+    // återförsök absorberar de flesta av de fallen utan att användaren
+    // märker något.
+    let firstPass = await client.messages.create({
       model: ASSISTANT_MODEL,
       max_tokens: 800,
       system: SYSTEM_PROMPT,
@@ -460,17 +464,40 @@ export async function POST(request: Request) {
       messages,
     });
 
-    const toolUse = firstPass.content.find(
+    let toolUse = firstPass.content.find(
       (block): block is Anthropic.ToolUseBlock =>
         block.type === "tool_use" && block.name === UPDATE_TOOL_NAME,
     );
 
+    if (!toolUse && !textOf(firstPass)) {
+      firstPass = await client.messages.create({
+        model: ASSISTANT_MODEL,
+        max_tokens: 800,
+        system: SYSTEM_PROMPT,
+        tools: [UPDATE_TOOL],
+        messages,
+      });
+      toolUse = firstPass.content.find(
+        (block): block is Anthropic.ToolUseBlock =>
+          block.type === "tool_use" && block.name === UPDATE_TOOL_NAME,
+      );
+    }
+
     if (!toolUse) {
       const reply = textOf(firstPass);
-      return NextResponse.json({
-        reply: reply || "Fick inget svar från AI-tjänsten.",
-        patch: null,
-      });
+      // Fortfarande tomt efter återförsöket är ett äkta fel, inte ett
+      // giltigt assistentsvar — skickas det som 200 med platshållartext
+      // sparas platshållaren permanent i chatthistoriken och skickas sedan
+      // tillbaka till modellen som om den själv sagt det, vilket kan
+      // förvirra kommande svar i samma tråd. Klienten visar fel som en
+      // banderoll i stället och lägger aldrig till dem i historiken.
+      if (!reply) {
+        return NextResponse.json(
+          { error: "AI-tjänsten svarade inte den här gången. Försök igen." },
+          { status: 502 },
+        );
+      }
+      return NextResponse.json({ reply, patch: null });
     }
 
     // Simulera ändringen mot en kopia av projektet i stället för att låta
