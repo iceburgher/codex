@@ -194,6 +194,16 @@ function scenarioPatchSchema(): Anthropic.Tool.InputSchema {
         type: "boolean",
         description: "Om en rådgivare har bekräftat den skattemässiga klassificeringen.",
       },
+      companySaleStructure: {
+        type: "string",
+        enum: ["asset_sale", "share_sale"],
+        description:
+          "Bara bolagsägande. share_sale = paketering (sälj aktierna i stället för fastigheten), vilket kan göra värdeökningen skattefri men kräver att strukturen finns på plats innan värdeökningen sker och att en rådgivare bekräftar upplägget.",
+      },
+      buyerLatentTaxDiscountPercent: {
+        type: "number",
+        description: "Bara vid share_sale: köparens rabatt på priset för att ta över den latenta skatten, t.ex. 0.08 för 8 %.",
+      },
       improvementBasis: {
         type: "object",
         description:
@@ -304,6 +314,8 @@ const SCENARIO_SUBFIELD_LABELS: Record<string, string> = {
   "improvementBasis.qualifyingRepairsAndMaintenancePercent":
     "andel förbättrande reparation mot kapitalvinsten",
   "improvementBasis.nonDeductiblePercent": "andel ej avdragsgill mot kapitalvinsten",
+  companySaleStructure: "försäljningsstruktur (direktförsäljning eller paketering)",
+  buyerLatentTaxDiscountPercent: "köparens rabatt för latent skatt vid paketering",
 };
 
 /** Översätter en punktad fältväg (t.ex. "rental.rentPerWeek") till vanlig svenska. */

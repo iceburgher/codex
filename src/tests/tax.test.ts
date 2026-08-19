@@ -82,6 +82,7 @@ describe("corporate tax", () => {
       otherDeductibleResult: -100_000,
       corporateTaxRate: 0.206,
       classification: "capital_asset",
+      disposalTaxExempt: false,
     });
     expect(r.taxableSaleResult).toBe(900_000);
     expect(r.companyTax).toBeCloseTo(185_400, 6);
@@ -96,6 +97,7 @@ describe("corporate tax", () => {
       otherDeductibleResult: 0,
       corporateTaxRate: 0.206,
       classification: "inventory_property",
+      disposalTaxExempt: false,
     });
     expect(r.companyTax).toBe(0);
     expect(r.companyProfitAfterTax).toBe(-1_000_000);
@@ -112,6 +114,7 @@ describe("corporate tax", () => {
       otherDeductibleResult: 0,
       corporateTaxRate: 0.206,
       classification: "inventory_property",
+      disposalTaxExempt: false,
     });
     expect(r.deferredTaxAssetValue).toBeCloseTo(1_000_000 * 0.206, 6);
     expect(r.companyProfitAfterTax).toBe(-1_000_000);
@@ -125,8 +128,36 @@ describe("corporate tax", () => {
       otherDeductibleResult: -100_000,
       corporateTaxRate: 0.206,
       classification: "capital_asset",
+      disposalTaxExempt: false,
     });
     expect(r.deferredTaxAssetValue).toBe(0);
+  });
+
+  it("exempts the disposal gain from tax under a share sale (paketering), but still taxes ongoing results", () => {
+    const assetSale = calculateCorporateTax({
+      salePrice: 6_000_000,
+      saleCosts: 200_000,
+      companyTaxBasis: 4_800_000,
+      otherDeductibleResult: -100_000,
+      corporateTaxRate: 0.206,
+      classification: "capital_asset",
+      disposalTaxExempt: false,
+    });
+    const shareSale = calculateCorporateTax({
+      salePrice: 6_000_000,
+      saleCosts: 200_000,
+      companyTaxBasis: 4_800_000,
+      otherDeductibleResult: -100_000,
+      corporateTaxRate: 0.206,
+      classification: "capital_asset",
+      disposalTaxExempt: true,
+    });
+    // Only the running (non-disposal) result of -100,000 is taxable, so the
+    // share sale pays less tax and keeps more profit than the asset sale —
+    // but both start from the same total economic result.
+    expect(shareSale.companyTax).toBe(0); // -100,000 taxable result: no tax due
+    expect(shareSale.companyTax).toBeLessThan(assetSale.companyTax);
+    expect(shareSale.companyProfitAfterTax).toBeGreaterThan(assetSale.companyProfitAfterTax);
   });
 });
 

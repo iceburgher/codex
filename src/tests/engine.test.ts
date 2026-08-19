@@ -160,6 +160,42 @@ describe("scenario engine", () => {
     expect(r.warnings.map((w) => w.id)).not.toContain("company_loss_deferred_tax_asset");
   });
 
+  it("makes a packaged (share) sale keep more after tax than a direct asset sale", () => {
+    const p = baseProject();
+    const assetSale = calculateScenario(p, "EXISTING_COMPANY");
+
+    p.scenarios.EXISTING_COMPANY.companySaleStructure = "share_sale";
+    const shareSale = calculateScenario(p, "EXISTING_COMPANY");
+
+    expect(shareSale.corporateTax?.companyTax).toBeLessThan(assetSale.corporateTax?.companyTax ?? 0);
+    expect(shareSale.netRetainedInCompany).toBeGreaterThan(assetSale.netRetainedInCompany);
+  });
+
+  it("reduces the effective sale price by the buyer's latent-tax discount under a share sale", () => {
+    const p = baseProject();
+    p.scenarios.EXISTING_COMPANY.companySaleStructure = "share_sale";
+    const noDiscount = calculateScenario(p, "EXISTING_COMPANY");
+
+    p.scenarios.EXISTING_COMPANY.buyerLatentTaxDiscountPercent = 0.08;
+    const withDiscount = calculateScenario(p, "EXISTING_COMPANY");
+
+    expect(withDiscount.netRetainedInCompany).toBeLessThan(noDiscount.netRetainedInCompany);
+    expect(withDiscount.profitBeforeTax).toBeLessThan(noDiscount.profitBeforeTax);
+  });
+
+  it("always flags a share-sale (paketering) structure as needing legal and tax advice", () => {
+    const p = baseProject();
+    p.scenarios.EXISTING_COMPANY.companySaleStructure = "share_sale";
+    const r = calculateScenario(p, "EXISTING_COMPANY");
+    expect(r.riskFlags.map((f) => f.id)).toContain("packaging_structure_risk");
+  });
+
+  it("never flags packaging risk for a direct asset sale", () => {
+    const p = baseProject();
+    const r = calculateScenario(p, "EXISTING_COMPANY");
+    expect(r.riskFlags.map((f) => f.id)).not.toContain("packaging_structure_risk");
+  });
+
   it("steps the mortgage interest deduction down to 21% above the per-person threshold", () => {
     const p = baseProject();
     p.inputs.ownershipSharePerson2 = 0; // a single owner, so the threshold is not doubled

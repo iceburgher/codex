@@ -10,6 +10,12 @@ const ASSET_LABELS: Record<CompanyAssetClassification, string> = {
  * rental result, employer contributions on benefit) are folded into
  * `otherDeductibleResult` by the scenario adapter so the taxable result
  * reflects the whole project, not just the disposal.
+ *
+ * Vid en andelsförsäljning (paketering, `disposalTaxExempt`) är själva
+ * försäljningsresultatet skattefritt i bolaget (IL 25a, näringsbetingade
+ * andelar) — men det löpande projektresultatet (ränta, drift, uthyrning,
+ * förmånens arbetsgivaravgift) har inte med aktieaffären att göra och
+ * beskattas som vanligt.
  */
 export function calculateCorporateTax(params: {
   salePrice: number;
@@ -18,32 +24,41 @@ export function calculateCorporateTax(params: {
   otherDeductibleResult: number;
   corporateTaxRate: number;
   classification: CompanyAssetClassification;
+  disposalTaxExempt: boolean;
 }): CorporateTaxResult {
   const disposalResult = params.salePrice - params.saleCosts - params.companyTaxBasis;
-  const taxableSaleResult = disposalResult + params.otherDeductibleResult;
-  const companyTax = Math.max(0, taxableSaleResult) * params.corporateTaxRate;
-  const companyProfitAfterTax = taxableSaleResult - companyTax;
+  const totalResult = disposalResult + params.otherDeductibleResult;
+  const taxableResult = params.disposalTaxExempt ? params.otherDeductibleResult : totalResult;
+
+  const companyTax = Math.max(0, taxableResult) * params.corporateTaxRate;
+  const companyProfitAfterTax = totalResult - companyTax;
   // Ett underskott ger ingen skatteåterbäring nu — bara ett sparat avdrag
   // (rullas framåt) värt det här OM bolaget någon gång har annan vinst att
   // kvitta det mot. Räknas inte in i companyProfitAfterTax av det skälet.
-  const deferredTaxAssetValue = Math.max(0, -taxableSaleResult) * params.corporateTaxRate;
+  const deferredTaxAssetValue = Math.max(0, -taxableResult) * params.corporateTaxRate;
 
   return {
-    taxableSaleResult,
+    taxableSaleResult: taxableResult,
     companyTax,
     companyProfitAfterTax,
     deferredTaxAssetValue,
     audit: [
       {
-        title: "Bolagsskatt",
-        source: "VERIFIED",
+        title: params.disposalTaxExempt ? "Bolagsskatt (paketering — andelsförsäljning)" : "Bolagsskatt",
+        source: params.disposalTaxExempt ? "TAX_ADVISOR_INPUT" : "VERIFIED",
         lines: [
-          { label: "Försäljningspris", value: params.salePrice },
+          { label: "Försäljningspris (efter ev. köparrabatt)", value: params.salePrice },
           { label: "Försäljningskostnader", value: -params.saleCosts },
           { label: "Skattemässigt anskaffningsvärde", value: -params.companyTaxBasis },
-          { label: "Resultat vid försäljning", value: disposalResult },
-          { label: "Övrigt projektresultat", value: params.otherDeductibleResult },
-          { label: "Skattepliktigt resultat", value: taxableSaleResult },
+          {
+            label: params.disposalTaxExempt
+              ? "Resultat vid försäljning (skattefritt, IL 25a)"
+              : "Resultat vid försäljning",
+            value: disposalResult,
+          },
+          { label: "Övrigt projektresultat (beskattas alltid)", value: params.otherDeductibleResult },
+          { label: "Totalt ekonomiskt resultat", value: totalResult },
+          { label: "Skattepliktigt resultat", value: taxableResult },
           { label: "Klassificering", value: ASSET_LABELS[params.classification] },
           {
             label: `Bolagsskatt, ${(params.corporateTaxRate * 100).toFixed(1).replace(".", ",")} %`,

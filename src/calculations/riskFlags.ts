@@ -83,6 +83,13 @@ export function buildRiskFlags(ctx: RiskContext): RiskFlag[] {
       text: "Ni äger huset privat men ska inte använda det själva. Det talar emot att det räknas som en privatbostad.",
     });
   }
+  if (ctx.isCompanyOwned && scenario.companySaleStructure === "share_sale") {
+    flags.push({
+      id: "packaging_structure_risk",
+      severity: "high",
+      text: "Kalkylen räknar med att sälja bolaget (aktierna) i stället för fastigheten, så att värdeökningen blir skattefri i bolaget. Det kräver att strukturen finns på plats innan värdeökningen sker, inte i efterhand, och köparens rabatt för den övertagna latenta skatten är bara en uppskattning. Det här är inget appen kan verifiera — ta in juridisk och skatterådgivning innan ni planerar för en paketerad försäljning.",
+    });
+  }
   if (ctx.isCompanyOwned && scenario.privateUseLevel !== "none") {
     flags.push({
       id: "company_private_use_risk",

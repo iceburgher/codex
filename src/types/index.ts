@@ -47,6 +47,8 @@ export type PrivatePropertyTaxClassification =
 
 export type CompanyAssetClassification = "capital_asset" | "inventory_property";
 
+export type CompanySaleStructure = "asset_sale" | "share_sale";
+
 export type VatTreatment = "none" | "partial" | "full";
 
 export type OptimizationTarget =
@@ -373,6 +375,18 @@ export interface ScenarioInputs {
   privatePropertyTaxClassification: PrivatePropertyTaxClassification;
   companyAssetClassification: CompanyAssetClassification;
   improvementBasis: ImprovementTaxBasisInputs;
+
+  /**
+   * Bara bolagsägande: sälja fastigheten direkt (tillgångsförsäljning,
+   * beskattas i bolaget) eller paketera den och sälja aktierna i bolaget
+   * (andelsförsäljning, skattefri enligt IL 25a om andelarna är
+   * näringsbetingade). Paketering kräver att strukturen finns på plats
+   * innan värdeökningen sker, och en köpare av aktier kräver normalt rabatt
+   * för den latenta skatt de tar över — inget appen kan verifiera själv.
+   */
+  companySaleStructure: CompanySaleStructure;
+  /** Köparens rabatt på priset för att ta över bolagets latenta skatteskuld, som andel av köpeskillingen. */
+  buyerLatentTaxDiscountPercent: number;
 
   opportunityCost: OpportunityCostInputs;
 

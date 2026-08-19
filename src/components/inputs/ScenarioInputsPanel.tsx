@@ -439,6 +439,34 @@ export function ScenarioInputsPanel({
               onChange={(v) => set((s) => void (s.companyAssetClassification = v))}
             />
           )}
+          {isCompany && (
+            <SelectField
+              label="Hur säljs bolaget vid utgången?"
+              source="TAX_ADVISOR_INPUT"
+              hint="Andelsförsäljning (paketering) kan göra värdeökningen skattefri i bolaget, men kräver att strukturen finns på plats i förväg och att köparen accepterar upplägget."
+              value={scenario.companySaleStructure}
+              options={[
+                { value: "asset_sale", label: "Fastigheten säljs direkt" },
+                { value: "share_sale", label: "Bolaget (aktierna) säljs — paketering" },
+              ]}
+              onChange={(v) => set((s) => void (s.companySaleStructure = v))}
+            />
+          )}
+          {isCompany && scenario.companySaleStructure === "share_sale" && (
+            <>
+              <PercentField
+                label="Köparens rabatt för latent skatt"
+                source="TAX_ADVISOR_INPUT"
+                hint="Andel av köpeskillingen köparen normalt kräver i avdrag för att ta över bolagets uppskjutna skatt. Utan uppgift, räkna med 5–10 %."
+                value={scenario.buyerLatentTaxDiscountPercent}
+                onChange={(v) => set((s) => void (s.buyerLatentTaxDiscountPercent = v ?? 0))}
+              />
+              <p className="rounded-md bg-danger-soft p-2 text-[11px] text-negative">
+                Paketering kräver att strukturen finns på plats innan värdeökningen sker, inte i
+                efterhand. Ta in juridisk och skatterådgivning innan ni planerar för det här.
+              </p>
+            </>
+          )}
           {!isCompany && (
             <>
               <PercentField

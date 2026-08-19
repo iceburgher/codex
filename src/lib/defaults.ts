@@ -192,6 +192,8 @@ export function defaultScenario(type: ScenarioType): ScenarioInputs {
 
     privatePropertyTaxClassification: "property_trading_inventory_risk",
     companyAssetClassification: "capital_asset",
+    companySaleStructure: "asset_sale",
+    buyerLatentTaxDiscountPercent: 0,
     improvementBasis: {
       fundamentalImprovementsPercent: 0,
       qualifyingRepairsAndMaintenancePercent: 0,

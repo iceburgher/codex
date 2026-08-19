@@ -211,14 +211,24 @@ function computeCore(
     (project.rental.enabled ? rental.companyRentalProfit : 0) -
     (benefit?.companyEmployerContributionOnBenefit ?? 0);
 
+  // Paketering (andelsförsäljning) gör själva fastighetsvinsten skattefri i
+  // bolaget (IL 25a), men en köpare av aktierna tar över den latenta
+  // skatteskulden och kräver normalt rabatt på priset för det.
+  const isShareSale = isCompanyOwned && scenario.companySaleStructure === "share_sale";
+  const shareSaleDiscount = isShareSale
+    ? salePrice * (scenario.buyerLatentTaxDiscountPercent || 0)
+    : 0;
+  const companySalePrice = salePrice - shareSaleDiscount;
+
   const corporateTax = isCompanyOwned
     ? calculateCorporateTax({
-        salePrice,
+        salePrice: companySalePrice,
         saleCosts: saleCosts.saleCostsTotal,
         companyTaxBasis,
         otherDeductibleResult: companyOtherResult,
         corporateTaxRate: config.corporateTaxRate,
         classification: scenario.companyAssetClassification,
+        disposalTaxExempt: isShareSale,
       })
     : null;
 
@@ -272,7 +282,11 @@ function computeCore(
       : rental.netRentalCashPrivate
     : 0;
 
-  const profitBeforeTax = salePrice - totalProjectCost + rentalContribution;
+  // Vid paketering är det den rabatterade köpeskillingen ägarna faktiskt
+  // får ut, inte fastighetens fulla marknadsvärde — annars skulle vinsten
+  // som visas inte gå ihop med skatten som faktiskt räknats på den.
+  const profitBeforeTax =
+    (isCompanyOwned ? companySalePrice : salePrice) - totalProjectCost + rentalContribution;
 
   const companyTaxTotal = corporateTax ? corporateTax.companyTax : 0;
   const ownerExtractionTax = extraction ? extraction.ownerExtractionTax : 0;
