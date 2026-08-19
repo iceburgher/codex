@@ -89,12 +89,15 @@ body {
   box-shadow: var(--shadow-card);
 }
 
-/* Mörkt/grönt framhävt kort, som aktivitetskortet i referensen. */
+/*
+ * Framhävt kort. En fylld platta med vit text blir oläslig i mörkt läge, så
+ * markeringen är en ram i accentfärg — samma yta och samma textfärger som
+ * alla andra kort.
+ */
 .card-accent {
-  background: linear-gradient(150deg, var(--accent) 0%, var(--accent-strong) 100%);
-  color: #fff;
+  background: var(--surface);
   border-radius: var(--radius-card);
-  box-shadow: var(--shadow-card);
+  box-shadow: var(--shadow-card), inset 0 0 0 2px var(--accent);
 }
 
 .numeric {
@@ -131,8 +134,7 @@ select {
     box-shadow: none;
   }
   .card-accent {
-    background: #f0f3f0;
-    color: #1f2421;
+    box-shadow: inset 0 0 0 2px #9aab9d;
   }
   .print-block {
     break-inside: avoid;

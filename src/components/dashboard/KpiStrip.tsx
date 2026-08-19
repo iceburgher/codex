@@ -67,7 +67,6 @@ export function KpiStrip({
           <Sparkline
             values={cashCurve.slice().reverse()}
             className="h-8 w-20"
-            stroke="rgba(255,255,255,0.85)"
           />
         }
       />
@@ -91,13 +90,15 @@ function Tile({
   return (
     <div className={`${accent ? "card-accent" : "card"} flex items-center gap-4 p-5 print-block`}>
       <div className="min-w-0 flex-1">
-        <p className={`text-sm ${accent ? "text-white/75" : "text-muted"}`}>{label}</p>
-        <p className="numeric mt-1 truncate text-xl font-semibold tracking-tight">{value}</p>
-        {hint && (
-          <p className={`numeric mt-0.5 truncate text-xs ${accent ? "text-white/70" : "text-muted"}`}>
-            {hint}
-          </p>
-        )}
+        <p className="text-sm text-muted">{label}</p>
+        <p
+          className={`numeric mt-1 truncate text-xl font-semibold tracking-tight ${
+            accent ? "text-accent-strong" : ""
+          }`}
+        >
+          {value}
+        </p>
+        {hint && <p className="numeric mt-0.5 truncate text-xs text-muted">{hint}</p>}
       </div>
       <div className="shrink-0">{viz}</div>
     </div>

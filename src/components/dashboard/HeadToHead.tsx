@@ -174,12 +174,10 @@ function SideCard({
       <header className="mb-4 flex items-start justify-between gap-3">
         <div>
           <h3 className="text-lg font-semibold tracking-tight">{side.title}</h3>
-          <p className={`mt-1 text-xs leading-snug ${highlighted ? "text-white/70" : "text-muted"}`}>
-            {side.financing}
-          </p>
+          <p className="mt-1 text-xs leading-snug text-muted">{side.financing}</p>
         </div>
         {highlighted && (
-          <span className="shrink-0 rounded-full bg-white/20 px-3 py-1 text-[11px] font-semibold">
+          <span className="shrink-0 rounded-full bg-accent-soft px-3 py-1 text-[11px] font-semibold text-accent-strong">
             Ger mest
           </span>
         )}
@@ -195,31 +193,27 @@ function SideCard({
       ) : (
         <>
           <div className="mb-5">
-            <p className={`text-sm ${highlighted ? "text-white/75" : "text-muted"}`}>
-              Kvar till er efter skatt
-            </p>
+            <p className="text-sm text-muted">Kvar till er efter skatt</p>
             <p
               className={`numeric mt-1 text-[34px] font-semibold leading-none tracking-tight ${
-                !highlighted && r.familyNetWorth.familyNetWorthDeltaModeB < 0 ? "text-negative" : ""
+                r.familyNetWorth.familyNetWorthDeltaModeB < 0
+                  ? "text-negative"
+                  : highlighted
+                    ? "text-accent-strong"
+                    : ""
               }`}
             >
               {formatMoney(r.familyNetWorth.familyNetWorthDeltaModeB)}
             </p>
-            <p className={`mt-2 text-xs ${highlighted ? "text-white/70" : "text-muted"}`}>
-              Bästa varianten: {r.label}
-            </p>
+            <p className="mt-2 text-xs text-muted">Bästa varianten: {r.label}</p>
           </div>
 
-          <dl className={`space-y-2.5 text-sm ${highlighted ? "text-white/90" : ""}`}>
-            <Row dim={highlighted} label="Vinst efter skatt i projektet" value={formatMoney(r.profitAfterTax)} />
-            <Row dim={highlighted} label="Total skatt och avgifter" value={formatMoney(r.totalTax)} />
-            <Row dim={highlighted} label="Kapital som binds" value={formatMoney(r.cashFlow.peakCashRequirement)} />
-            <Row dim={highlighted} label="Avkastning" value={formatPercent(r.roi.equityROI)} />
-            <Row
-              dim={highlighted}
-              label="Nollpris vid försäljning"
-              value={formatMoney(r.breakEven.breakEvenSalePrice)}
-            />
+          <dl className="space-y-2.5 text-sm">
+            <Row label="Vinst efter skatt i projektet" value={formatMoney(r.profitAfterTax)} />
+            <Row label="Total skatt och avgifter" value={formatMoney(r.totalTax)} />
+            <Row label="Kapital som binds" value={formatMoney(r.cashFlow.peakCashRequirement)} />
+            <Row label="Avkastning" value={formatPercent(r.roi.equityROI)} />
+            <Row label="Nollpris vid försäljning" value={formatMoney(r.breakEven.breakEvenSalePrice)} />
           </dl>
         </>
       )}
@@ -276,10 +270,10 @@ function ExtractionRatePrompt({ onSet }: { onSet: (rate: number) => void }) {
   }
 }
 
-function Row({ label, value, dim }: { label: string; value: string; dim: boolean }) {
+function Row({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-baseline justify-between gap-3">
-      <dt className={dim ? "text-white/70" : "text-muted"}>{label}</dt>
+      <dt className="text-muted">{label}</dt>
       <dd className="numeric font-medium">{value}</dd>
     </div>
   );

@@ -83,29 +83,30 @@ export function ScenarioCards({
             <header className="mb-5 flex items-start justify-between gap-2">
               <h3 className="text-[15px] font-semibold leading-tight">{r.label}</h3>
               {i === best && (
-                <span className="shrink-0 rounded-full bg-white/20 px-3 py-1 text-[11px] font-semibold">
+                <span className="shrink-0 rounded-full bg-accent-soft px-3 py-1 text-[11px] font-semibold text-accent-strong">
                   Bäst
                 </span>
               )}
             </header>
 
             <div className="mb-5">
-              <p className={`text-sm ${i === best ? "text-white/75" : "text-muted"}`}>
-                Kvar till er efter skatt
-              </p>
+              <p className="text-sm text-muted">Kvar till er efter skatt</p>
               <p
                 className={`numeric mt-1 text-[26px] font-semibold leading-tight tracking-tight ${
-                  !blocked && r.netAvailablePrivately < 0 && i !== best ? "text-negative" : ""
+                  !blocked && r.netAvailablePrivately < 0
+                    ? "text-negative"
+                    : i === best
+                      ? "text-accent-strong"
+                      : ""
                 }`}
               >
                 {whenAssessable(blocked, () => formatMoney(r.netAvailablePrivately), placeholder)}
               </p>
             </div>
 
-            <dl className={`space-y-2.5 text-sm ${i === best ? "text-white/90" : ""}`}>
+            <dl className="space-y-2.5 text-sm">
               {isCompany && (
                 <Line
-                  dim={i === best}
                   label="Kvar i bolaget"
                   value={whenAssessable(r.salePriceMissing, () =>
                     formatMoney(r.netRetainedInCompany),
@@ -113,28 +114,21 @@ export function ScenarioCards({
                 />
               )}
               <Line
-                dim={i === best}
                 label="Avkastning"
                 value={whenAssessable(blocked, () => formatPercent(r.roi.equityROI), placeholder)}
               />
               <Line
-                dim={i === best}
                 label="Kapital som binds"
                 value={formatMoney(r.cashFlow.peakCashRequirement)}
               />
               <Line
-                dim={i === best}
                 label="Nollpris vid försäljning"
                 value={formatMoney(r.breakEven.breakEvenSalePrice)}
               />
             </dl>
 
             {redFlags > 0 && (
-              <p
-                className={`mt-5 rounded-full px-3.5 py-2 text-xs font-medium ${
-                  i === best ? "bg-white/20 text-white" : "bg-negative-soft text-negative"
-                }`}
-              >
+              <p className="mt-5 rounded-full bg-negative-soft px-3.5 py-2 text-xs font-medium text-negative">
                 {redFlags} {redFlags === 1 ? "fråga" : "frågor"} för skatterådgivare
               </p>
             )}
@@ -145,10 +139,10 @@ export function ScenarioCards({
   );
 }
 
-function Line({ label, value, dim }: { label: string; value: string; dim?: boolean }) {
+function Line({ label, value }: { label: string; value: string }) {
   return (
     <div className="flex items-baseline justify-between gap-3">
-      <dt className={dim ? "text-white/70" : "text-muted"}>{label}</dt>
+      <dt className="text-muted">{label}</dt>
       <dd className="numeric font-medium">{value}</dd>
     </div>
   );
