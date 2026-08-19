@@ -42,7 +42,8 @@ const UPDATE_TOOL: Anthropic.Tool = {
       },
       rental: {
         type: "object",
-        description: "Uthyrning under innehavstiden.",
+        description:
+          "Uthyrning under innehavstiden. Uthyrningen kan bara ske EFTER att renoveringen är klar (renoveringen tar upp till 6 av innehavstidens månader, eller hela innehavstiden om den är kortare) — den ryms alltså inte parallellt med renoveringen.",
         properties: {
           enabled: { type: "boolean" },
           rentedWeeks: { type: "number", description: "Antal uthyrningsveckor totalt." },

@@ -39,7 +39,10 @@ export function buildCashFlow(params: CashFlowParams): CashFlowResult {
   const runningPerMonth = params.runningCostAnnual / 12;
   const interestPerMonth = params.interestTotal / n;
   const amortPerMonth = params.amortizationAnnual / 12;
-  const rentalPerMonth = params.rentalIncomeTotal / n;
+  // Uthyrning kan inte börja förrän renoveringen är klar, så intäkten sprids
+  // bara över månaderna efter renoMonths — inte parallellt med den.
+  const rentalMonths = Math.max(0, n - renoMonths);
+  const rentalPerMonth = rentalMonths > 0 ? params.rentalIncomeTotal / rentalMonths : 0;
 
   let balance = 0;
   let debt = 0;
@@ -57,7 +60,7 @@ export function buildCashFlow(params: CashFlowParams): CashFlowResult {
     const renovationSpend = m >= 1 && m <= renoMonths ? renoPerMonth : 0;
     const runningCost = isMonthZero ? 0 : runningPerMonth;
     const interest = isMonthZero ? 0 : interestPerMonth;
-    const rentalIncome = isMonthZero ? 0 : rentalPerMonth;
+    const rentalIncome = m > renoMonths ? rentalPerMonth : 0;
     const saleIncome = isExit ? params.salePrice - params.saleCosts : 0;
     const taxes = isExit ? params.taxAtExit : 0;
     const scheduledAmortization = isMonthZero ? 0 : Math.min(amortPerMonth, Math.max(0, debt));

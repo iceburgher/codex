@@ -203,6 +203,32 @@ describe("cash flow", () => {
     const totalAmort = amortizing.months.reduce((s, m) => s + m.amortization, 0);
     expect(totalAmort).toBeCloseTo(120_000, 6);
   });
+
+  it("never books rental income during the renovation months", () => {
+    // A house being actively renovated cannot be rented out at the same
+    // time — renovationSpreadMonths is 6, so months 1-6 must show nothing.
+    const rented = buildCashFlow({ ...params, rentalIncomeTotal: 120_000 });
+    for (const m of rented.months.filter((m) => m.month >= 1 && m.month <= 6)) {
+      expect(m.rentalIncome).toBe(0);
+    }
+  });
+
+  it("spreads the full rental income only across the months after renovation", () => {
+    const rented = buildCashFlow({ ...params, rentalIncomeTotal: 120_000 });
+    const afterReno = rented.months.filter((m) => m.month > 6);
+    const total = afterReno.reduce((s, m) => s + m.rentalIncome, 0);
+    expect(total).toBeCloseTo(120_000, 6);
+    // 12-month project, 6 months of renovation, 6 months left to rent.
+    expect(afterReno[0].rentalIncome).toBeCloseTo(120_000 / 6, 6);
+  });
+
+  it("books no rental income at all when renovation consumes the whole holding period", () => {
+    const shortProject = { ...params, holdingPeriodMonths: 4, renovationSpreadMonths: 6 };
+    const rented = buildCashFlow({ ...shortProject, rentalIncomeTotal: 50_000 });
+    for (const m of rented.months) {
+      expect(m.rentalIncome).toBe(0);
+    }
+  });
 });
 
 describe("opportunity cost", () => {

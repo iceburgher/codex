@@ -111,6 +111,26 @@ describe("scenario engine", () => {
     expect(r.warnings.map((w) => w.id)).not.toContain("broker_fee");
   });
 
+  it("warns when the holding period leaves no time to rent out after renovation", () => {
+    const p = baseProject();
+    p.inputs.holdingPeriodMonths = 4; // shorter than the 6-month renovation assumption
+    p.rental.enabled = true;
+    p.rental.rentedWeeks = 8;
+    p.rental.rentPerWeek = 5_000;
+    const r = calculateScenario(p, "PRIVATE_EQUITY");
+    expect(r.warnings.map((w) => w.id)).toContain("rental_no_time_after_renovation");
+  });
+
+  it("does not warn about rental timing once the holding period leaves room after renovation", () => {
+    const p = baseProject();
+    p.inputs.holdingPeriodMonths = 12;
+    p.rental.enabled = true;
+    p.rental.rentedWeeks = 8;
+    p.rental.rentPerWeek = 5_000;
+    const r = calculateScenario(p, "PRIVATE_EQUITY");
+    expect(r.warnings.map((w) => w.id)).not.toContain("rental_no_time_after_renovation");
+  });
+
   it("deducts the broker fee from the profit shown, not just from a side panel", () => {
     const withFee = baseProject();
     withFee.sale.brokerFeePercent = 0.03;

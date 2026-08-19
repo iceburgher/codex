@@ -291,12 +291,18 @@ function computeCore(
     ? (companyFunding?.businessInterest ?? 0)
     : loans.netMortgageInterest + loans.netUnsecuredInterest;
 
+  // Uthyrning kan börja tidigast när renoveringen är klar, så det avgör
+  // både kassaflödets tidslinje (buildCashFlow) och om uthyrningen som är
+  // ifylld ens ryms inom innehavstiden (varningen nedan).
+  const renovationSpreadMonths = Math.max(1, Math.min(holdingPeriodMonths, 6));
+  const monthsAvailableForRental = Math.max(0, holdingPeriodMonths - renovationSpreadMonths);
+
   const cashFlow = buildCashFlow({
     holdingPeriodMonths,
     purchasePrice,
     purchaseCosts: purchaseTaxesFees + hiddenCostsTotal,
     renovationCashCost,
-    renovationSpreadMonths: Math.max(1, Math.min(holdingPeriodMonths, 6)),
+    renovationSpreadMonths,
     runningCostAnnual: runningCosts.totalAnnual,
     rentalIncomeTotal: project.rental.enabled ? rental.grossRentalIncome : 0,
     interestTotal,
@@ -352,6 +358,7 @@ function computeCore(
     dividendAllowanceExceeded:
       (dividend?.allowanceExceeded ?? false) ||
       (extraction ? extraction.aboveDividendAllowance > 0 : false),
+    monthsAvailableForRental,
   };
 
   return {

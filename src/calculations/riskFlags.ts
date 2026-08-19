@@ -15,6 +15,8 @@ export interface RiskContext {
   isCompanyOwned: boolean;
   vatDeductibleVat: number;
   dividendAllowanceExceeded: boolean;
+  /** Månader kvar av innehavstiden efter att renoveringen antas vara klar. */
+  monthsAvailableForRental: number;
 }
 
 export function buildRiskFlags(ctx: RiskContext): RiskFlag[] {
@@ -124,6 +126,13 @@ export function buildWarnings(params: {
 
   if (params.vatWarning) warnings.push({ id: "vat", text: params.vatWarning });
   if (params.rentalWarning) warnings.push({ id: "rental", text: params.rentalWarning });
+
+  if (ctx.project.rental.enabled && ctx.monthsAvailableForRental === 0) {
+    warnings.push({
+      id: "rental_no_time_after_renovation",
+      text: "Innehavstiden räcker inte till uthyrning efter att renoveringen antas vara klar. Uthyrningsintäkten räknas ändå in i resultatet, men kassaflödet visar den inte under några månader — förläng innehavstiden eller minska uthyrningen så det stämmer med verkligheten.",
+    });
+  }
 
   if (ctx.isCompanyOwned && ctx.scenario.privateUseLevel !== "none") {
     warnings.push({
