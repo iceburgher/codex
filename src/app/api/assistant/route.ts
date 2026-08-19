@@ -262,6 +262,11 @@ function scenarioPatchSchema(): Anthropic.Tool.InputSchema {
         description:
           "Bara bolagsägande: om bolaget köper fastigheten av ägaren själv eller någon närstående i stället för av en oberoende säljare. Måste ske till marknadsvärde — annars risk för uttagsbeskattning hos säljaren eller omräkning enligt korrigeringsregeln i IL 53 kap. Föreslå eller kommentera det här fältet utan att gissa att ett lågt pris är okej.",
       },
+      downPaymentRequirementPercent: {
+        type: "number",
+        description:
+          "Andel av köpeskillingen det primära lånet (bolån privat, företagslån i bolag) högst får täcka — kontantinsatsen. T.ex. 0.15 för 15 %, svensk standard för bolån. Resten kan finansieras med ett lån utan säkerhet (blancolån/ägarlån) lika gärna som med eget kapital — anta aldrig att kontantinsatsen måste vara kontanter.",
+      },
       improvementBasis: {
         type: "object",
         description:
@@ -385,6 +390,7 @@ const SCENARIO_SUBFIELD_LABELS: Record<string, string> = {
   buildingValueSharePercent: "andel av anskaffningsvärdet som är byggnad",
   annualDepreciationRatePercent: "värdeminskningsavdrag per år",
   purchasedFromRelatedParty: "bolaget köper av ägaren själv eller närstående",
+  downPaymentRequirementPercent: "krävd kontantinsats",
 };
 
 /** Översätter en punktad fältväg (t.ex. "rental.rentPerWeek") till vanlig svenska. */

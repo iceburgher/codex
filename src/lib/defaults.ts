@@ -210,6 +210,10 @@ export function defaultScenario(type: ScenarioType): ScenarioInputs {
     buildingValueSharePercent: 0,
     annualDepreciationRatePercent: 0,
     purchasedFromRelatedParty: false,
+    // Svenska bolåneregler: max 85 % belåningsgrad, dvs. minst 15 %
+    // kontantinsats. Ingen motsvarande lagreglering finns för företagslån,
+    // men samma utgångspunkt används tills en rådgivare säger annat.
+    downPaymentRequirementPercent: 0.15,
     improvementBasis: {
       fundamentalImprovementsPercent: 0,
       qualifyingRepairsAndMaintenancePercent: 0,

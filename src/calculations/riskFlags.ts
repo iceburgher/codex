@@ -1,4 +1,5 @@
 import type {
+  DownPaymentResult,
   PropertyProject,
   RiskFlag,
   ScenarioInputs,
@@ -15,6 +16,7 @@ export interface RiskContext {
   isCompanyOwned: boolean;
   vatDeductibleVat: number;
   vatPotentialAdjustmentRepayment: number;
+  downPayment: DownPaymentResult;
   dividendAllowanceExceeded: boolean;
   /** Månader kvar av innehavstiden efter att renoveringen antas vara klar. */
   monthsAvailableForRental: number;
@@ -43,6 +45,13 @@ export function buildRiskFlags(ctx: RiskContext): RiskFlag[] {
       id: "leasehold_ground_rent_missing",
       severity: "medium",
       text: "Huset står på tomträtt men ingen tomträttsavgäld är ifylld. Den kostnaden tillkommer varje år utöver fastighetsavgiften och kan vara betydande — fyll i under Driftkostnader.",
+    });
+  }
+  if (ctx.downPayment.primaryLoanExceedsCap) {
+    flags.push({
+      id: "mortgage_exceeds_down_payment_cap",
+      severity: "high",
+      text: `Det ${ctx.isCompanyOwned ? "planerade företagslånet" : "planerade bolånet"} täcker mer än vad kontantinsatsen (${(ctx.downPayment.downPaymentRequirementPercent * 100).toFixed(0)} % av köpeskillingen) tillåter. Resten måste finansieras på annat sätt — ett lån utan säkerhet (blancolån${ctx.isCompanyOwned ? " eller ägarlån" : ""}) duger lika bra som eget kapital${ctx.isCompanyOwned ? " (från bolaget eller aktieägartillskott)" : ""} — men det primära lånet ensamt räcker inte.`,
     });
   }
   if (project.inputs.existingMortgageDeeds === null) {

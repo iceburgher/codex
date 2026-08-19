@@ -425,6 +425,18 @@ export interface ScenarioInputs {
   improvementBasis: ImprovementTaxBasisInputs;
 
   /**
+   * Andel av köpeskillingen som INTE får finansieras med det primära lånet
+   * (bolån privat, företagslån i bolag) — kontantinsatsen. Standard 15 %
+   * (svenska bolåneregler, max 85 % belåningsgrad), men redigerbart eftersom
+   * kraven skiljer sig mellan långivare och är inte lagreglerade för
+   * företagslån. Kontantinsatsen i sig behöver inte vara kontanter — den kan
+   * finansieras med ett lån utan säkerhet (blancolån/ägarlån) lika gärna som
+   * med eget kapital (privat eller från bolaget); det här fältet styr bara
+   * hur stor del av köpeskillingen det primära lånet högst får täcka.
+   */
+  downPaymentRequirementPercent: number;
+
+  /**
    * Bara bolagsägande: sälja fastigheten direkt (tillgångsförsäljning,
    * beskattas i bolaget) eller paketera den och sälja aktierna i bolaget
    * (andelsförsäljning, skattefri enligt IL 25a om andelarna är
@@ -555,6 +567,23 @@ export interface PurchaseCostResult {
   newMortgageDeedTax: number;
   newMortgageDeedCost: number;
   totalPurchaseCosts: number;
+  audit: AuditTrail[];
+}
+
+/**
+ * Kontantinsatsen — den andel av köpeskillingen som inte får finansieras med
+ * det primära lånet (bolån privat, företagslån i bolag). Säger ingenting om
+ * VAD den finansieras med — det kan lika gärna vara ett lån utan säkerhet
+ * (blancolån/ägarlån) som eget kapital.
+ */
+export interface DownPaymentResult {
+  purchasePrice: number;
+  downPaymentRequirementPercent: number;
+  requiredDownPayment: number;
+  maxPrimaryLoan: number;
+  primaryLoanAmount: number;
+  primaryLoanExceedsCap: boolean;
+  shortfallAboveCap: number;
   audit: AuditTrail[];
 }
 
@@ -832,6 +861,7 @@ export interface ScenarioResult {
   scenario: ScenarioType;
   label: string;
   purchase: PurchaseCostResult;
+  downPayment: DownPaymentResult;
   renovation: RenovationResult;
   vat: VatResult;
   rot: RotResult;

@@ -68,6 +68,13 @@ export function ScenarioInputsPanel({
 
           <Collapsible title="Privata lån" defaultOpen={scenarioType === "PRIVATE_DEBT"}>
             <div className="space-y-3">
+              <PercentField
+                label="Krävd kontantinsats"
+                source="TAX_ADVISOR_INPUT"
+                hint="Andel av köpeskillingen bolånet högst får täcka (svensk standard 15 %). Resten — kontantinsatsen — kan finansieras med privatlånet eller lånet från eget bolag nedan lika gärna som med egna pengar."
+                value={scenario.downPaymentRequirementPercent}
+                onChange={(v) => set((s) => void (s.downPaymentRequirementPercent = v ?? 0))}
+              />
               <NumberField
                 label="Bolån"
                 suffix="kr"
@@ -196,6 +203,13 @@ export function ScenarioInputsPanel({
       {scenarioType === "EXISTING_COMPANY" && (
         <Collapsible title="Bolagets finansiering" defaultOpen>
           <div className="space-y-3">
+            <PercentField
+              label="Krävd kontantinsats"
+              source="TAX_ADVISOR_INPUT"
+              hint="Andel av köpeskillingen företagslånet högst får täcka. Ingen lagreglering som för privata bolån, men banker ställer ofta liknande krav. Resten — kontantinsatsen — kan finansieras med ägarlånet nedan lika gärna som med bolagets kassa eller aktieägartillskott."
+              value={scenario.downPaymentRequirementPercent}
+              onChange={(v) => set((s) => void (s.downPaymentRequirementPercent = v ?? 0))}
+            />
             <NumberField
               label="Pengar från bolagets kassa"
               suffix="kr"

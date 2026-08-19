@@ -100,6 +100,11 @@ const ROWS: Entry[] = [
 
   section("Finansiering"),
   row({
+    label: "Kontantinsats som krävs",
+    value: (r) => formatMoney(r.downPayment.requiredDownPayment),
+    audit: (r) => r.downPayment.audit,
+  }),
+  row({
     label: "Bolagets/privat befintliga kapital",
     value: (r) =>
       formatMoney(

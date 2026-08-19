@@ -6,6 +6,7 @@ import { calculateBenefitTax } from "@/calculations/benefitTax";
 import { calculatePropertyFee } from "@/calculations/operatingCosts";
 import { calculateRoi } from "@/calculations/roi";
 import { calculateCompanyFunding } from "@/calculations/fundingCompany";
+import { calculateDownPayment } from "@/calculations/downPayment";
 import type { CompanyFundingInputs, RentalInputs } from "@/types";
 
 describe("private capital gain", () => {
@@ -444,5 +445,53 @@ describe("company funding: owner loan", () => {
     expect(r.maxCashRequirement).toBe(1_000_000 + 200_000 + 3_000_000 + 2_000_000);
     // "debt" stays external-only — owner loan is itemized separately.
     expect(r.debt).toBe(3_000_000);
+  });
+});
+
+describe("down payment (kontantinsats)", () => {
+  it("caps the primary loan at 85% by default and flags nothing when respected", () => {
+    const r = calculateDownPayment({
+      purchasePrice: 4_000_000,
+      downPaymentRequirementPercent: 0.15,
+      primaryLoanAmount: 3_000_000, // 75% LTV, under the 85% cap
+    });
+    expect(r.requiredDownPayment).toBe(600_000);
+    expect(r.maxPrimaryLoan).toBe(3_400_000);
+    expect(r.primaryLoanExceedsCap).toBe(false);
+    expect(r.shortfallAboveCap).toBe(0);
+  });
+
+  it("flags and quantifies the shortfall when the primary loan alone exceeds the cap", () => {
+    const r = calculateDownPayment({
+      purchasePrice: 4_000_000,
+      downPaymentRequirementPercent: 0.15,
+      primaryLoanAmount: 3_800_000, // 95% LTV
+    });
+    expect(r.maxPrimaryLoan).toBe(3_400_000);
+    expect(r.primaryLoanExceedsCap).toBe(true);
+    expect(r.shortfallAboveCap).toBe(400_000);
+  });
+
+  it("respects a custom down-payment percentage instead of assuming 15%", () => {
+    const r = calculateDownPayment({
+      purchasePrice: 4_000_000,
+      downPaymentRequirementPercent: 0.3,
+      primaryLoanAmount: 3_000_000, // fine at 15%, but not at 30%
+    });
+    expect(r.requiredDownPayment).toBe(1_200_000);
+    expect(r.maxPrimaryLoan).toBe(2_800_000);
+    expect(r.primaryLoanExceedsCap).toBe(true);
+    expect(r.shortfallAboveCap).toBe(200_000);
+  });
+
+  it("never assumes what finances the down payment itself — only caps the primary loan", () => {
+    // A fully-covered purchase (no primary loan at all) trivially satisfies
+    // the cap regardless of whether the rest is a loan or equity.
+    const r = calculateDownPayment({
+      purchasePrice: 4_000_000,
+      downPaymentRequirementPercent: 0.15,
+      primaryLoanAmount: 0,
+    });
+    expect(r.primaryLoanExceedsCap).toBe(false);
   });
 });

@@ -857,3 +857,48 @@ describe("not_yet_determined is the default private classification", () => {
     expect(r.capitalGain.alternativeClassifications).toHaveLength(3);
   });
 });
+
+describe("down payment (kontantinsats)", () => {
+  it("defaults to 15% and does not flag a reasonably sized mortgage", () => {
+    const p = baseProject();
+    // 2 500 000 / 3 600 000 ≈ 69% LTV, well under the 85% cap.
+    const r = calculateScenario(p, "PRIVATE_DEBT");
+    expect(p.scenarios.PRIVATE_DEBT.downPaymentRequirementPercent).toBe(0.15);
+    expect(r.downPayment.requiredDownPayment).toBeCloseTo(3_600_000 * 0.15, 4);
+    expect(r.riskFlags.map((f) => f.id)).not.toContain("mortgage_exceeds_down_payment_cap");
+  });
+
+  it("flags a private mortgage that alone exceeds what the down payment requirement allows", () => {
+    const p = baseProject();
+    p.scenarios.PRIVATE_DEBT.privateLoans.mortgageAmount = 3_600_000; // 100% LTV
+    const r = calculateScenario(p, "PRIVATE_DEBT");
+    const flag = r.riskFlags.find((f) => f.id === "mortgage_exceeds_down_payment_cap");
+    expect(flag?.severity).toBe("high");
+    expect(r.downPayment.primaryLoanExceedsCap).toBe(true);
+    expect(r.downPayment.shortfallAboveCap).toBeCloseTo(3_600_000 - 3_600_000 * 0.85, 4);
+  });
+
+  it("flags a company (externalBusinessLoan) exceeding the cap the same way as a private mortgage", () => {
+    const p = baseProject();
+    p.scenarios.EXISTING_COMPANY.companyFunding.externalBusinessLoan = 3_600_000; // 100% LTV
+    const r = calculateScenario(p, "EXISTING_COMPANY");
+    expect(r.riskFlags.map((f) => f.id)).toContain("mortgage_exceeds_down_payment_cap");
+    expect(r.downPayment.primaryLoanExceedsCap).toBe(true);
+  });
+
+  it("respects a custom down-payment percentage instead of the 15% default", () => {
+    const p = baseProject();
+    // 2 500 000 / 3 600 000 ≈ 69% LTV — fine at 15%, but not once the
+    // required contribution is raised to 40%.
+    p.scenarios.PRIVATE_DEBT.downPaymentRequirementPercent = 0.4;
+    const r = calculateScenario(p, "PRIVATE_DEBT");
+    expect(r.riskFlags.map((f) => f.id)).toContain("mortgage_exceeds_down_payment_cap");
+  });
+
+  it("never flags a company scenario for a private mortgage amount, and vice versa", () => {
+    const p = baseProject();
+    p.scenarios.PRIVATE_DEBT.privateLoans.mortgageAmount = 3_600_000; // would violate privately
+    const r = calculateScenario(p, "EXISTING_COMPANY");
+    expect(r.riskFlags.map((f) => f.id)).not.toContain("mortgage_exceeds_down_payment_cap");
+  });
+});

@@ -12,6 +12,7 @@ import { calculateBreakEven } from "./breakEven";
 import { buildCashFlow } from "./cashFlow";
 import { calculatePrivateCapitalGain } from "./capitalGain";
 import { calculateCorporateTax } from "./corporateTax";
+import { calculateDownPayment } from "./downPayment";
 import { calculateDividendGrossUp } from "./dividend";
 import { calculateExtraction } from "./extraction";
 import { calculateCompanyFunding } from "./fundingCompany";
@@ -142,6 +143,16 @@ function computeCore(
     titleRegistrationFee: config.titleRegistrationFee,
     mortgageDeedTaxRate: config.mortgageDeedTaxRate,
     mortgageDeedAdminFee: config.mortgageDeedAdminFee,
+  });
+
+  // Kontantinsatsen: hur mycket av köpeskillingen det primära lånet (bolån
+  // privat, företagslån i bolag) högst får täcka. Säger inget om vad resten
+  // finansieras med — det kan vara ett lån utan säkerhet lika gärna som
+  // eget kapital, se riskFlags.ts.
+  const downPayment = calculateDownPayment({
+    purchasePrice,
+    downPaymentRequirementPercent: scenario.downPaymentRequirementPercent,
+    primaryLoanAmount: securedDebt,
   });
 
   const hiddenCostsTotal = project.hiddenCosts
@@ -531,6 +542,7 @@ function computeCore(
     scenarioType,
     vatDeductibleVat: vat.deductibleVat,
     vatPotentialAdjustmentRepayment: vat.potentialAdjustmentRepayment,
+    downPayment,
     dividendAllowanceExceeded:
       (dividend?.allowanceExceeded ?? false) ||
       (extraction ? extraction.aboveDividendAllowance > 0 : false),
@@ -539,6 +551,7 @@ function computeCore(
 
   return {
     purchase,
+    downPayment,
     renovation,
     vat,
     rot,

@@ -130,6 +130,7 @@ const scenarioSchema = z.object({
   buildingValueSharePercent: z.number().optional(),
   annualDepreciationRatePercent: z.number().optional(),
   purchasedFromRelatedParty: z.boolean().optional(),
+  downPaymentRequirementPercent: z.number().optional(),
   improvementBasis: z.object({
     fundamentalImprovementsPercent: z.number(),
     qualifyingRepairsAndMaintenancePercent: z.number(),
