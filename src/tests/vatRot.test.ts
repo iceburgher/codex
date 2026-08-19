@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { RESIDENTIAL_VAT_WARNING, calculateVat, calculateVatLine, extractVat } from "@/calculations/vat";
+import {
+  RESIDENTIAL_VAT_WARNING,
+  VAT_ADJUSTMENT_PERIOD_MONTHS,
+  calculateVat,
+  calculateVatLine,
+  extractVat,
+} from "@/calculations/vat";
 import { calculateRot } from "@/calculations/rot";
 import { calculateImprovementBasis } from "@/calculations/improvementBasis";
 import type { RotInputs, VatInputs } from "@/types";
@@ -43,11 +49,13 @@ describe("VAT module", () => {
       vat: noVat,
       defaultVatRate: 0.25,
       isCompanyOwned: true,
+      holdingPeriodMonths: 12,
     });
     expect(r.deductibleVat).toBe(0);
     expect(r.trueCashCost).toBe(1_000_000);
     expect(r.nonDeductibleVat).toBeCloseTo(200_000, 6);
     expect(r.warning).toBeUndefined();
+    expect(r.potentialAdjustmentRepayment).toBe(0);
   });
 
   it("warns when a company scenario claims VAT deduction", () => {
@@ -56,6 +64,7 @@ describe("VAT module", () => {
       vat: vat({ vatTreatment: "full", vatDeductiblePercent: 1 }),
       defaultVatRate: 0.25,
       isCompanyOwned: true,
+      holdingPeriodMonths: 12,
     });
     expect(r.deductibleVat).toBeCloseTo(200_000, 6);
     expect(r.trueCashCost).toBeCloseTo(800_000, 6);
@@ -72,9 +81,36 @@ describe("VAT module", () => {
       }),
       defaultVatRate: 0.25,
       isCompanyOwned: true,
+      holdingPeriodMonths: 12,
     });
     expect(r.deductibleVat).toBeCloseTo(50_000, 6);
     expect(r.trueCashCost).toBeCloseTo(950_000, 6);
+  });
+
+  it("flags a potential jämkning repayment when the sale happens well within the ten-year period", () => {
+    const r = calculateVat({
+      renovationTotalGross: 1_000_000,
+      vat: vat({ vatTreatment: "full", vatDeductiblePercent: 1 }),
+      defaultVatRate: 0.25,
+      isCompanyOwned: true,
+      holdingPeriodMonths: 12,
+    });
+    expect(r.adjustmentPeriodMonths).toBe(VAT_ADJUSTMENT_PERIOD_MONTHS);
+    expect(r.monthsRemainingInAdjustmentPeriod).toBe(108);
+    // 200 000 kr avdragen moms * 108/120 kvarvarande månader
+    expect(r.potentialAdjustmentRepayment).toBeCloseTo(180_000, 6);
+  });
+
+  it("has no jämkning risk once the ten-year correction period has passed", () => {
+    const r = calculateVat({
+      renovationTotalGross: 1_000_000,
+      vat: vat({ vatTreatment: "full", vatDeductiblePercent: 1 }),
+      defaultVatRate: 0.25,
+      isCompanyOwned: true,
+      holdingPeriodMonths: 120,
+    });
+    expect(r.monthsRemainingInAdjustmentPeriod).toBe(0);
+    expect(r.potentialAdjustmentRepayment).toBe(0);
   });
 });
 

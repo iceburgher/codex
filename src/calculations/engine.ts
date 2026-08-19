@@ -76,6 +76,7 @@ function computeCore(
     vat: scenario.vat,
     defaultVatRate: DEFAULT_VAT_RATE,
     isCompanyOwned,
+    holdingPeriodMonths,
   });
 
   const rot = calculateRot({
@@ -401,6 +402,7 @@ function computeCore(
     isCompanyOwned,
     scenarioType,
     vatDeductibleVat: vat.deductibleVat,
+    vatPotentialAdjustmentRepayment: vat.potentialAdjustmentRepayment,
     dividendAllowanceExceeded:
       (dividend?.allowanceExceeded ?? false) ||
       (extraction ? extraction.aboveDividendAllowance > 0 : false),

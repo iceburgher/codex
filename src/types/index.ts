@@ -511,6 +511,12 @@ export interface VatResult {
   nonDeductibleVat: number;
   trueCashCost: number;
   warning?: string;
+  /** Korrigeringstiden för momsjämkning på fastighetsinvesteringar (120 månader). */
+  adjustmentPeriodMonths: number;
+  /** Hur många av de 120 månaderna som återstår vid den planerade försäljningen. */
+  monthsRemainingInAdjustmentPeriod: number;
+  /** Andel av avdragen moms som riskerar att behöva betalas tillbaka om användningen ändras inom korrigeringstiden. */
+  potentialAdjustmentRepayment: number;
   audit: AuditTrail[];
 }
 

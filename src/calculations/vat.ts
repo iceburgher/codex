@@ -3,6 +3,9 @@ import type { VatInputs, VatResult } from "@/types";
 export const RESIDENTIAL_VAT_WARNING =
   "Momsavdrag på bostad kräver särskilt stöd i skattereglerna. Stäm av med skatterådgivare.";
 
+/** Korrigeringstiden för jämkning av moms på fastighetsinvesteringar (10 år). */
+export const VAT_ADJUSTMENT_PERIOD_MONTHS = 120;
+
 /** VAT embedded in a gross (VAT-inclusive) amount. */
 export function extractVat(grossAmount: number, vatRate: number): number {
   if (vatRate <= -1) return 0;
@@ -29,6 +32,8 @@ export function calculateVat(params: {
   vat: VatInputs;
   defaultVatRate: number;
   isCompanyOwned: boolean;
+  /** Innehavstid i månader — avgör hur mycket av 10-årsperioden som är kvar vid försäljning. */
+  holdingPeriodMonths: number;
 }): VatResult {
   const { renovationTotalGross, vat, defaultVatRate } = params;
 
@@ -57,6 +62,26 @@ export function calculateVat(params: {
   const warning =
     deductibleVat > 0 && params.isCompanyOwned ? RESIDENTIAL_VAT_WARNING : undefined;
 
+  // Jämkning: dras moms av på en fastighetsinvestering och användningen ändras
+  // inom tioårsperioden — vanligast genom att fastigheten säljs — kan en andel
+  // av den avdragna momsen, motsvarande återstående tid, behöva betalas
+  // tillbaka. Det här är en potentiell risk, inte en säker kostnad (den beror
+  // på köparens fortsatta användning), så den dras aldrig av från vinsten här.
+  const monthsRemainingInAdjustmentPeriod = Math.max(
+    0,
+    VAT_ADJUSTMENT_PERIOD_MONTHS - params.holdingPeriodMonths,
+  );
+  const potentialAdjustmentRepayment =
+    deductibleVat * (monthsRemainingInAdjustmentPeriod / VAT_ADJUSTMENT_PERIOD_MONTHS);
+
+  const adjustmentAuditLines =
+    deductibleVat > 0 && monthsRemainingInAdjustmentPeriod > 0
+      ? [
+          { label: "Kvar av tioårig jämkningstid", value: monthsRemainingInAdjustmentPeriod },
+          { label: "Möjlig återbetalning vid jämkning", value: potentialAdjustmentRepayment },
+        ]
+      : [];
+
   return {
     grossAmount: renovationTotalGross,
     vatIncluded,
@@ -64,6 +89,9 @@ export function calculateVat(params: {
     nonDeductibleVat,
     trueCashCost,
     warning,
+    adjustmentPeriodMonths: VAT_ADJUSTMENT_PERIOD_MONTHS,
+    monthsRemainingInAdjustmentPeriod,
+    potentialAdjustmentRepayment,
     audit: [
       {
         title: "Moms på renovering",
@@ -74,6 +102,7 @@ export function calculateVat(params: {
           { label: "Avdragsgill moms", value: deductibleVat },
           { label: "Ej avdragsgill moms", value: nonDeductibleVat },
           { label: "Verklig kostnad", value: trueCashCost },
+          ...adjustmentAuditLines,
         ],
       },
     ],

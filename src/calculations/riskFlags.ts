@@ -14,6 +14,7 @@ export interface RiskContext {
   scenarioType: ScenarioType;
   isCompanyOwned: boolean;
   vatDeductibleVat: number;
+  vatPotentialAdjustmentRepayment: number;
   dividendAllowanceExceeded: boolean;
   /** Månader kvar av innehavstiden efter att renoveringen antas vara klar. */
   monthsAvailableForRental: number;
@@ -109,6 +110,13 @@ export function buildRiskFlags(ctx: RiskContext): RiskFlag[] {
       id: "vat_deduction_claimed_on_residence",
       severity: "high",
       text: "Ni drar av moms på renovering av en bostad. Det är sällan tillåtet och behöver stämmas av.",
+    });
+  }
+  if (ctx.vatPotentialAdjustmentRepayment > 0) {
+    flags.push({
+      id: "vat_adjustment_risk",
+      severity: "high",
+      text: "Ni har dragit av moms på investeringen. Om fastighetens användning ändras inom tio år efter renoveringen — vanligast genom att den säljs till någon som inte fortsätter med momspliktig verksamhet — kan en del av den avdragna momsen behöva betalas tillbaka (jämkning). Den möjliga återbetalningen räknas fram utifrån hur mycket av tioårsperioden som återstår, men dras inte av från vinsten här eftersom det beror på köparens fortsatta användning.",
     });
   }
   if (ctx.dividendAllowanceExceeded) {
