@@ -204,10 +204,13 @@ Tre typer av meddelanden:
 
 Var tydlig när en fråga egentligen kräver en skatterådgivare — gissa aldrig på skatteklassificeringar.`;
 
-const CONSEQUENCE_SYSTEM_PROMPT = `Du föreslog nyss en ändring av projektets antaganden. Ett verktygssvar visar om den gick att tillämpa, och om den gjorde det, de omräknade siffrorna efteråt.
-Förklara kort vad ändringen faktiskt betyder: vilka av de jämförda alternativen som påverkas och hur, jämfört med innan. Använd bara talen i verktygssvaret — hitta aldrig på egna. Skriv i korta stycken (2-4 meningar) med tom rad mellan om det är mer än en sak att säga.
-Om verktygssvaret säger att ändringen inte gick att tillämpa: förklara det tydligt och fråga vad som menades i stället för att låtsas att något hände.
-Svara aldrig bara "Uppdaterat" eller liknande utan att förklara konsekvensen.`;
+const CONSEQUENCE_SYSTEM_PROMPT = `Ändringen du föreslog är redan gjord (eller avvisad) och användaren har redan sett exakt vilka fält som ändrades — det behöver du inte upprepa eller kommentera. Nästa meddelande ger dig de nya, omräknade siffrorna att utgå från.
+
+Skriv som att du redan känner till dessa siffror — aldrig något om HUR de togs fram. Nämn aldrig ord som "verktyg", "verktygssvar", "anropet" eller att något "tillämpades" — det är teknisk bakgrund som inte hör hemma i ett samtal. Gå rakt på sak: vilka av de jämförda alternativen påverkas och hur, jämfört med innan. Använd bara talen som skickas med — hitta aldrig på egna.
+
+Om nästa meddelande säger att fälten inte gick att koppla till projektet: säg kort att du inte lyckades göra ändringen och fråga vad som menades — utan att förklara varför, bara vad du behöver för att försöka igen.
+
+Skriv i korta stycken (2-4 meningar) med tom rad mellan om det är mer än en sak att säga.`;
 
 const FIELD_LABELS: Record<string, string> = {
   name: "projektnamn",
@@ -370,8 +373,8 @@ export async function POST(request: Request) {
 
     const toolResultContent =
       changed.length > 0
-        ? `Ändringen tillämpades. ${statusLine}\n\nNya siffror efter ändringen:\n\n${buildContext(patched, patchedResults)}`
-        : `${statusLine} Fälten i förslaget matchade inget i projektets nuvarande struktur.`;
+        ? buildContext(patched, patchedResults)
+        : "Inget av fälten gick att koppla till projektets nuvarande struktur — fråga användaren vad som menades.";
 
     const secondPass = await client.messages.create({
       model: ASSISTANT_MODEL,

@@ -34,6 +34,7 @@ export function AiAssistant({
   project: PropertyProject;
   update: (updater: (draft: PropertyProject) => void) => void;
 }) {
+  const [open, setOpen] = useState(true);
   const [draft, setDraft] = useState("");
   const [sending, setSending] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
@@ -53,7 +54,7 @@ export function AiAssistant({
     if (el && stickToBottomRef.current) {
       el.scrollTop = el.scrollHeight;
     }
-  }, [project.aiChat.length, sending]);
+  }, [project.aiChat.length, sending, open]);
 
   async function send() {
     const text = draft.trim();
@@ -98,79 +99,95 @@ export function AiAssistant({
 
   return (
     <section className="card print-block flex flex-col overflow-hidden">
-      <header className="flex items-center justify-between border-b border-border px-5 py-4">
-        <div>
-          <h2 className="text-lg font-semibold tracking-tight">Chat</h2>
-          <p className="mt-0.5 text-xs text-muted">
-            Svarar på frågor om kalkylen och kan ändra antaganden åt er
-          </p>
-        </div>
-        {project.aiChat.length > 0 && (
+      <header
+        className={`flex items-center justify-between px-5 py-4 ${open ? "border-b border-border" : ""}`}
+      >
+        <button
+          type="button"
+          onClick={() => setOpen((v) => !v)}
+          className="flex min-w-0 flex-1 items-center gap-2 text-left"
+          aria-expanded={open}
+        >
+          <span className="text-muted">{open ? "▾" : "▸"}</span>
+          <span className="min-w-0">
+            <span className="block text-lg font-semibold tracking-tight">Chat</span>
+            <span className="mt-0.5 block text-xs text-muted">
+              Svarar på frågor om kalkylen och kan ändra antaganden åt er
+            </span>
+          </span>
+        </button>
+        {open && project.aiChat.length > 0 && (
           <button
             type="button"
             onClick={() => update((d) => void (d.aiChat = []))}
-            className="no-print shrink-0 rounded-full px-3 py-1.5 text-xs font-medium text-muted hover:bg-surface-muted hover:text-foreground"
+            className="no-print ml-3 shrink-0 rounded-full px-3 py-1.5 text-xs font-medium text-muted hover:bg-surface-muted hover:text-foreground"
           >
             Rensa chatt
           </button>
         )}
       </header>
 
-      <div
-        ref={listRef}
-        onScroll={handleScroll}
-        className="h-80 space-y-3 overflow-y-auto px-5 py-4"
-      >
-        {project.aiChat.length === 0 && (
-          <p className="text-sm leading-relaxed text-muted">
-            Fråga vad som helst om siffrorna, eller föreslå en ändring — till exempel &quot;vad
-            händer om vi hyr ut för 25 000 kr i månaden, 8 veckor om året?&quot; eller &quot;höj
-            lånet till 3,2 miljoner&quot;. Svaret bygger bara på det ni själva fyllt i, inte
-            skatterådgivning.
-          </p>
-        )}
-        {project.aiChat.map((m, i) => (
+      {open && (
+        <>
           <div
-            key={i}
-            className={`max-w-[85%] space-y-2.5 rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed ${
-              m.role === "user" ? "ml-auto bg-ink text-white" : "bg-surface-muted"
-            }`}
+            ref={listRef}
+            onScroll={handleScroll}
+            className="h-80 space-y-3 overflow-y-auto px-5 py-4"
           >
-            {paragraphsOf(m.text).map((paragraph, j) => (
-              <p key={j}>{paragraph}</p>
+            {project.aiChat.length === 0 && (
+              <p className="text-sm leading-relaxed text-muted">
+                Fråga vad som helst om siffrorna, eller föreslå en ändring — till exempel &quot;vad
+                händer om vi hyr ut för 25 000 kr i månaden, 8 veckor om året?&quot; eller &quot;höj
+                lånet till 3,2 miljoner&quot;. Svaret bygger bara på det ni själva fyllt i, inte
+                skatterådgivning.
+              </p>
+            )}
+            {project.aiChat.map((m, i) => (
+              <div
+                key={i}
+                className={`max-w-[85%] space-y-2.5 rounded-2xl px-3.5 py-2.5 text-sm leading-relaxed ${
+                  m.role === "user" ? "ml-auto bg-ink text-white" : "bg-surface-muted"
+                }`}
+              >
+                {paragraphsOf(m.text).map((paragraph, j) => (
+                  <p key={j}>{paragraph}</p>
+                ))}
+              </div>
             ))}
+            {sending && (
+              <div className="max-w-[85%] rounded-2xl bg-surface-muted px-3.5 py-2.5 text-sm text-muted">
+                Tänker…
+              </div>
+            )}
           </div>
-        ))}
-        {sending && (
-          <div className="max-w-[85%] rounded-2xl bg-surface-muted px-3.5 py-2.5 text-sm text-muted">
-            Tänker…
-          </div>
-        )}
-      </div>
 
-      {notice && <p className="border-t border-border px-5 py-2.5 text-sm text-negative">{notice}</p>}
+          {notice && (
+            <p className="border-t border-border px-5 py-2.5 text-sm text-negative">{notice}</p>
+          )}
 
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          void send();
-        }}
-        className="no-print flex items-center gap-2 border-t border-border p-4"
-      >
-        <input
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          placeholder="Skriv ett meddelande…"
-          className="flex-1 rounded-full bg-surface-muted px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-accent/40"
-        />
-        <button
-          type="submit"
-          disabled={sending || !draft.trim()}
-          className="shrink-0 rounded-full bg-ink px-5 py-2.5 text-xs font-medium text-white hover:opacity-90 disabled:opacity-50"
-        >
-          Skicka
-        </button>
-      </form>
+          <form
+            onSubmit={(e) => {
+              e.preventDefault();
+              void send();
+            }}
+            className="no-print flex items-center gap-2 border-t border-border p-4"
+          >
+            <input
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
+              placeholder="Skriv ett meddelande…"
+              className="flex-1 rounded-full bg-surface-muted px-4 py-2.5 text-sm outline-none focus:ring-2 focus:ring-accent/40"
+            />
+            <button
+              type="submit"
+              disabled={sending || !draft.trim()}
+              className="shrink-0 rounded-full bg-ink px-5 py-2.5 text-xs font-medium text-white hover:opacity-90 disabled:opacity-50"
+            >
+              Skicka
+            </button>
+          </form>
+        </>
+      )}
     </section>
   );
 }
