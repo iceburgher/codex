@@ -14,7 +14,8 @@ describe("private capital gain", () => {
     eligiblePurchaseCosts: 54_825,
     eligibleImprovementCosts: 900_000,
     privateResidentialEffectiveRate: 0.22,
-    fallbackRate: 0.3,
+    businessPropertyEffectiveRate: 0.27,
+    propertyTradingRateAssumption: 0.5,
   };
 
   it("applies 22% only for an explicit private residential classification", () => {
@@ -27,12 +28,20 @@ describe("private capital gain", () => {
     expect(r.capitalGainTax).toBeCloseTo(273_938.5, 4);
   });
 
-  it("does not apply 22% to a trading-risk classification", () => {
+  it("applies 27% (IL 45:33, 90% i kapital) for a business property, not the residential rate", () => {
+    const r = calculatePrivateCapitalGain({
+      ...base,
+      classification: "business_property",
+    });
+    expect(r.capitalGainTax).toBeCloseTo(1_245_175 * 0.27, 4);
+  });
+
+  it("does not apply 22% or 27% to a trading-risk classification", () => {
     const r = calculatePrivateCapitalGain({
       ...base,
       classification: "property_trading_inventory_risk",
     });
-    expect(r.capitalGainTax).toBeCloseTo(1_245_175 * 0.3, 4);
+    expect(r.capitalGainTax).toBeCloseTo(1_245_175 * 0.5, 4);
   });
 
   it("never taxes a loss", () => {

@@ -189,7 +189,8 @@ function computeCore(
     eligibleImprovementCosts: improvementBasis.eligibleTaxBasis,
     classification: scenario.privatePropertyTaxClassification,
     privateResidentialEffectiveRate: config.privateResidentialCapitalGainEffectiveRate,
-    fallbackRate: config.capitalIncomeTaxRate,
+    businessPropertyEffectiveRate: config.businessPropertyCapitalGainEffectiveRate,
+    propertyTradingRateAssumption: config.propertyTradingEffectiveRateAssumption,
   });
 
   const companyTaxBasis = purchasePrice + purchase.totalPurchaseCosts + renovationCashCost;

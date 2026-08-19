@@ -69,6 +69,26 @@ describe("scenario engine", () => {
     expect(residential.capitalGain.capitalGainTax).toBeLessThan(risky.capitalGain.capitalGainTax);
   });
 
+  it("taxes a business property at 27%, not the residential 22% or the trading-risk assumption", () => {
+    const p = baseProject();
+    p.scenarios.PRIVATE_EQUITY.privatePropertyTaxClassification = "business_property";
+    const business = calculateScenario(p, "PRIVATE_EQUITY");
+    p.scenarios.PRIVATE_EQUITY.privatePropertyTaxClassification = "private_residential_property";
+    const residential = calculateScenario(p, "PRIVATE_EQUITY");
+    p.scenarios.PRIVATE_EQUITY.privatePropertyTaxClassification = "property_trading_inventory_risk";
+    const trading = calculateScenario(p, "PRIVATE_EQUITY");
+
+    expect(business.capitalGain.capitalGainTax).toBeGreaterThan(residential.capitalGain.capitalGainTax);
+    expect(business.capitalGain.capitalGainTax).toBeLessThan(trading.capitalGain.capitalGainTax);
+  });
+
+  it("flags handel med fastigheter as taxed like business income, not a capital gain", () => {
+    const p = baseProject();
+    p.scenarios.PRIVATE_EQUITY.privatePropertyTaxClassification = "property_trading_inventory_risk";
+    const r = calculateScenario(p, "PRIVATE_EQUITY");
+    expect(r.riskFlags.map((f) => f.id)).toContain("property_trading_not_capital_gain");
+  });
+
   it("recognizes qualifying repairs in the capital-gains basis, not just fundamental improvements", () => {
     // Regression for a real bug: qualifyingRepairsAndMaintenancePercent was
     // defined on the type but never read by any calculation, so a large

@@ -23,6 +23,20 @@ const FIELDS: Field[] = [
     source: "VERIFIED",
     hint: "Används bara när fastigheten uttryckligen klassats som privatbostad.",
   },
+  {
+    key: "businessPropertyCapitalGainEffectiveRate",
+    label: "Kapitalvinstskatt näringsfastighet",
+    kind: "percent",
+    source: "VERIFIED",
+    hint: "90 % av vinsten tas upp i kapital (IL 45:33) — används när fastigheten klassats som näringsfastighet.",
+  },
+  {
+    key: "propertyTradingEffectiveRateAssumption",
+    label: "Skattesats vid handel med fastigheter",
+    kind: "percent",
+    source: "TAX_ADVISOR_INPUT",
+    hint: "Ingen fast sats — det här är näringsverksamhet, inte kapitalvinst. Grov uppskattning tills en rådgivare bekräftat er faktiska nivå.",
+  },
   { key: "capitalIncomeTaxRate", label: "Kapitalskatt", kind: "percent", source: "VERIFIED" },
   {
     key: "dividendTaxWithinAllowance",

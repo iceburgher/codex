@@ -7,10 +7,16 @@ const CLASSIFICATION_LABELS: Record<PrivatePropertyTaxClassification, string> = 
 };
 
 /**
- * Private capital gain. The 22% effective residential rate is applied ONLY
- * when the user has explicitly classified the property as a private
- * residential property. Other classifications fall back to a user-supplied
- * rate, defaulting to the full capital income rate, and are flagged.
+ * Private capital gain. Skattesatsen beror på klassificeringen:
+ *
+ * - Privatbostad: 22 % effektiv skatt (schablonmässigt 22/30 av vinsten,
+ *   VERIFIED).
+ * - Näringsfastighet: 27 % effektiv skatt (IL 45:33 — 90 % av vinsten tas
+ *   upp i kapital, dvs 0,9 x kapitalinkomstskatten, VERIFIED).
+ * - Risk för handel med fastigheter: hamnar inte i kapitalvinst alls, utan
+ *   i inkomstslaget näringsverksamhet — progressiv kommunal/statlig skatt
+ *   plus egenavgifter. Det finns ingen fast sats, så den här grenen använder
+ *   en tydligt flaggad uppskattning i stället för att låtsas veta exakt.
  */
 export function calculatePrivateCapitalGain(params: {
   salePrice: number;
@@ -20,7 +26,8 @@ export function calculatePrivateCapitalGain(params: {
   eligibleImprovementCosts: number;
   classification: PrivatePropertyTaxClassification;
   privateResidentialEffectiveRate: number;
-  fallbackRate: number;
+  businessPropertyEffectiveRate: number;
+  propertyTradingRateAssumption: number;
 }): CapitalGainResult {
   const taxBasis =
     params.purchasePrice + params.eligiblePurchaseCosts + params.eligibleImprovementCosts;
@@ -29,7 +36,9 @@ export function calculatePrivateCapitalGain(params: {
   const rate =
     params.classification === "private_residential_property"
       ? params.privateResidentialEffectiveRate
-      : params.fallbackRate;
+      : params.classification === "business_property"
+        ? params.businessPropertyEffectiveRate
+        : params.propertyTradingRateAssumption;
 
   const capitalGainTax = Math.max(0, capitalGain) * rate;
 
@@ -42,9 +51,11 @@ export function calculatePrivateCapitalGain(params: {
       {
         title: "Kapitalvinst privat",
         source:
-          params.classification === "private_residential_property"
-            ? "VERIFIED"
-            : "TAX_ADVISOR_INPUT",
+          params.classification === "property_trading_inventory_risk"
+            ? "ESTIMATE"
+            : params.classification === "private_residential_property"
+              ? "VERIFIED"
+              : "TAX_ADVISOR_INPUT",
         lines: [
           { label: "Försäljningspris", value: params.salePrice },
           { label: "Försäljningskostnader", value: -params.saleCosts },
@@ -53,8 +64,14 @@ export function calculatePrivateCapitalGain(params: {
           { label: "Avdragsgilla förbättringar", value: -params.eligibleImprovementCosts },
           { label: "Kapitalvinst", value: capitalGain },
           { label: "Klassificering", value: CLASSIFICATION_LABELS[params.classification] },
-          { label: "Skattesats", value: `${(rate * 100).toFixed(1).replace(".", ",")} %` },
-          { label: "Kapitalvinstskatt", value: capitalGainTax },
+          {
+            label:
+              params.classification === "property_trading_inventory_risk"
+                ? "Skattesats (grov uppskattning — näringsverksamhet, inte kapitalvinst)"
+                : "Skattesats",
+            value: `${(rate * 100).toFixed(1).replace(".", ",")} %`,
+          },
+          { label: "Skatt", value: capitalGainTax },
         ],
       },
     ],

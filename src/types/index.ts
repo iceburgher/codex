@@ -74,6 +74,15 @@ export interface TaxConfig {
   taxYear: number;
   corporateTaxRate: number;
   privateResidentialCapitalGainEffectiveRate: number;
+  /** IL 45:33 — 90 % av vinsten på en näringsfastighet tas upp i kapital: 0,9 x kapitalIncomeTaxRate. */
+  businessPropertyCapitalGainEffectiveRate: number;
+  /**
+   * Handel med fastigheter beskattas inte som kapitalvinst utan som
+   * inkomst av näringsverksamhet — progressiv kommunal/statlig skatt plus
+   * egenavgifter. Det finns ingen fast sats; det här är en grov, tydligt
+   * flaggad uppskattning tills en rådgivare bekräftat den faktiska nivån.
+   */
+  propertyTradingEffectiveRateAssumption: number;
   capitalIncomeTaxRate: number;
   dividendTaxWithinAllowance: number;
   dividendTaxAboveAllowanceDefault: number | null;

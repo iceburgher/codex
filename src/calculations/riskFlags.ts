@@ -69,6 +69,13 @@ export function buildRiskFlags(ctx: RiskContext): RiskFlag[] {
       text: "Ingen rådgivare har bekräftat att huset räknas som privatbostad. Det avgör om skatten på vinsten blir 22 % eller betydligt mer.",
     });
   }
+  if (!ctx.isCompanyOwned && scenario.privatePropertyTaxClassification === "property_trading_inventory_risk") {
+    flags.push({
+      id: "property_trading_not_capital_gain",
+      severity: "high",
+      text: "Vid handel med fastigheter beskattas vinsten inte som en kapitalvinst utan som inkomst av näringsverksamhet — progressiv kommunal och statlig skatt plus egenavgifter, ofta betydligt mer än kapitalvinstskatten. Skattesatsen i kalkylen är en grov uppskattning, inte en fastställd nivå. Stäm av den faktiska skattebelastningen med en rådgivare.",
+    });
+  }
   if (!ctx.isCompanyOwned && scenario.privateUseLevel === "none") {
     flags.push({
       id: "no_private_use",
