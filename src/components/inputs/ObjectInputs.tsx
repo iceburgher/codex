@@ -19,7 +19,7 @@ import {
 
 type Update = (updater: (draft: PropertyProject) => void) => void;
 
-const PROPERTY_TYPES: { value: PropertyType; label: string }[] = [
+export const PROPERTY_TYPES: { value: PropertyType; label: string }[] = [
   { value: "detached_house", label: "Villa" },
   { value: "townhouse", label: "Radhus" },
   { value: "holiday_home", label: "Fritidshus" },

@@ -31,6 +31,7 @@ import { ScenarioCards } from "./dashboard/ScenarioCards";
 import { SensitivityPanel } from "./dashboard/SensitivityPanel";
 import { HeadToHead } from "./dashboard/HeadToHead";
 import { AiAssistant } from "./dashboard/AiAssistant";
+import { GuidedWizard } from "./wizard/GuidedWizard";
 import { Button, Card, Collapsible, SelectField, Stat, Tabs, ToggleField } from "./ui";
 
 type TabKey = "oversikt" | "antaganden" | "detaljer";
@@ -52,6 +53,9 @@ export function ProjectDashboard({ projectId }: { projectId: string }) {
   const project = store.getProject(projectId);
   const [tab, setTab] = useState<TabKey>("oversikt");
   const [activeScenario, setActiveScenario] = useState<ScenarioType | null>(null);
+  // null = följ standardregeln (öppna guiden för ett tomt, nystartat projekt).
+  // true/false = användaren har själv öppnat eller stängt guiden.
+  const [wizardOverride, setWizardOverride] = useState<boolean | null>(null);
 
   /*
    * Varje beräkning kör lösaren för nollpris och avkastningsmål, vilket
@@ -101,6 +105,7 @@ export function ProjectDashboard({ projectId }: { projectId: string }) {
     );
   }
 
+  const wizardOpen = wizardOverride ?? project.inputs.purchasePrice === null;
   const selectedScenario = activeScenario ?? project.selectedScenario;
   const selectedResult = results.find((r) => r.scenario === selectedScenario) ?? results[0] ?? null;
   const currentName = project.name;
@@ -192,14 +197,35 @@ export function ProjectDashboard({ projectId }: { projectId: string }) {
       </header>
 
       <div className="mb-6">
-        <Tabs tabs={TABS} active={tab} onChange={setTab} />
+        {wizardOpen ? (
+          <Button size="sm" variant="ghost" onClick={() => setWizardOverride(false)}>
+            ← Till alla flikar
+          </Button>
+        ) : (
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <Tabs tabs={TABS} active={tab} onChange={setTab} />
+            <Button size="sm" onClick={() => setWizardOverride(true)}>
+              Guidad genomgång
+            </Button>
+          </div>
+        )}
       </div>
 
       <div className="mb-6">
         <AiAssistant project={project} update={update} />
       </div>
 
-      {results.length === 0 ? (
+      {wizardOpen ? (
+        <GuidedWizard
+          project={project}
+          update={update}
+          results={results}
+          onFinish={() => {
+            setWizardOverride(false);
+            setTab("oversikt");
+          }}
+        />
+      ) : results.length === 0 ? (
         <Card title="Inget alternativ valt">
           <p className="text-sm text-muted">
             Slå på minst ett sätt att äga huset under Antaganden.
