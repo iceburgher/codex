@@ -7,7 +7,7 @@ import Anthropic from "@anthropic-ai/sdk";
  * en klientkomponent. Saknas miljövariabeln är AI-sammanfattningen helt
  * enkelt inte påslagen, och knappen i gränssnittet döljs.
  */
-export const ASSISTANT_MODEL = "claude-opus-5";
+export const ASSISTANT_MODEL = "claude-sonnet-5";
 
 let cached: Anthropic | null = null;
 

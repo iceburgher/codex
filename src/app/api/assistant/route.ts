@@ -462,10 +462,18 @@ export async function POST(request: Request) {
     // ogiltigt modellsvar snarare än ett äkta assistentsvar. Ett enda
     // återförsök absorberar de flesta av de fallen utan att användaren
     // märker något.
+    // System-prompten och verktygsschemat är identiska för varje anrop, till
+    // alla användare — cache_control på systemblocket cachar hela prefixet
+    // (verktyg + system, i den ordningen de skickas) så bara de faktiska
+    // projektsiffrorna i messages kostar fullt pris varje gång.
+    const cachedSystemPrompt: Anthropic.TextBlockParam[] = [
+      { type: "text", text: SYSTEM_PROMPT, cache_control: { type: "ephemeral" } },
+    ];
+
     let firstPass = await client.messages.create({
       model: ASSISTANT_MODEL,
       max_tokens: 800,
-      system: SYSTEM_PROMPT,
+      system: cachedSystemPrompt,
       tools: [UPDATE_TOOL],
       messages,
     });
@@ -479,7 +487,7 @@ export async function POST(request: Request) {
       firstPass = await client.messages.create({
         model: ASSISTANT_MODEL,
         max_tokens: 800,
-        system: SYSTEM_PROMPT,
+        system: cachedSystemPrompt,
         tools: [UPDATE_TOOL],
         messages,
       });
@@ -523,7 +531,9 @@ export async function POST(request: Request) {
     const secondPass = await client.messages.create({
       model: ASSISTANT_MODEL,
       max_tokens: 500,
-      system: CONSEQUENCE_SYSTEM_PROMPT,
+      system: [
+        { type: "text", text: CONSEQUENCE_SYSTEM_PROMPT, cache_control: { type: "ephemeral" } },
+      ],
       messages: [
         ...messages,
         { role: "assistant", content: firstPass.content as unknown as Anthropic.MessageParam["content"] },
